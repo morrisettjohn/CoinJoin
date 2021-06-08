@@ -1,10 +1,14 @@
-from .CoinJoin_server import *
-from .HTTPRequest import HTTPRequest
+import os
+from HTTPRequest import *
+from CoinJoin_server import *
+import sys
 import socket
+import json
 
 joins = []
-JOIN_LIMIT = 10
+JOIN_DISPLAY_LIMIT = 10
 COLLECT_INPUTS, COLLECT_SIGS, DONE = range(3)
+current_id = 0
 
 def isvalid_json():
     return True
@@ -25,17 +29,35 @@ def request_length(req):
 
 def process_header(conn, message):
     req = HTTPRequest(message)
-    if not JoinState.isvalid_request(req):
+    if not isvalid_request(req):
         return -1
-    return JoinState.request_length(req)
+    return request_length(req)
+
+def create_new_join(asset_type, amount):
+    global current_id
+    new_join = JoinState(
+        id = current_id,
+        connect_limit = 7,
+        assettype = asset_type,
+        assetamount = amount,
+    )
+    current_id += 1
+    return new_join
 
 def find_joins(request_data, conn):
+    #XXX create available joins if you need to,
+    #XXX fixed amounts, make sure matchmaking is easy 1, 10, 100 avax
+    #XXX round to nearest 10th
     matches = []
     for item in joins:
         if item.state == COLLECT_INPUTS and item.assettype == request_data["assettype"] and item.assetamount == request_data["amount"]:
-            matches.append(item)
+            matches.append(json.loads(str({"id": item.name})))
+        if matches >= JOIN_DISPLAY_LIMIT:
+            break
+    if len(matches) == 0:
+        joins.append(create_new_join(request_data["assettype"], request_data["amount"]))
+    return matches
     
-
 def start_findme_service():
     HOST = sys.argv[1]
     PORT = 12345
@@ -72,3 +94,4 @@ def start_findme_service():
                 else:
                     print("invalid json data")
                 
+start_findme_service()
