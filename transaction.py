@@ -5,10 +5,10 @@ import binascii
 import hashlib
 from collections import defaultdict
 
-from ecdsa import SigningKey, VerifyingKey, SECP256k1
+#from ecdsa import SigningKey, VerifyingKey, SECP256k1
 
 from utils import *
-from params import *
+#from params import *
 
 # For good hygiene, we employ a canonical format for all transaction inputs and outputs
 # Both inputs and outputs are sorted by their respective keys
@@ -42,6 +42,7 @@ PayTo_PubKeyHash, PayTo_Multisig, Stake, Unstake, MintReward = range(1,6)
 spendstr = { PayTo_PubKeyHash: "PayTo_PubKeyHash", PayTo_Multisig: "PayTo_Multisig", Stake: "Stake", Unstake: "Unstake", MintReward: "MintReward"}
 
 class TxOutput:
+    print(PayTo_PubKeyHash)
     # this constructor takes a buffer, typically a memoryview, and, optionally, a set of field values
     # 
     # it either interprets the contents of the buffer, or it packs the given field values into that buffer

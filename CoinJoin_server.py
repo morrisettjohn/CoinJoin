@@ -1,39 +1,25 @@
 import socket
-from http.server import BaseHTTPRequestHandler
-from io import BytesIO
-
 import json
 import sys
 
-#import wallet
-#from avatools.inputs import MultisigInput
-#from avatools.outputs import MultisigOutput, Utxo
-#from avatools.transaction import TransactionWithState
+from transaction import *
+from HTTPRequest import *
 
 joins = []
 
 #Parses raw http header data
-class HTTPRequest(BaseHTTPRequestHandler):
-    def __init__(self, request_text):
-        self.rfile = BytesIO(request_text)
-        self.raw_requestline = self.rfile.readline()
-        self.error_code = self.error_message = None
-        self.parse_request()
-
-    def send_error(self, code, message):
-        self.error_code = code
-        self.error_message = message   
+  
 
 #Class which holds all the coinjoin data
 class JoinState:
     COLLECT_INPUTS, COLLECT_SIGS, DONE = range(3)
 
-    def __init__(self, name = "test", connect_limit = 3, assettype = 1, assetamount = 10, 
+    def __init__(self, id = "test", connect_limit = 5, assettype = 1, assetamount = 10, 
             feeaddress = "", feeamount = 0):
         if feeamount < 0:
             return Exception("fee must be 0 or positive")
 
-        self.name = name
+        self.id = id
         self.connect_limit = connect_limit
         self.assettype = assettype
         self.assetamount = assetamount
@@ -49,29 +35,53 @@ class JoinState:
     def find_join(request_data):
         joinid = request_data["joinid"]
         for join in joins:
-            if join.name == joinid:
+            if join.id == joinid:
                 return join
         return None
 
     def take_inputdata(data):
         return data[0]["utxo"]
 
-    def create_input(request_data, conn):
-        return [MultisigInput(
-            request_data["utxo"],
-            request_data["utxooffset"],
-            request_data["assettype"],
-            request_data["amount"],
-            10,
-        ), conn]
+    #previous create_input 
+    #def create_input(request_data, conn):
+        #return [MultisigInput(
+            #request_data["utxo"],
+            #request_data["utxooffset"],
+            #request_data["assettype"],
+            #request_data["amount"],
+            #10,
+        #), conn]
 
-    def create_output(self, destinationaddr, amount, conn):
-        return [MultisigOutput(
-            amount,
-            10,
-            self.assettype,
-            threshold=1,
-            addresses= destinationaddr,
+    #def create_output(self, destinationaddr, amount, conn):
+        #return [MultisigOutput(
+            #amount,
+            #10,
+            #self.assettype,
+            #threshold=1,
+            #addresses= destinationaddr,
+        #), conn]
+
+    def create_output(self, coinid, destinationaddr, amount, conn):
+        return [TxOutput(
+            buf = None,
+            packvalues = True,
+            stype = "PayTo_PubKeyHash",
+            coinid = coinid,
+            amount = amount,
+            address = destinationaddr,
+            locktime = 1
+        ), conn]
+        
+    def create_input(self, request_data, conn):
+        return [TxInput(
+            buf = None,
+            packvalues = True,
+            stype = 1,
+            prevhash = request_data["utxo"],
+            previdx = request_data["utxooffset"],
+            coinid = request_data["assettype"],
+            amount = request_data["assetamount"],
+            key = request_data["key"]
         ), conn]
 
     def sort_inputs(self):
@@ -82,17 +92,22 @@ class JoinState:
             item.pop()
 
     def sort_outputs(self):
+        #XXX sort lexigraphically
         self.outputs.sort()
 
     def inputs_append(self, request_data, ip):  #XXX maybe change this from host ip to public key?
-        input = JoinState.create_input(request_data, ip)
+        input = self.create_input(request_data, ip)
         self.inputs.append(input)
         JoinState.sort_inputs()
 
-    def outputs_append(self, destination_addr, amount, ip): #XXX maybe change this form host ip to public key?
-        output = JoinState.create_output(destination_addr, amount, ip)
+    def outputs_append(self, coinid, destination_addr, amount, ip): #XXX maybe change this form host ip to public key?
+        output = JoinState.create_output(coinid, destination_addr, amount, ip)
         self.outputs.append(output)
         JoinState.sort_outputs()
+
+    def outputs_append_fee(self, request_data, ip):
+        self.outputs_append(request_data["assettype"], request_data["destinationaddr"], request_data["amount"], ip)
+        pass
 
     def signers_append(self, signature, ip):
         inputs, ips = map(list, zip(*self.inputs))
@@ -115,7 +130,7 @@ class JoinState:
         return outputs
 
     def craft_transaction(self):
-        return TransactionWithState(
+        return Transaction(
             self.extract_inputs(), 
             self.extract_outputs(),
             None)
@@ -157,6 +172,7 @@ class JoinState:
         return JoinState.request_length(req)
 
     def get_utxo_amount(utxo, offset):
+        #XXX need to actually get utxo data
         return 15
 
     def process_request(self, request_data, conn, HOST):
@@ -171,20 +187,19 @@ class JoinState:
                                     self.connections.append(conn)
                                     self.IP_addresses.append(HOST)
                                     self.inputs_append(request_data, HOST)
-                                    self.outputs_append(request_data["destinationaddr"], self.assetamount, HOST)
+                                    self.outputs_append(request_data, HOST)
 
                                     #If there is a fee, add this to the outputs list
                                     if self.feeamount > 0:
-                                        self.outputs_append(self.feeaddress, self.feeamount, HOST)
+                                        self.outputs_append_fee(request_data, HOST)
 
                                     #If the input is greater than the amount requirement and fee requirement, return that value
-                                    if utxo_amount > self.assetamount + self.feeamount:
-                                        self.outputs_append(senderaddress, request_data["assetamount"] - self.assetamount - self.feeamount, HOST)
+                                    #if utxo_amount > self.assetamount + self.feeamount:  #XXX send to surplus
+                                        #self.outputs_append(senderaddress, request_data["assetamount"] - self.assetamount - self.feeamount, HOST)
                                     
                                     if len(self.connections) >= self.connect_limit:
                                         tx = self.craft_transaction()
                                         for item in self.connections:
-                                            #XXX send out actual transaction to sign
                                             item.sendall(tx)
                                         self.initialize_signers()
                                         self.state = JoinState.COLLECT_SIGS
@@ -211,7 +226,6 @@ class JoinState:
             if request_data["messagetype"] != "signature":
                 if conn in self.connections:
                     if conn not in self.signers:
-                        #XXX put the signatures together in the same order as the inputs
                         self.signers_append(request_data["signature"], HOST)
 
                         if len(self.signers) >= self.connect_limit:
@@ -243,17 +257,12 @@ def start_server():
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.bind((HOST, PORT))
     s.listen()
-    joins.append(JoinState("Mario", 2)) 
-    joins.append(JoinState("Luigi", 3, 1))
-    joins.append(JoinState("Bowser", 4, 1))
     joins.append(JoinState("123", 15))
     REQUEST_TERMINATOR = b'\r\n\r\n'
 
     while True:
         #loop that continues to accept requests
-        conn, addr = s.accept()
-        print(conn)
-        
+        conn, addr = s.accept()        
         print('Connected by', addr)
         message = b''
         while True:
