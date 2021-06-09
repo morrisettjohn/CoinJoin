@@ -182,10 +182,14 @@ class JoinState:
                                 self.connections.append(conn)
                                 self.IP_addresses.append(HOST)
                                 self.inputs_append(request_data, HOST)
-                                self.outputs_append(request_data["assettype"], request_data["destinationaddr"], request_data["assetamount"], HOST)
+                                self.outputs_append(request_data["assettype"], 
+                                    request_data["destinationaddr"], 
+                                    self.assetamount, HOST)
 
                                 self.collected_fee_amount += request_data["assetamount"] - self.assetamount
                                 print("collected fees: " + str(self.collected_fee_amount))
+                                for item in self.outputs:
+                                    print(item)
 
                                 #If the input is greater than the amount requirement and fee requirement, return that value
                                 #if utxo_amount > self.assetamount + self.feeamount:  
@@ -225,13 +229,13 @@ class JoinState:
 
         #collect sigs state
         elif self.state == COLLECT_SIGS:
-            print("I'm here")
             if request_data["messagetype"] == "signature":
                 if True: #conn in self.connections:       #XXX commented out for testing purposes
                     if conn not in self.signers:
                         self.signers_append(request_data["signature"], HOST)
-                        print("I made it")
+                        print(self.signers)
                         if None not in self.signers and len(self.signers) >= self.connect_limit:
+                            print("all signed")
                             for item in self.signers:
                                 item.sendall(self.inputs + b"\r\n")
                             self.state = DONE
@@ -255,8 +259,8 @@ class JoinState:
 
 #Function that starts the server connections and listens for data.
 def start_server():
-    HOST = sys.argv[1]      #ip addresses for testing:  '100.64.8.232', '192.168.128.238'
-    PORT = 65432        # Port to listen on (non-privileged ports are > 1023)
+    HOST = sys.argv[1][:sys.argv[1].find(":")]
+    PORT = int(sys.argv[1][sys.argv[1].find(":")+1:])
 
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.bind((HOST, PORT))
