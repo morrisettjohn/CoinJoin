@@ -142,16 +142,16 @@ def unpack_hash(buf, off):
 
 def pack_addr(buf, off, val):
     assert len(val) == ADDRLEN, "length of addr is %d bytes, not %d bytes" % (len(val), ADDRLEN)
-    buf[off:off+ADDRLEN] = val
+    buf[off:off+ADDRLEN] = bytes.fromhex(val)
     return ADDRLEN
 
 def unpack_addr(buf, off):
     val = buf[off:off+ADDRLEN]
-    return ADDRLEN, val
+    return ADDRLEN, bytes.fromhex(val)
 
 def pack_pubkey(buf, off, val):
     assert len(val) == PUBKEYLEN, "length of pubkey is %d bytes, not %d bytes" % (len(val), PUBKEYLEN)
-    buf[off:off+PUBKEYLEN] = val
+    buf[off:off+PUBKEYLEN] = bytes.fromhex(val)
     return PUBKEYLEN
 
 def unpack_pubkey(buf, off):

@@ -59,8 +59,8 @@ def find_joins(request_data, conn):
     return matches
     
 def start_findme_service():
-    HOST = sys.argv[1]
-    PORT = 12345
+    HOST = sys.argv[1][:sys.argv[1].find(":")]
+    PORT = sys.argv[1][sys.argv[1].find(":"):]
     REQUEST_TERMINATOR = b'\r\n\r\n'
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.bind((HOST, PORT))
