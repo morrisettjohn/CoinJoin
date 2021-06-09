@@ -1,6 +1,6 @@
 # CoinJoin
 
-operate CoinJoin_server by accessing through commandline and putting ip address in place.
+operate CoinJoin_server by accessing through commandline and putting ip address and port as an argument.  (e.g. python3 CoinJoin_server.py 123.456.789:65432)
 
 Operates based on two different states:  Collecting inputs & collecting signatures.
 When collecting inputs, the server will wait and receive json data that contain information necessary for a transaction.  Below is a sample:
@@ -16,7 +16,12 @@ When collecting inputs, the server will wait and receive json data that contain 
 }
 
 if this is valid data, the server accepts the connection and will keep accepting connections until it has hit its limit.  
-It then creates a transaction based on the above data. Then it asks to receive signature data.
+It then creates a transaction based on the above data. Then it asks to receive signature data.  Signature data looks something like this:
+{
+    "joinid": 123,
+    "messagetype": "signature",
+    "signature": "a23bc"
+}
 
 In the collect_signatures state, the server will wait until all connections send their signature.  Once this is done, the signature will be sent out
 into the blockchain.
