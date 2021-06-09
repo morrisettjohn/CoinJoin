@@ -1,13 +1,13 @@
 import os
 from HTTPRequest import *
 from CoinJoin_server import *
+from params import *
 import sys
 import socket
 import json
 
 joins = []
 JOIN_DISPLAY_LIMIT = 10
-COLLECT_INPUTS, COLLECT_SIGS, DONE = range(3)
 current_id = 0
 
 def isvalid_json():

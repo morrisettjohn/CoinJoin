@@ -4,6 +4,7 @@ import sys
 
 #from transaction import *
 from HTTPRequest import *
+from params import *
 
 
 joins = []
@@ -13,12 +14,10 @@ joins = []
 
 #Class which holds all the coinjoin data
 class JoinState:
-    COLLECT_INPUTS, COLLECT_SIGS, DONE = range(3)
+
 
     def __init__(self, id = "test", connect_limit = 5, assettype = 1, assetamount = 10, 
             feeaddress = "", feepercent = 0.10):
-        if feepercent < 0 or feepercent > 1:
-            return Exception("fee must be a valid percentage of the total amount")
 
         self.id = id
         self.connect_limit = connect_limit
@@ -27,13 +26,27 @@ class JoinState:
         self.feepercent = feepercent
         self.totalamount = assetamount + assetamount * feepercent
         self.feeaddress = feeaddress
-        self.state = JoinState.COLLECT_INPUTS
+        self.state = COLLECT_INPUTS
         self.collected_fee_amount = 0
         self.IP_addresses = []
         self.connections = []
         self.signers = []
         self.inputs = []
         self.outputs = []
+
+        if not self.isvalid_join():
+            raise Exception("bad parameters")
+
+    def isvalid_join(self):
+        if type(self.id) != int:
+            return False
+        if self.connect_limit < 2 or self.connect_limit > CONNECT_LIMIT_MAX:
+            return False
+        if self.assetamount <= 0:
+            return False
+        if self.feepercent < 0 or self.feepercent >= 1:
+            return False
+        return True
 
     def find_join(request_data):
         joinid = request_data["joinid"]
@@ -74,6 +87,7 @@ class JoinState:
         return [TxInp, conn]
 
     def sort_inputs(self):
+        #Convert utxo hash to binary, and then sort based on this
         for item in self.inputs:
             item.append(int(bin(int(item[0]["utxo"], 16))[2:]))
         self.inputs = sorted(self.inputs, key=lambda x:x[2])
@@ -81,8 +95,7 @@ class JoinState:
             item.pop()
 
     def sort_outputs(self):
-        #XXX sort lexigraphically
-        self.outputs.sort()
+        self.outputs.sort(key=lambda x: x[0]["destinationaddr"])
 
     def inputs_append(self, request_data, ip):  #XXX maybe change this from host ip to public key?
         input = self.create_input(request_data, ip)
@@ -118,7 +131,7 @@ class JoinState:
         return outputs
 
     def craft_transaction(self):
-        return bytes({"inputs": self.extract_inputs(),"outputs": self.extract_outputs()})
+        return {"inputs": self.extract_inputs(),"outputs": self.extract_outputs()}
 
     def isvalid_request(request_data):
         if request_data.command != 'POST':
@@ -156,37 +169,37 @@ class JoinState:
             return -1
         return JoinState.request_length(req)
 
-    def get_utxo_amount(utxo, offset):
-        #XXX need to actually get utxo data
-        return 15
-
+    #Function that parses data, and makes sure that it is valid
     def process_request(self, request_data, conn, HOST):
-        if self.state == JoinState.COLLECT_INPUTS:
+
+        #collect inputs state
+        if self.state == COLLECT_INPUTS:
             if request_data["messagetype"] == "input":
                 if request_data["assetamount"] >= self.totalamount:
                     if request_data["assettype"] == self.assettype:
-                        if not HOST in self.IP_addresses:
+                        if True: #not HOST in self.IP_addresses:       #XXX need to comment out for testing purposes
                             if conn not in self.connections:
-                                print("hi")
                                 self.connections.append(conn)
                                 self.IP_addresses.append(HOST)
                                 self.inputs_append(request_data, HOST)
                                 self.outputs_append(request_data["assettype"], request_data["destinationaddr"], request_data["assetamount"], HOST)
 
                                 self.collected_fee_amount += request_data["assetamount"] - self.assetamount
+                                print("collected fees: " + str(self.collected_fee_amount))
 
                                 #If the input is greater than the amount requirement and fee requirement, return that value
-                                #if utxo_amount > self.assetamount + self.feeamount:  #XXX send to surplus
+                                #if utxo_amount > self.assetamount + self.feeamount:  
                                     #self.outputs_append(senderaddress, request_data["assetamount"] - self.assetamount - self.feeamount, HOST)
                                 
                                 #when sufficient connections are created, go through the process of sending out the transaction
                                 if len(self.connections) >= self.connect_limit:
                                     self.outputs_append_fee(None) #create an output for fee transactions
                                     tx = self.craft_transaction()
+                                    print(tx)
                                     for item in self.connections:
-                                        item.sendall(tx)
+                                        item.sendall(b"transaction placeholder:")
                                     self.initialize_signers()
-                                    self.state = JoinState.COLLECT_SIGS
+                                    self.state = COLLECT_SIGS
                                 return
                         
                             else:
@@ -202,7 +215,7 @@ class JoinState:
                         conn.sendall(b"Mismatched asset-type")
                         return
                 else:
-                    print("Quanitty of avax needs to be the same")
+                    print("Quantity of avax needs to be the same")
                     conn.sendall(b"Quantity of avax needs to be the same")
                     return
             else:
@@ -210,74 +223,86 @@ class JoinState:
                 conn.sendall(b"Message not applicable, Join in input state")
                 return
 
-        elif self.state == JoinState.COLLECT_SIGS:
-            if request_data["messagetype"] != "signature":
-                if conn in self.connections:
+        #collect sigs state
+        elif self.state == COLLECT_SIGS:
+            print("I'm here")
+            if request_data["messagetype"] == "signature":
+                if True: #conn in self.connections:       #XXX commented out for testing purposes
                     if conn not in self.signers:
                         self.signers_append(request_data["signature"], HOST)
-
-                        if len(self.signers) >= self.connect_limit:
+                        print("I made it")
+                        if None not in self.signers and len(self.signers) >= self.connect_limit:
                             for item in self.signers:
                                 item.sendall(self.inputs + b"\r\n")
-                            self.state = JoinState.DONE
+                            self.state = DONE
                         return
                     else:
+                        print("already signed")
                         conn.sendall(b"already signed")
                         return
                 else:
+                    print("join is full")
                     conn.sendall(b"Join is full")
                     return
             else:
+                print("not a message for signature state")
                 conn.sendall(b"Message not applicable, Join in signature state")
                 return
-        elif self.state == JoinState.DONE:
+        elif self.state == DONE:
             pass
         else:
             conn.sendall(b"in invalid state")
 
-
+#Function that starts the server connections and listens for data.
 def start_server():
     HOST = sys.argv[1]      #ip addresses for testing:  '100.64.8.232', '192.168.128.238'
     PORT = 65432        # Port to listen on (non-privileged ports are > 1023)
-    print(HOST)
 
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.bind((HOST, PORT))
     s.listen()
-    joins.append(JoinState("123", 15))
+    joins.append(JoinState(123, 3))
     REQUEST_TERMINATOR = b'\r\n\r\n'
 
     while True:
-        #loop that continues to accept requests
-        conn, addr = s.accept()        
-        print('Connected by', addr)
-        message = b''
-        while True:
-            data = conn.recv(1024)
-            if data == b'':
-                break
+        try:
+            #loop that continues to accept requests
+            conn, addr = s.accept()        
+            print('Connected by', addr)
+            message = b''
+            while True:
+                data = conn.recv(1024)
+                if data == b'':
+                    break
 
-            message += data
+                message += data
 
-            while message != b'' and message.find(REQUEST_TERMINATOR) != -1:
-                request_length = JoinState.process_header(conn, message[:message.find(REQUEST_TERMINATOR)])
-                if request_length < 0:
-                    break #XXX
-                message = message[message.find(REQUEST_TERMINATOR)+len(REQUEST_TERMINATOR):]
-                if len(message) != request_length:
-                    while (len(message) < request_length):
-                        data = conn.recv(1024)
-                        if data == b'':
-                            break
-                        message += data
+                done_processing = False
+                while message != b'' and message.find(REQUEST_TERMINATOR) != -1:
+                    request_length = JoinState.process_header(conn, message[:message.find(REQUEST_TERMINATOR)])
+                    if request_length < 0:
+                        break #XXX
+                    message = message[message.find(REQUEST_TERMINATOR)+len(REQUEST_TERMINATOR):]
+                    if len(message) != request_length:
+                        while (len(message) < request_length):
+                            data = conn.recv(1024)
+                            if data == b'':
+                                break
+                            message += data
 
-                request_data = json.loads(message)
-                if JoinState.isvalid_jsondata(request_data):
-                    join = JoinState.find_join(request_data)
-                    print(join.id)
-                    join.process_request(request_data, conn, HOST)
-                else:
-                    print("invalid json data")
-            break
+                    request_data = json.loads(message)
+                    if JoinState.isvalid_jsondata(request_data):
+                        join = JoinState.find_join(request_data)
+                        join.process_request(request_data, conn, HOST)
+                        done_processing = True
+                        break
+                    else:
+                        print("invalid json data")
+                if done_processing:
+                    break
+        except KeyboardInterrupt:
+            print('keyboard interrupt')
+            s.shutdown(socket.SHUT_RDWR)
+            s.close()
 
 start_server()
