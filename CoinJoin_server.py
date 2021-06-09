@@ -2,8 +2,9 @@ import socket
 import json
 import sys
 
-from transaction import *
+#from transaction import *
 from HTTPRequest import *
+
 
 joins = []
 
@@ -15,17 +16,19 @@ class JoinState:
     COLLECT_INPUTS, COLLECT_SIGS, DONE = range(3)
 
     def __init__(self, id = "test", connect_limit = 5, assettype = 1, assetamount = 10, 
-            feeaddress = "", feeamount = 0):
-        if feeamount < 0:
-            return Exception("fee must be 0 or positive")
+            feeaddress = "", feepercent = 0.10):
+        if feepercent < 0 or feepercent > 1:
+            return Exception("fee must be a valid percentage of the total amount")
 
         self.id = id
         self.connect_limit = connect_limit
         self.assettype = assettype
         self.assetamount = assetamount
+        self.feepercent = feepercent
+        self.totalamount = assetamount + assetamount * feepercent
         self.feeaddress = feeaddress
-        self.feeamount = feeamount
         self.state = JoinState.COLLECT_INPUTS
+        self.collected_fee_amount = 0
         self.IP_addresses = []
         self.connections = []
         self.signers = []
@@ -62,33 +65,19 @@ class JoinState:
         #), conn]
 
     def create_output(self, coinid, destinationaddr, amount, conn):
-        return [TxOutput(
-            buf = None,
-            packvalues = True,
-            stype = "PayTo_PubKeyHash",
-            coinid = coinid,
-            amount = amount,
-            address = destinationaddr,
-            locktime = 1
-        ), conn]
+        TxOut = {"coinid": coinid, "amount": amount, "destinationaddr": destinationaddr}
+        return [TxOut, conn]
         
     def create_input(self, request_data, conn):
-        return [TxInput(
-            buf = None,
-            packvalues = True,
-            stype = 1,
-            prevhash = request_data["utxo"],
-            previdx = request_data["utxooffset"],
-            coinid = request_data["assettype"],
-            amount = request_data["assetamount"],
-            key = request_data["key"]
-        ), conn]
+        TxInp = {"coinid": request_data["assettype"], "amount": request_data["assetamount"], 
+            "utxo": request_data["utxo"], "utxooffset": request_data["utxooffset"]}
+        return [TxInp, conn]
 
     def sort_inputs(self):
         for item in self.inputs:
             item.append(int(bin(int(item[0]["utxo"], 16))[2:]))
         self.inputs = sorted(self.inputs, key=lambda x:x[2])
-        for item in input:
+        for item in self.inputs:
             item.pop()
 
     def sort_outputs(self):
@@ -98,17 +87,16 @@ class JoinState:
     def inputs_append(self, request_data, ip):  #XXX maybe change this from host ip to public key?
         input = self.create_input(request_data, ip)
         self.inputs.append(input)
-        JoinState.sort_inputs()
+        self.sort_inputs()
 
     def outputs_append(self, coinid, destination_addr, amount, ip): #XXX maybe change this form host ip to public key?
-        output = JoinState.create_output(coinid, destination_addr, amount, ip)
+        output = self.create_output(coinid, destination_addr, amount, ip)
         self.outputs.append(output)
-        JoinState.sort_outputs()
+        self.sort_outputs()
 
-    def outputs_append_fee(self, request_data, ip):
-        self.outputs_append(request_data["assettype"], request_data["destinationaddr"], request_data["amount"], ip)
-        pass
-
+    def outputs_append_fee(self, ip):
+        self.outputs_append(self.assettype, self.feeaddress, self.collected_fee_amount, ip)
+        
     def signers_append(self, signature, ip):
         inputs, ips = map(list, zip(*self.inputs))
         index = ips.index(ip)
@@ -130,10 +118,7 @@ class JoinState:
         return outputs
 
     def craft_transaction(self):
-        return Transaction(
-            self.extract_inputs(), 
-            self.extract_outputs(),
-            None)
+        return bytes({"inputs": self.extract_inputs(),"outputs": self.extract_outputs()})
 
     def isvalid_request(request_data):
         if request_data.command != 'POST':
@@ -178,47 +163,50 @@ class JoinState:
     def process_request(self, request_data, conn, HOST):
         if self.state == JoinState.COLLECT_INPUTS:
             if request_data["messagetype"] == "input":
-                if request_data["assetamount"] == self.assetamount:
+                if request_data["assetamount"] >= self.totalamount:
                     if request_data["assettype"] == self.assettype:
-                        utxo_amount = JoinState.get_utxo_amount(request_data["utxo"], request_data["utxooffset"])
-                        if utxo_amount >= self.assetamount + self.feeamount:
-                            if not HOST in self.IP_addresses:
-                                if conn not in self.connections:
-                                    self.connections.append(conn)
-                                    self.IP_addresses.append(HOST)
-                                    self.inputs_append(request_data, HOST)
-                                    self.outputs_append(request_data, HOST)
+                        if not HOST in self.IP_addresses:
+                            if conn not in self.connections:
+                                print("hi")
+                                self.connections.append(conn)
+                                self.IP_addresses.append(HOST)
+                                self.inputs_append(request_data, HOST)
+                                self.outputs_append(request_data["assettype"], request_data["destinationaddr"], request_data["assetamount"], HOST)
 
-                                    #If there is a fee, add this to the outputs list
-                                    if self.feeamount > 0:
-                                        self.outputs_append_fee(request_data, HOST)
+                                self.collected_fee_amount += request_data["assetamount"] - self.assetamount
 
-                                    #If the input is greater than the amount requirement and fee requirement, return that value
-                                    #if utxo_amount > self.assetamount + self.feeamount:  #XXX send to surplus
-                                        #self.outputs_append(senderaddress, request_data["assetamount"] - self.assetamount - self.feeamount, HOST)
-                                    
-                                    if len(self.connections) >= self.connect_limit:
-                                        tx = self.craft_transaction()
-                                        for item in self.connections:
-                                            item.sendall(tx)
-                                        self.initialize_signers()
-                                        self.state = JoinState.COLLECT_SIGS
-                                    return
-                            
-                                else:
-                                    conn.sendall(b"Already connected")
-                                    return
+                                #If the input is greater than the amount requirement and fee requirement, return that value
+                                #if utxo_amount > self.assetamount + self.feeamount:  #XXX send to surplus
+                                    #self.outputs_append(senderaddress, request_data["assetamount"] - self.assetamount - self.feeamount, HOST)
+                                
+                                #when sufficient connections are created, go through the process of sending out the transaction
+                                if len(self.connections) >= self.connect_limit:
+                                    self.outputs_append_fee(None) #create an output for fee transactions
+                                    tx = self.craft_transaction()
+                                    for item in self.connections:
+                                        item.sendall(tx)
+                                    self.initialize_signers()
+                                    self.state = JoinState.COLLECT_SIGS
+                                return
+                        
                             else:
-                                conn.sendall(b"matching ip address already in use")
+                                print("already connected")
+                                conn.sendall(b"Already connected")
+                                return
                         else:
-                            conn.sendall(b"Insufficient amount of currency")
+                            print("matching ip address already in use")
+                            conn.sendall(b"matching ip address already in use")
+
                     else:
+                        print("Mismatched asset-type")
                         conn.sendall(b"Mismatched asset-type")
                         return
                 else:
+                    print("Quanitty of avax needs to be the same")
                     conn.sendall(b"Quantity of avax needs to be the same")
                     return
             else:
+                print("message not applicable, Join in input state")
                 conn.sendall(b"Message not applicable, Join in input state")
                 return
 
@@ -246,7 +234,6 @@ class JoinState:
             pass
         else:
             conn.sendall(b"in invalid state")
-
 
 
 def start_server():
@@ -287,6 +274,7 @@ def start_server():
                 request_data = json.loads(message)
                 if JoinState.isvalid_jsondata(request_data):
                     join = JoinState.find_join(request_data)
+                    print(join.id)
                     join.process_request(request_data, conn, HOST)
                 else:
                     print("invalid json data")
