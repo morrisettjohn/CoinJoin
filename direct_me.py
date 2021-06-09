@@ -8,6 +8,7 @@ import json
 
 joins = []
 JOIN_DISPLAY_LIMIT = 10
+JOINS_NUMBER = 15
 current_id = 0
 
 def isvalid_json():
@@ -47,7 +48,6 @@ def create_new_join(asset_type, amount):
 def find_joins(request_data, conn):
     #XXX create available joins if you need to,
     #XXX fixed amounts, make sure matchmaking is easy 1, 10, 100 avax
-    #XXX round to nearest 10th
     matches = []
     for item in joins:
         if item.state == COLLECT_INPUTS and item.assettype == request_data["assettype"] and item.assetamount == request_data["amount"]:
@@ -77,6 +77,7 @@ def start_findme_service():
 
             message += data
 
+            request_done = False
             while message != b'' and message.find(REQUEST_TERMINATOR) != -1:
                 request_length = process_header(conn, message[:message.find(REQUEST_TERMINATOR)])
                 if request_length < 0:
@@ -93,5 +94,7 @@ def start_findme_service():
                     find_joins(request_data)
                 else:
                     print("invalid json data")
+            if request_done:
+                break
                 
 start_findme_service()

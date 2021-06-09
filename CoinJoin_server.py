@@ -6,15 +6,11 @@ import sys
 from HTTPRequest import *
 from params import *
 
-
 joins = []
 
-#Parses raw http header data
-  
-
-#Class which holds all the coinjoin data
+#This is a class which holds all the data for a coinjoin.  The CoinJoin has two main states that it can be in:  collecting utxo inputs and collecting
+#signatures.  
 class JoinState:
-
 
     def __init__(self, id = "test", connect_limit = 5, assettype = 1, assetamount = 10, 
             feeaddress = "", feepercent = 0.10):
@@ -28,6 +24,7 @@ class JoinState:
         self.feeaddress = feeaddress
         self.state = COLLECT_INPUTS
         self.collected_fee_amount = 0
+        self.last_accessed = "x"
         self.IP_addresses = []
         self.connections = []
         self.signers = []
@@ -58,33 +55,14 @@ class JoinState:
     def take_inputdata(data):
         return data[0]["utxo"]
 
-    #previous create_input 
-    #def create_input(request_data, conn):
-        #return [MultisigInput(
-            #request_data["utxo"],
-            #request_data["utxooffset"],
-            #request_data["assettype"],
-            #request_data["amount"],
-            #10,
-        #), conn]
-
-    #def create_output(self, destinationaddr, amount, conn):
-        #return [MultisigOutput(
-            #amount,
-            #10,
-            #self.assettype,
-            #threshold=1,
-            #addresses= destinationaddr,
-        #), conn]
-
-    def create_output(self, coinid, destinationaddr, amount, conn):
+    def create_output(self, coinid, destinationaddr, amount, ip):
         TxOut = {"coinid": coinid, "amount": amount, "destinationaddr": destinationaddr}
-        return [TxOut, conn]
+        return [TxOut, ip]
         
-    def create_input(self, request_data, conn):
+    def create_input(self, request_data, ip):
         TxInp = {"coinid": request_data["assettype"], "amount": request_data["assetamount"], 
             "utxo": request_data["utxo"], "utxooffset": request_data["utxooffset"]}
-        return [TxInp, conn]
+        return [TxInp, ip]
 
     def sort_inputs(self):
         #Convert utxo hash to binary, and then sort based on this
@@ -181,19 +159,13 @@ class JoinState:
                             if conn not in self.connections:
                                 self.connections.append(conn)
                                 self.IP_addresses.append(HOST)
-                                self.inputs_append(request_data, HOST)
-                                self.outputs_append(request_data["assettype"], 
+                                self.inputs_append(request_data, HOST)      
+                                self.outputs_append(request_data["assettype"],   
                                     request_data["destinationaddr"], 
                                     self.assetamount, HOST)
 
                                 self.collected_fee_amount += request_data["assetamount"] - self.assetamount
                                 print("collected fees: " + str(self.collected_fee_amount))
-                                for item in self.outputs:
-                                    print(item)
-
-                                #If the input is greater than the amount requirement and fee requirement, return that value
-                                #if utxo_amount > self.assetamount + self.feeamount:  
-                                    #self.outputs_append(senderaddress, request_data["assetamount"] - self.assetamount - self.feeamount, HOST)
                                 
                                 #when sufficient connections are created, go through the process of sending out the transaction
                                 if len(self.connections) >= self.connect_limit:
@@ -232,11 +204,11 @@ class JoinState:
             if request_data["messagetype"] == "signature":
                 if True: #conn in self.connections:       #XXX commented out for testing purposes
                     if conn not in self.signers:
-                        self.signers_append(request_data["signature"], HOST)
+                        self.signers_append(request_data["signature"], HOST)   
                         print(self.signers)
                         if None not in self.signers and len(self.signers) >= self.connect_limit:
                             print("all signed")
-                            for item in self.signers:
+                            for item in self.connections:
                                 item.sendall(self.inputs + b"\r\n")
                             self.state = DONE
                         return
