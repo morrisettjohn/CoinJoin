@@ -10,6 +10,7 @@ joins = []
 
 #This is a class which holds all the data for a coinjoin.  The CoinJoin has two main states that it can be in:  collecting utxo inputs and collecting
 #signatures.  
+
 class JoinState:
 
     def __init__(self, id = "test", connect_limit = 5, assettype = 1, assetamount = 10, 
@@ -45,16 +46,40 @@ class JoinState:
             return False
         return True
 
-    def find_join(request_data):
-        joinid = request_data["joinid"]
-        for join in joins:
-            if join.id == joinid:
-                return join
-        return None
+    def get_current_signature_count(self):
+        count = 0
+        for item in self.signers:
+            if item != None:
+                count += 1
+        return count
 
-    def take_inputdata(data):
-        return data[0]["utxo"]
+    #function that returns the current status of the join in json form, for easy access
+    def get_status(self):
+        if self.state == COLLECT_INPUTS:
+            status = {
+                "id": self.id,
+                "state": self.state,
+                "connect_limit": self.connect_limit,
+                "current_connection_count": len(self.connections),
+                "base_amount": self.assetamount,
+                "fee_percent":  self.feepercent,
+                "total_amount": self.totalamount
+                }
+        elif self.state == COLLECT_SIGS:
+            status = {
+                "id": self.id,
+                "state": self.state,
+                "signatures_needed": self.connect_limit,
+                "current_signature_count": self.get_current_signature_count(),
+                "base_amount": self.assetamount,
+                "fee_percent": self.feepercent,
+                "total_amount": self.totalamount
+            }
+        else:
+            Exception("bad")
+        return json.dumps(status)
 
+    #Creates 
     def create_output(self, coinid, destinationaddr, amount, ip):
         TxOut = {"coinid": coinid, "amount": amount, "destinationaddr": destinationaddr}
         return [TxOut, ip]
@@ -110,42 +135,6 @@ class JoinState:
 
     def craft_transaction(self):
         return {"inputs": self.extract_inputs(),"outputs": self.extract_outputs()}
-
-    def isvalid_request(request_data):
-        if request_data.command != 'POST':
-            return False
-        if request_data.path != '/':
-            return False
-        if not request_data.request_version.startswith("HTTP/1"):
-            return False
-        if not "Content-Length" in request_data.headers:
-            return False
-        return True
-
-    def isvalid_jsondata(request_data):
-        if not "joinid" in request_data or JoinState.find_join(request_data) == None:
-            return False
-        if not "messagetype" in request_data:
-            return False
-        if request_data["messagetype"] == "input":
-            if "utxo" in request_data and "utxooffset" in request_data and "assetamount" in request_data and "assettype" in request_data and "destinationaddr" in request_data:
-                return True
-            return False
-        elif request_data["messagetype"] == "signature":
-            if "signature" in request_data:
-                return True
-            return False
-        else:
-            return False
-                
-    def request_length(req):
-        return int(req.headers['Content-Length'])
-        
-    def process_header(conn, message):
-        req = HTTPRequest(message)
-        if not JoinState.isvalid_request(req):
-            return -1
-        return JoinState.request_length(req)
 
     #Function that parses data, and makes sure that it is valid
     def process_request(self, request_data, conn, HOST):
@@ -228,57 +217,3 @@ class JoinState:
             pass
         else:
             conn.sendall(b"in invalid state")
-
-#Function that starts the server connections and listens for data.
-def start_server():
-    HOST = sys.argv[1][:sys.argv[1].find(":")]
-    PORT = int(sys.argv[1][sys.argv[1].find(":")+1:])
-
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.bind((HOST, PORT))
-    s.listen()
-    joins.append(JoinState(123, 3))
-    REQUEST_TERMINATOR = b'\r\n\r\n'
-
-    while True:
-        try:
-            #loop that continues to accept requests
-            conn, addr = s.accept()        
-            print('Connected by', addr)
-            message = b''
-            while True:
-                data = conn.recv(1024)
-                if data == b'':
-                    break
-
-                message += data
-
-                done_processing = False
-                while message != b'' and message.find(REQUEST_TERMINATOR) != -1:
-                    request_length = JoinState.process_header(conn, message[:message.find(REQUEST_TERMINATOR)])
-                    if request_length < 0:
-                        break #XXX
-                    message = message[message.find(REQUEST_TERMINATOR)+len(REQUEST_TERMINATOR):]
-                    if len(message) != request_length:
-                        while (len(message) < request_length):
-                            data = conn.recv(1024)
-                            if data == b'':
-                                break
-                            message += data
-
-                    request_data = json.loads(message)
-                    if JoinState.isvalid_jsondata(request_data):
-                        join = JoinState.find_join(request_data)
-                        join.process_request(request_data, conn, HOST)
-                        done_processing = True
-                        break
-                    else:
-                        print("invalid json data")
-                if done_processing:
-                    break
-        except KeyboardInterrupt:
-            print('keyboard interrupt')
-            s.shutdown(socket.SHUT_RDWR)
-            s.close()
-
-start_server()
