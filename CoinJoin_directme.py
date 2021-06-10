@@ -1,6 +1,7 @@
 from CoinJoin import JoinState
 from HTTPRequest import *
 from params import *
+from JoinState_samples import samples
 import socket
 import requests
 
@@ -67,6 +68,7 @@ def get_json_data(conn):
             request_length = process_header(message[:message.find(REQUEST_TERMINATOR)])
             if request_length < 0:
                 break
+            message = message[message.find(REQUEST_TERMINATOR) + len(REQUEST_TERMINATOR):]
             if len(message) < request_length:
                 data = conn.recv(1024)
                 if data == b'':
@@ -79,18 +81,15 @@ def parse_option_data(data):
     assetamount = data["assetamount"]
     if assettype in ASSET_TYPES and assetamount in JOIN_AMOUNTS:
         return [assettype, assetamount]
+    #XXX error handling
 
-def parse_join_data(conn):
-    data = get_json_data(conn)
-    if "joinid" in data:
-        joinid = data["joinid"]
-        return joinid
+def parse_join_data(data):
+    joinid = data["joinid"]
+    return joinid
+    #XXX error handling
 
 def get_join(data):
     return joinlist[data["joinid"]]
-
-def parse_transaction_data(conn):  #XXX finish this
-    data = get_json_data(conn)
 
 def isvalid_jsondata(data):
     if not "messagetype" in data:
@@ -114,7 +113,7 @@ def isvalid_jsondata(data):
     return True
 
 def get_messagetype(data):
-    return data["messagetpe"]
+    return data["messagetype"]
 
 def process_data(conn, HOST):
     global joinlist
@@ -122,16 +121,16 @@ def process_data(conn, HOST):
     if isvalid_jsondata(data):
         messagetype = get_messagetype(data)
         if messagetype == "startprocess":
-            conn.sendall(json.dumps({"message": "select options", "currencies": ASSET_TYPES, "amounts": JOIN_AMOUNTS}))
+            conn.sendall(str.encode(json.dumps({"message": "select options", "currencies": ASSET_TYPES, "amounts": JOIN_AMOUNTS})))
         elif messagetype == "selectoptions":
             option_data = parse_option_data(data)
             assettype = option_data[0]
             amount = option_data[1]
             matches = find_joins(assettype, amount)
-            conn.sendall(json.dumps({"message": "select a join", "joins": matches}))
+            conn.sendall(str.encode(json.dumps({"message": "select a join", "joins": matches})))
         elif messagetype == "selectjoin":
             join = get_join(data)
-            conn.sendall(json.dumps({"message": "input transaction data", "join_data": join.get_status()}))
+            conn.sendall(str.encode(json.dumps({"message": "input transaction data", "join_data": join.get_status()})))
         elif messagetype == "input":
             join = get_join(data)
             join.process_request(data, conn, HOST)
@@ -150,10 +149,11 @@ def start_findme_service():
 
     while True:
         conn, addr = s.accept()
+        conn.sendall(b"HTTP/1.1 200 OK\r\n\r\n")   #initializes http response
         print("Connected by", addr)
-        
-        #conn.sendall(b"HTTP/1.1 200 OK")
-
         process_data(conn, addr)
+        conn.close()
                 
+
+joinlist = samples
 start_findme_service()

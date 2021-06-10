@@ -1,12 +1,7 @@
-import socket
 import json
-import sys
 
-#from transaction import *
 from HTTPRequest import *
 from params import *
-
-joins = []
 
 #This is a class which holds all the data for a coinjoin.  The CoinJoin has two main states that it can be in:  collecting utxo inputs and collecting
 #signatures.  
@@ -217,3 +212,6 @@ class JoinState:
             pass
         else:
             conn.sendall(b"in invalid state")
+
+    def __str__(self):
+        return self.get_status()
