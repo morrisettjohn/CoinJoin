@@ -3,6 +3,7 @@ import time
 
 from HTTPRequest import *
 from params import *
+import socket
 
 #This is a class which holds all the data for a coinjoin.  The CoinJoin has two main states that it can be in:  collecting utxo inputs and collecting
 #signatures.  
@@ -22,7 +23,9 @@ class JoinState:
         self.state = COLLECT_INPUTS
         self.collected_fee_amount = 0
         self.last_accessed = time.time()
-        self.IP_addresses = []
+        self.tx = None
+        self.pubaddresses = []
+        self.IP_addresses = []  #XXX
         self.connections = []
         self.signers = []
         self.inputs = []
@@ -45,6 +48,9 @@ class JoinState:
         if self.feepercent < 0 or self.feepercent >= 1:
             return False
         return True
+
+    def get_pubaddr(request_data):
+        return request_data["pubaddr"]
 
     #Returns the number of signatures that have joined during the signature stage
     def get_current_signature_count(self):
@@ -86,14 +92,15 @@ class JoinState:
             Exception("bad")
         return status
 
-    def create_output(self, coinid, destinationaddr, amount, pubaddress):
+    def create_output(self, coinid, destinationaddr, amount, pubaddr):
         TxOut = {"coinid": coinid, "amount": amount, "destinationaddr": destinationaddr}
-        return [TxOut, pubaddress]
+        return [TxOut, pubaddr]
         
     def create_input(self, request_data):
+        pubaddr = JoinState.get_pubaddr(request_data)
         TxInp = {"coinid": request_data["assettype"], "amount": request_data["assetamount"], 
-            "utxo": request_data["utxo"], "utxooffset": request_data["utxooffset"], "pubaddress": request_data["pubaddress"]}
-        return [TxInp, request_data["pubaddress"]]
+            "utxo": request_data["utxo"], "utxooffset": request_data["utxooffset"], "pubaddr": pubaddr}
+        return [TxInp, pubaddr]
 
     #Convert utxo hash to binary, and then sort based on said hash
     def sort_inputs(self):
@@ -114,20 +121,20 @@ class JoinState:
         self.sort_inputs()
 
     #Creates a new output, then sorts the entire list
-    def outputs_append(self, coinid, destination_addr, amount, pubaddress):
-        output = self.create_output(coinid, destination_addr, amount, pubaddress)
+    def outputs_append(self, coinid, destination_addr, amount, pubaddr):
+        output = self.create_output(coinid, destination_addr, amount, pubaddr)
         self.outputs.append(output)
         self.sort_outputs()
 
     #Create the fee output data
-    def outputs_append_fee(self, ip):
-        self.outputs_append(self.assettype, self.feeaddress, self.collected_fee_amount, ip)
+    def outputs_append_fee(self, pubaddr):
+        self.outputs_append(self.assettype, self.feeaddress, self.collected_fee_amount, pubaddr)
         
     #Add a new signature to the list.  Signatures should be in the same order as inputs, so they are ordered as such.
-    def signers_append(self, signature, ip):
-        inputs, ips = map(list, zip(*self.inputs))
-        index = ips.index(ip)  #Determines where the ip is in the list
-        self.signers[index] = [signature, ip]  #Based on the index of the ip established before, assigns the none object to be an index
+    def signers_append(self, signature, pubaddr):
+        inputs, pubaddresses = map(list, zip(*self.inputs))
+        index = pubaddresses.index(pubaddr)  #Determines where the ip is in the list
+        self.signers[index] = [signature, pubaddr]  #Based on the index of the ip established before, assigns the none object to be an index
 
     #Initializes the signer data, by creating a list full of None objects, so that signatures can be appended in the correct order
     def initialize_signers(self):
@@ -149,20 +156,25 @@ class JoinState:
 
     #Function that parses data, and makes sure that it is valid
     def process_request(self, request_data, conn, addr):
+        ip = addr[0]
+        pubaddr = JoinState.get_pubaddr(request_data)
+
         if self.state == COLLECT_INPUTS:
             if request_data["messagetype"] == "input":
                 if request_data["assetamount"] >= self.totalamount:
                     if request_data["assettype"] == self.assettype:
                         if True: #not ip in self.IP_addresses:       #XXX need to comment out for testing purposes
-                            if conn not in self.connections:
+                            if pubaddr not in self.pubaddresses:
                                 #create input and output data when this has been determined to be valid information
                                 self.update_last_accessed()
                                 self.connections.append(conn)
-                                self.IP_addresses.append(addr[0])
+                                self.IP_addresses.append(ip)
+                                self.pubaddresses.append(pubaddr)
+                                
                                 self.inputs_append(request_data)
                                 self.outputs_append(request_data["assettype"],   
                                     request_data["destinationaddr"], 
-                                    self.assetamount, request_data["pubaddress"])
+                                    self.assetamount, pubaddr)
 
                                 #update the fee amounts
                                 self.collected_fee_amount += request_data["assetamount"] - self.assetamount
@@ -172,12 +184,15 @@ class JoinState:
                                 if len(self.connections) >= self.connect_limit:
                                     self.outputs_append_fee(None) #create an output for fee transactions
                                     tx = self.craft_transaction()
+                                    self.tx = tx
                                     print(tx)
                                     #send out transaction to every user
                                     for item in self.connections:
                                         item.sendall(str.encode(json.dumps(tx)))
                                         item.close()
                                     self.initialize_signers()
+                                    self.IP_addresses = [] #delete ip addresses for security
+                                    self.connections = []  #reset connections
                                     self.state = COLLECT_SIGS
                                 return
                             else:
@@ -204,15 +219,18 @@ class JoinState:
         #collect sigs state
         elif self.state == COLLECT_SIGS:
             if request_data["messagetype"] == "signature":
-                if True: #not conn in self.connections:       #XXX commented out for testing purposes
-                    if conn not in self.signers:
+                if pubaddr in self.pubaddresses:       #XXX commented out for testing purposes
+                    if pubaddr not in self.signers:
                         #When it has been determined that the signature is valid, continue through
                         self.update_last_accessed()
-                        self.signers_append(request_data["signature"], ip)   
+                        self.signers_append(request_data["signature"], pubaddr)
+                        self.connections.append(conn)
+                        print(self.signers)
                         if None not in self.signers and len(self.signers) >= self.connect_limit:
                             print("all signed")
                             for item in self.connections:
-                                item.sendall(self.inputs + b"\r\n")
+                                item.sendall(str.encode(json.dumps({"signatures": self.signers,"transaction": self.tx})))
+                                item.close()
                             self.state = DONE
                         return
                     else:

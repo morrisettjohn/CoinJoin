@@ -118,9 +118,11 @@ def isvalid_jsondata(data):
             return False
     elif data["messagetype"] == "signature":
         if not "joinid" in data or not "signature" in data or not "pubaddr" in data:
+            print("nuh-uh")
             return False
     else:
         return False
+    print("all good")
     return True
 
 def get_join(data):
@@ -148,7 +150,6 @@ def process_data(conn, addr):
             conn.close()
         elif messagetype == "input":
             join = get_join(data)
-            print(join.get_status())
             join.process_request(data, conn, addr)
         elif messagetype == "signature":
             join = get_join(data)
