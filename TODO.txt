@@ -1,0 +1,5 @@
+A couple of ideas that might be handy
+
+Instead of keeping track of users by ip, keep track of them by connection (maybe to wallet?)
+
+Message type to withdraw input/signature

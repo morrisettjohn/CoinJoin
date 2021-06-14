@@ -48,4 +48,12 @@ sample5 = JoinState(
     feepercent = .15
 )
 
-samples = {0: sample0, 1: sample1, 2: sample2, 3: sample3, 4: sample4, 5: sample5}
+sample6 = JoinState(
+    id = 6,
+    connect_limit = 3,
+    assettype = 1,
+    assetamount = 10,
+    feepercent = .15
+)
+
+samples = {0: sample0, 1: sample1, 2: sample2, 3: sample3, 4: sample4, 5: sample5, 6: sample6}
