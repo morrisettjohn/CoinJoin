@@ -1,3 +1,4 @@
+from json.decoder import JSONDecodeError
 from CoinJoin import JoinState
 from HTTPRequest import *
 
@@ -8,7 +9,7 @@ import sys
 import json
 import time
 
-current_id = 0
+current_id = 7
 joinlist = {}
 
 def isvalid_request(request_data):
@@ -31,12 +32,13 @@ def process_header(message):
         return -1
     return request_length(req)
 
+#returns the json data from a connection, or throws an error if json data is incorrect
 def get_json_data(conn):
     message = b''
     while True:
         data = conn.recv(1024)
         if data == b'':
-            break
+            return message
 
         message += data
 
@@ -51,8 +53,14 @@ def get_json_data(conn):
                     if data == b'':
                         break
                     message += data
-            return json.loads(message)
+            if message == b'':
+                return message
+            try:
+                return json.loads(message)
+            except JSONDecodeError:
+                return b''
 
+#Creates a new join if no joins are available
 def create_new_join(asset_type, amount, limit):
     global current_id
     new_join = JoinState(
@@ -64,7 +72,9 @@ def create_new_join(asset_type, amount, limit):
     current_id += 1
     return new_join
 
+#Returns a list of joins that match the users specificaitons
 def find_joins(assettype, amount, min_users, max_users):
+    global current_id
     matches = []
     for item in joinlist:
         item = joinlist[item]
@@ -73,12 +83,16 @@ def find_joins(assettype, amount, min_users, max_users):
         and item.connect_limit >= min_users and item.connect_limit <= max_users:
             matches.append(item.get_status())
     if len(matches) == 0:
+        print("no joins found, creating new join")
         #If no join is found, create a new one
         new_join = create_new_join(assettype, amount, min_users)
         joinlist[new_join.id] = new_join
         matches.append(new_join.get_status())
+        print(joinlist)
+        current_id += 1
     return matches
 
+#Determines what the option data for a find_joins request is.  
 def parse_option_data(data):
     assettype = data["assettype"]
     assetamount = data["assetamount"]
@@ -89,7 +103,7 @@ def parse_option_data(data):
     if "max_users" in data:
         max_users = int(data["max_users"])
 
-    #handling incorrect inputs
+    #handling incorrect inputs of min/max user bounds
     if min_users < MIN_USER_BOUND or min_users > MAX_USER_BOUND:
         print("minimum bound invalid, correcting")
         min_users = DEFAULT_LOWER_USER_BOUND
@@ -101,28 +115,36 @@ def parse_option_data(data):
         min_users = max_users
     return [assettype, assetamount, min_users, max_users]
 
+#Determines if the given jsondata is valid
 def isvalid_jsondata(data):
+    if data == b'':
+        print("no messagetype")
+        return False
     if not "messagetype" in data:
+        print("no messagetype")
         return False
     if data["messagetype"] == "startprocess":
         return True
     elif data["messagetype"] == "selectoptions":
         if not "assetamount" in data or not "assettype" in data or not data["assettype"] in ASSET_TYPES:
+            print("insufficient data for selectoptions message")
             return False
     elif data["messagetype"] == "selectjoin":
         if not "joinid" in data:
+            print("no joinid in data for selectjoin message")
             return False
     elif data["messagetype"] == "input":
         if not "joinid" in data or not "utxo" in data or not "utxooffset" in data or not "assetamount" in data\
              or not "assettype" in data or not "destinationaddr" in data or not "pubaddr" in data:
+            print("insufficient data for input message")
             return False
     elif data["messagetype"] == "signature":
         if not "joinid" in data or not "signature" in data or not "pubaddr" in data:
-            print("nuh-uh")
+            print("insufficient data for signature message")
             return False
     else:
         return False
-    print("all good")
+    print("good data")
     return True
 
 def get_join(data):
@@ -131,6 +153,7 @@ def get_join(data):
 def get_messagetype(data):
     return data["messagetype"]
 
+#Processes data based on what kind of message the data contains
 def process_data(conn, addr):
     global joinlist
     data = get_json_data(conn)
@@ -155,12 +178,19 @@ def process_data(conn, addr):
             join = get_join(data)
             join.process_request(data, conn, addr)
         else:
-            return Exception("invalid message type")
+            conn.sendall(b"not a valid messagetype")
+            conn.close()
+    else:
+        print("invalid data")
+        conn.sendall(b"invalid or insufficient data for message")
+        conn.close()
 
+#Starts the whole coinjoin process, starting from beginning to end
 def start_findme_service():
     HOST = sys.argv[1][:sys.argv[1].find(":")]
     PORT = int(sys.argv[1][sys.argv[1].find(":")+1:])
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)   #XXX just doing this for testing purposes, can be deleted later
     s.bind((HOST, PORT))
     s.listen()
 

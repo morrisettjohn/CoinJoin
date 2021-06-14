@@ -1,5 +1,5 @@
 
-COLLECT_INPUTS, COLLECT_SIGS, DONE = range(3) #different states for a CoinJoin
+START_PROCESS, SELECT_OPTIONS, SELECTJOINS, COLLECT_INPUTS, COLLECT_SIGS, DONE = range(6) #different states for a CoinJoin
 JOIN_AMOUNTS = [1, 10, 100]
 MIN_USER_BOUND = 3
 MAX_USER_BOUND = 20

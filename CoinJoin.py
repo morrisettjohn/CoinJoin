@@ -179,10 +179,12 @@ class JoinState:
                                 #update the fee amounts
                                 self.collected_fee_amount += request_data["assetamount"] - self.assetamount
                                 print("collected fees: " + str(self.collected_fee_amount))
+                                conn.sendall(b"transaction data accepted, please wait for other users to input data")
                                 
                                 #when sufficient connections are created, go through the process of sending out the transaction
                                 if len(self.connections) >= self.connect_limit:
                                     self.outputs_append_fee(None) #create an output for fee transactions
+                                    conn.sendall(b"all transactions complete, please input signature now\r\n\r\n")
                                     tx = self.craft_transaction()
                                     self.tx = tx
                                     print(tx)
@@ -198,22 +200,28 @@ class JoinState:
                             else:
                                 print("already connected")
                                 conn.sendall(b"Already connected")
+                                conn.close()
                                 return
                         else:
                             print("matching ip address already in use")
                             conn.sendall(b"matching ip address already in use")
+                            conn.close()
+                            return
 
                     else:
                         print("Mismatched asset-type")
                         conn.sendall(b"Mismatched asset-type")
+                        conn.close()
                         return
                 else:
                     print("Quantity of avax needs to be the same")
                     conn.sendall(b"Quantity of avax needs to be the same")
+                    conn.close()
                     return
             else:
                 print("message not applicable, Join in input state")
                 conn.sendall(b"Message not applicable, Join in input state")
+                conn.close()
                 return
 
         #collect sigs state
@@ -236,19 +244,23 @@ class JoinState:
                     else:
                         print("already signed")
                         conn.sendall(b"already signed")
+                        conn.close()
                         return
                 else:
                     print("join is full")
                     conn.sendall(b"Join is full")
+                    conn.close()
                     return
             else:
                 print("not a message for signature state")
                 conn.sendall(b"Message not applicable, Join in signature state")
+                conn.close()
                 return
         elif self.state == DONE:
             pass
         else:
             conn.sendall(b"in invalid state")
+            conn.close()
 
     def __str__(self):
         return self.get_status()
