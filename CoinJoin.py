@@ -160,7 +160,7 @@ class JoinState:
         pubaddr = JoinState.get_pubaddr(request_data)
 
         if self.state == COLLECT_INPUTS:
-            if request_data["messagetype"] == "input":
+            if request_data["messagetype"] == COLLECT_INPUTS:
                 if request_data["assetamount"] >= self.totalamount:
                     if request_data["assettype"] == self.assettype:
                         if True: #not ip in self.IP_addresses:       #XXX need to comment out for testing purposes
@@ -226,7 +226,7 @@ class JoinState:
 
         #collect sigs state
         elif self.state == COLLECT_SIGS:
-            if request_data["messagetype"] == "signature":
+            if request_data["messagetype"] == COLLECT_SIGS:
                 if pubaddr in self.pubaddresses:       #XXX commented out for testing purposes
                     if pubaddr not in self.signers:
                         #When it has been determined that the signature is valid, continue through

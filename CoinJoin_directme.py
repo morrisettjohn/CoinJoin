@@ -123,22 +123,22 @@ def isvalid_jsondata(data):
     if not "messagetype" in data:
         print("no messagetype")
         return False
-    if data["messagetype"] == "startprocess":
+    if data["messagetype"] == START_PROCESS: 
         return True
-    elif data["messagetype"] == "selectoptions":
+    elif data["messagetype"] == SELECT_OPTIONS:    
         if not "assetamount" in data or not "assettype" in data or not data["assettype"] in ASSET_TYPES:
             print("insufficient data for selectoptions message")
             return False
-    elif data["messagetype"] == "selectjoin":
+    elif data["messagetype"] == SELECT_JOINS:  
         if not "joinid" in data:
             print("no joinid in data for selectjoin message")
             return False
-    elif data["messagetype"] == "input":
+    elif data["messagetype"] == COLLECT_INPUTS:
         if not "joinid" in data or not "utxo" in data or not "utxooffset" in data or not "assetamount" in data\
              or not "assettype" in data or not "destinationaddr" in data or not "pubaddr" in data:
             print("insufficient data for input message")
             return False
-    elif data["messagetype"] == "signature":
+    elif data["messagetype"] == COLLECT_SIGS:
         if not "joinid" in data or not "signature" in data or not "pubaddr" in data:
             print("insufficient data for signature message")
             return False
@@ -159,22 +159,22 @@ def process_data(conn, addr):
     data = get_json_data(conn)
     if isvalid_jsondata(data):
         messagetype = get_messagetype(data)
-        if messagetype == "startprocess":
+        if messagetype == START_PROCESS:
             conn.sendall(str.encode(json.dumps({"message": "select options", "currencies": ASSET_TYPES, "amounts": JOIN_AMOUNTS})))
             conn.close()
-        elif messagetype == "selectoptions":
+        elif messagetype == SELECT_OPTIONS:
             specs = parse_option_data(data)
             matches = find_joins(specs[0], specs[1], specs[2], specs[3])
             conn.sendall(str.encode(json.dumps({"message": "select a join", "joins": matches})))
             conn.close()
-        elif messagetype == "selectjoin":
+        elif messagetype == SELECT_JOINS:
             join = get_join(data)
             conn.sendall(str.encode(json.dumps({"message": "input transaction data", "join_data": join.get_status()})))
             conn.close()
-        elif messagetype == "input":
+        elif messagetype == COLLECT_INPUTS:
             join = get_join(data)
             join.process_request(data, conn, addr)
-        elif messagetype == "signature":
+        elif messagetype == COLLECT_SIGS:
             join = get_join(data)
             join.process_request(data, conn, addr)
         else:
