@@ -57,7 +57,7 @@ avax.setRequestConfig('withCredentials', true);
 var xchain = avax.XChain();
 var fee = xchain.getDefaultTxFee();
 var sendsignature = function (joinid, data, pubaddr, privatekey) { return __awaiter(void 0, void 0, void 0, function () {
-    var inputs, outputs, inputData, outputData, xKeyChain, myKeyPair, myAddressBuf, myAddressStrings, i, inputObject, amt, txidstring, txid, outputidx, assetid, assetidBuf, secpTransferInput, input, i, outputObject, amt, outputaddress, outputaddressBuf, assetid, assetidBuf, secpTransferOutput, transferableOutput, baseTx, unsignedTx, txbuff, msg, sigbuf, sig, returndata, returndatastring, options, recievedData, req;
+    var inputs, outputs, inputData, outputData, xKeyChain, myKeyPair, myAddressBuf, myAddressStrings, i, inputObject, input, i, outputObject, amt, outputaddress, outputaddressBuf, assetid, assetidBuf, secpTransferOutput, transferableOutput, baseTx, unsignedTx, testtx, txbuff, msg, sigbuf, sig, returndata, returndatastring, options, recievedData, req;
     return __generator(this, function (_a) {
         inputs = [];
         outputs = [];
@@ -68,25 +68,16 @@ var sendsignature = function (joinid, data, pubaddr, privatekey) { return __awai
         myAddressBuf = xchain.keyChain().getAddresses();
         myAddressStrings = xchain.keyChain().getAddressStrings();
         //construct inputs
-        console.log("constructing tx");
+        console.log("constructing tx from wiretx");
+        console.log("constructing inputs");
         for (i = 0; i < inputData.length; i++) {
             inputObject = inputData[i];
-            console.log(inputData);
-            amt = new avalanche_1.BN(inputObject["amount"] * BNSCALE);
-            txidstring = inputObject["transactionid"];
-            txid = bintools.cb58Decode(txidstring);
-            outputidx = avalanche_1.Buffer.alloc(4);
-            outputidx.writeIntBE(inputObject["transactionoffset"], 0, 4);
-            assetid = inputObject["assetid"];
-            assetidBuf = bintools.cb58Decode(assetid);
-            secpTransferInput = new avm_1.SECPTransferInput(amt);
-            secpTransferInput.addSignatureIdx(0, avalanche_1.Buffer.from(inputObject["pubaddr"]));
-            console.log(secpTransferInput.getSigIdxs()[0]);
-            input = new avm_1.TransferableInput(txid, outputidx, assetidBuf, secpTransferInput);
-            console.log("here");
+            input = new avm_1.TransferableInput();
+            input.fromBuffer(avalanche_1.Buffer.from(inputObject[0]));
             inputs.push(input);
         }
         //construct outputs
+        console.log("constructing outputs");
         for (i = 0; i < outputData.length; i++) {
             outputObject = outputData[i];
             amt = new avalanche_1.BN(outputObject["amount"] * BNSCALE);
@@ -98,14 +89,18 @@ var sendsignature = function (joinid, data, pubaddr, privatekey) { return __awai
             transferableOutput = new avm_1.TransferableOutput(assetidBuf, secpTransferOutput);
             outputs.push(transferableOutput);
         }
+        console.log("constructing transaction");
         baseTx = new avm_1.BaseTx(networkID, bintools.cb58Decode(xchainid), outputs, inputs, avalanche_1.Buffer.from("test"));
         unsignedTx = new avm_1.UnsignedTx(baseTx);
+        testtx = new avm_1.UnsignedTx();
+        testtx.fromBuffer(unsignedTx.toBuffer());
         console.log("creating signature");
-        txbuff = unsignedTx.toBuffer().toString();
+        txbuff = unsignedTx.toBuffer();
         msg = avalanche_1.Buffer.from(crypto_1.createHash("sha256").update(txbuff).digest());
         sigbuf = myKeyPair.sign(msg);
         sig = new common_1.Signature();
         sig.fromBuffer(sigbuf);
+        console.log("transaction signed, sending sig to coinJoin");
         returndata = {
             "joinid": joinid,
             "messagetype": 4,
@@ -116,20 +111,20 @@ var sendsignature = function (joinid, data, pubaddr, privatekey) { return __awai
         };
         returndatastring = JSON.stringify(returndata);
         options = {
-            host: "192.168.129.105",
+            host: "100.64.15.72",
             port: "65432",
             method: "POST",
             headers: {
                 "Content-Length": avalanche_1.Buffer.byteLength(returndatastring)
             }
         };
-        console.log("sending data");
         recievedData = new avalanche_1.Buffer("");
         req = http_1.request(options, function (res) {
             res.on("data", function (d) {
                 recievedData = new avalanche_1.Buffer(d);
             });
             res.on("end", function () {
+                console.log("recieved signature list from coinjoin, issuing tx");
                 issuetx_1.issuetx(JSON.parse(recievedData.toString()));
             });
         });

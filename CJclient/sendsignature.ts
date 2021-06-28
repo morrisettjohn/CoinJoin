@@ -52,31 +52,20 @@ const sendsignature = async(joinid: number, data: any, pubaddr: string, privatek
     const myAddressStrings = xchain.keyChain().getAddressStrings()
 
     //construct inputs
-    console.log("constructing tx")
+    console.log("constructing tx from wiretx")
+
+    console.log("constructing inputs")
     for (let i = 0; i < inputData.length; i++){
         const inputObject = inputData[i]
 
-        console.log(inputData)
-
-        const amt: BN = new BN(inputObject["amount"]*BNSCALE)
-        const txidstring: string = inputObject["transactionid"]
-        const txid: Buffer = bintools.cb58Decode(txidstring)
-        const outputidx = Buffer.alloc(4)
-        outputidx.writeIntBE(inputObject["transactionoffset"], 0, 4)
-        const assetid = inputObject["assetid"]
-        const assetidBuf: Buffer = bintools.cb58Decode(assetid)
-
-        const secpTransferInput:  SECPTransferInput = new SECPTransferInput(amt)
-        secpTransferInput.addSignatureIdx(0, Buffer.from(inputObject["pubaddr"]))
-        console.log(secpTransferInput.getSigIdxs()[0])
-        const input:  TransferableInput = new TransferableInput(txid, outputidx, assetidBuf, secpTransferInput)
-
-        console.log("here")
+        const input: TransferableInput = new TransferableInput()
+        input.fromBuffer(Buffer.from(inputObject[0]))
 
         inputs.push(input)
 
     }
     //construct outputs
+    console.log("constructing outputs")
     for (let i = 0; i < outputData.length; i++){
         const outputObject = outputData[i]
         const amt: BN = new BN(outputObject["amount"]*BNSCALE)
@@ -90,6 +79,7 @@ const sendsignature = async(joinid: number, data: any, pubaddr: string, privatek
         outputs.push(transferableOutput)
     }
 
+    console.log("constructing transaction")
     const baseTx: BaseTx = new BaseTx (
         networkID,
         bintools.cb58Decode(xchainid),
@@ -100,12 +90,17 @@ const sendsignature = async(joinid: number, data: any, pubaddr: string, privatek
     
     const unsignedTx: UnsignedTx = new UnsignedTx(baseTx)
 
+    const testtx: UnsignedTx = new UnsignedTx()
+    testtx.fromBuffer(unsignedTx.toBuffer())
+
     console.log("creating signature")
-    const txbuff = unsignedTx.toBuffer().toString()
+    const txbuff = unsignedTx.toBuffer()
     const msg = Buffer.from(createHash("sha256").update(txbuff).digest())
     const sigbuf = myKeyPair.sign(msg)
     const sig: Signature = new Signature()
     sig.fromBuffer(sigbuf)
+
+    console.log("transaction signed, sending sig to coinJoin")
     
     const returndata = {
         "joinid": joinid,
@@ -119,7 +114,7 @@ const sendsignature = async(joinid: number, data: any, pubaddr: string, privatek
     const returndatastring = JSON.stringify(returndata)
 
     const options = {
-        host: "192.168.129.105",
+        host: "100.64.15.72",
         port: "65432",
         method: "POST",
         headers: {
@@ -127,13 +122,13 @@ const sendsignature = async(joinid: number, data: any, pubaddr: string, privatek
         }
     }
 
-    console.log("sending data")
     let recievedData: Buffer = new Buffer("")
     const req = request(options, res => {
         res.on("data", d => {
             recievedData = new Buffer(d)
         })
         res.on("end", ()=> {
+            console.log("recieved signature list from coinjoin, issuing tx")
             issuetx(JSON.parse(recievedData.toString()))
             
         })

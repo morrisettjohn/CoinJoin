@@ -83,6 +83,7 @@ var sendutxodata = function (joinid, assetid, assetamount, destinationaddr, puba
                 balance = utxoset.getBalance(myAddressBuf, assetid);
                 inputTotal = new avalanche_1.BN(0);
                 assetidBuf = bintools.cb58Decode(assetid);
+                console.log("checking funds in account");
                 //cycle through utxos until enough currency has been collected
                 if (balance.toNumber() >= targetAmountWithFee.toNumber()) {
                     for (i = 0; i < utxos.length && inputTotal.toNumber() < targetAmountWithFee.toNumber(); i++) {
@@ -104,6 +105,7 @@ var sendutxodata = function (joinid, assetid, assetamount, destinationaddr, puba
                     console.log("insufficient funds");
                     throw Error; //XXX fix this later
                 }
+                console.log("sufficient funds, creating input utxo");
                 changetotal = inputTotal.sub(targetAmountWithFee);
                 targetOutput = new avm_1.SECPTransferOutput(targetAmountFormatBN, myAddressBuf);
                 transferableTargetOutput = new avm_1.TransferableOutput(assetidBuf, targetOutput);
@@ -137,10 +139,10 @@ var sendutxodata = function (joinid, assetid, assetamount, destinationaddr, puba
                 status = _a.sent();
                 return [3 /*break*/, 3];
             case 5:
-                console.log("accepted, sending data to coinjoin server now");
                 if (status === "Rejected") {
                     throw Error("rejected, not submitting to coinjoin");
                 }
+                console.log("accepted, sending data to coinjoin server now");
                 txidstring = id;
                 txid = bintools.cb58Decode(txidstring);
                 outputidx = avalanche_1.Buffer.alloc(4);
@@ -148,6 +150,8 @@ var sendutxodata = function (joinid, assetid, assetamount, destinationaddr, puba
                 secpTransferInput = new avm_1.SECPTransferInput(targetAmountFormatBN);
                 secpTransferInput.addSignatureIdx(0, myAddressBuf[0]);
                 input = new avm_1.TransferableInput(txid, outputidx, assetidBuf, secpTransferInput);
+                console.log("returndata:\n");
+                console.log(targetAmountFormatBN.toNumber());
                 returndata = {
                     "joinid": joinid,
                     "messagetype": 3,
@@ -157,7 +161,7 @@ var sendutxodata = function (joinid, assetid, assetamount, destinationaddr, puba
                     "assetamount": assetamount,
                     "destinationaddr": destinationaddr,
                     "pubaddr": pubaddr,
-                    "input": input.toBuffer()
+                    "inputbuf": input.toBuffer()
                 };
                 returndatastring = JSON.stringify(returndata);
                 options = {
@@ -172,9 +176,9 @@ var sendutxodata = function (joinid, assetid, assetamount, destinationaddr, puba
                 req = http_1.request(options, function (res) {
                     res.on("data", function (d) {
                         recievedData = new avalanche_1.Buffer(d);
-                        console.log(recievedData.toString());
                     });
                     res.on("end", function () {
+                        console.log("recieved wiretx");
                         sendsignature_1.sendsignature(joinid, JSON.parse(recievedData.toString()), pubaddr, privatekey);
                     });
                 });

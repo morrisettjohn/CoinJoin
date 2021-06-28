@@ -75,6 +75,8 @@ const sendutxodata = async(joinid: number, assetid: string, assetamount:
     let inputTotal: BN = new BN(0)
     const assetidBuf: Buffer = bintools.cb58Decode(assetid)
 
+    console.log("checking funds in account")
+
     //cycle through utxos until enough currency has been collected
     if (balance.toNumber() >= targetAmountWithFee.toNumber()){
         for (let i = 0; i < utxos.length && inputTotal.toNumber() < targetAmountWithFee.toNumber(); i++){
@@ -96,6 +98,8 @@ const sendutxodata = async(joinid: number, assetid: string, assetamount:
         console.log("insufficient funds")
         throw Error //XXX fix this later
     }
+
+    console.log("sufficient funds, creating input utxo")
 
     const changetotal: BN = inputTotal.sub(targetAmountWithFee)
 
@@ -138,11 +142,12 @@ const sendutxodata = async(joinid: number, assetid: string, assetamount:
     while (status != "Accepted" && status != "Rejected"){
         status = await xchain.getTxStatus(id)
     }
-    console.log("accepted, sending data to coinjoin server now")
 
     if (status === "Rejected"){
         throw Error("rejected, not submitting to coinjoin")
     }
+
+    console.log("accepted, sending data to coinjoin server now")
 
     //construct input
     const txidstring: string = id
@@ -154,7 +159,8 @@ const sendutxodata = async(joinid: number, assetid: string, assetamount:
     secpTransferInput.addSignatureIdx(0, myAddressBuf[0])
     const input:  TransferableInput = new TransferableInput(txid, outputidx, assetidBuf, secpTransferInput)
     
-
+    console.log("returndata:\n")
+    console.log(targetAmountFormatBN.toNumber())
     const returndata = {
         "joinid": joinid,
         "messagetype": 3,
@@ -182,9 +188,9 @@ const sendutxodata = async(joinid: number, assetid: string, assetamount:
     const req = request(options, res => {
         res.on("data", d => {
             recievedData = new Buffer(d)
-            console.log(recievedData.toString())
         })
         res.on("end", ()=> {
+            console.log("recieved wiretx")
             sendsignature(joinid, JSON.parse(recievedData.toString()), pubaddr, privatekey)
         })
     })

@@ -51,7 +51,7 @@ sample5 = JoinState(
 
 sample6 = JoinState(
     id = 6,
-    connect_limit = 2,
+    connect_limit = 3,
     assetid = AVAX,
     assetamount = 1,
     feepercent = .15,

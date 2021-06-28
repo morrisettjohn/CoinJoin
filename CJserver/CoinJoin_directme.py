@@ -166,25 +166,31 @@ def process_data(conn, addr):
     if isvalid_jsondata(data):
         messagetype = get_messagetype(data)
         if messagetype == START_PROCESS:
+            print("displaying options to user")
             conn.sendall(str.encode(json.dumps({"message": "select options", "currencies": ASSET_TYPES, "amounts": JOIN_AMOUNTS})))
             conn.close()
         elif messagetype == SELECT_OPTIONS:
+            print("sending compatible coinjoins")
             specs = parse_option_data(data)
             matches = find_joins(specs[0], specs[1], specs[2], specs[3])
             conn.sendall(str.encode(json.dumps({"message": "select a join", "joins": matches})))
             conn.close()
         elif messagetype == GET_JOIN_INFO:
             join = get_join(data)
+            print("sending info for join of id %s" % join)
             conn.sendall(str.encode(json.dumps({"message": "input transaction data", "join_data": join.get_status()})))
             conn.close()
-        elif messagetype == COLLECT_INPUTS:
+        elif messagetype == COLLECT_INPUTS: 
             join = get_join(data)
+            print("collecting input for join of id %s" % join)
             join.process_request(data, conn, addr)
         elif messagetype == COLLECT_SIGS:
             join = get_join(data)
+            print("collecting signature for join of id %s" % join)
             join.process_request(data, conn, addr)
         elif messagetype == ISSUE_TX:
             join = get_join(data)
+            print("issuing transaciton for join of id %s" % join)
             join.process_request(data, conn, addr)
         else:
             conn.sendall(b"not a valid messagetype")

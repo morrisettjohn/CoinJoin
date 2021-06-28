@@ -39,38 +39,21 @@ const xchain: AVMAPI = avax.XChain();
 const issuetx = async(data: any): Promise<any> => {
 
 
-    console.log("in issue phase")  //XXX each signature should be its own credential
+    console.log("issuing tx")  //XXX each signature should be its own credential
+    console.log("reconstructing unsignedtx")
     const unsignedTx: UnsignedTx = new UnsignedTx()
-    
-
     unsignedTx.fromBuffer(Buffer.from(data["transaction"]))
-    console.log(unsignedTx.getTransaction().getIns()[0].getInput().getSigIdxs())
-    const inps: TransferableInput[] = unsignedTx.getTransaction().getIns()
     
+    console.log("creating credental array")
     let credentialArray: SECPCredential[] = []
-    for (let i = 0; i < inps.length; i++){
-        credentialArray.push(undefined)
-    }
-
-    console.log("hilo")
-    
-    data["signatures"].forEach((sig) => {
+    data["signatures"].forEach((sig: any) => {
         const sigitem: Signature = new Signature()
         const sigbuf = Buffer.from(sig[0])
         sigitem.fromBuffer(sigbuf)
         const cred: SECPCredential = new SECPCredential([sigitem])
-        for (let i = 0; i < inps.length; i++){
-            console.log(inps[i].getInput().getSigIdxs()[0])
-            console.log(sig[1])
-            if (inps[i].getInput().getSigIdxs()[0] == sig[1]){
-                credentialArray[i] = cred
-            }
-        }
-        console.log("got cred")
-        console.log(credentialArray)
+        credentialArray.push(cred)
     })
     
-
 
     console.log("constructing and issuing tx")
     const tx: Tx = new Tx(unsignedTx, credentialArray)
@@ -78,7 +61,7 @@ const issuetx = async(data: any): Promise<any> => {
     console.log(unsignedTx.getOutputTotal(bintools.cb58Decode(Defaults.network[networkID].X.avaxAssetID)).toNumber())
 
 
-    //const id: string = await xchain.issueTx(tx) 
+    const id: string = await xchain.issueTx(tx) 
 
     console.log("issued")
 }

@@ -3,15 +3,17 @@ import time
 
 from HTTPRequest import *
 from params import *
-import socket
+from decimal import Decimal, getcontext
+getcontext().prec = 9
+
 
 #This is a class which holds all the data for a coinjoin.  The CoinJoin has two main states that it can be in:  collecting utxo inputs and collecting
 #signatures.  
 
 class JoinState:
 
-    def __init__(self, id = "test", connect_limit = DEFAULT_LOWER_USER_BOUND, assetid = 1, assetamount = 10, 
-            feeaddress = "", feepercent = 0.10):
+    def __init__(self, id = "test", connect_limit:int = DEFAULT_LOWER_USER_BOUND, assetid:str = 1, assetamount = 1, 
+            feeaddress:str = "", feepercent = Decimal(0.10)):
 
         self.id = id
         self.connect_limit = connect_limit
@@ -21,7 +23,7 @@ class JoinState:
         self.totalamount = assetamount + assetamount * feepercent
         self.feeaddress = feeaddress
         self.state = COLLECT_INPUTS
-        self.collected_fee_amount = 0
+        self.collected_fee_amount = Decimal(0)
         self.last_accessed = time.time()
         self.tx = None
         self.pubaddresses = []
@@ -98,18 +100,12 @@ class JoinState:
         
     def create_input(self, request_data):
         pubaddr = JoinState.get_pubaddr(request_data)
-        TxInp = {"assetid": request_data["assetid"], "amount": request_data["assetamount"], 
-            "transactionid": request_data["transactionid"], "transactionoffset": request_data["transactionoffset"], "pubaddr": pubaddr}
-        return [TxInp, pubaddr]
+        return [request_data["inputbuf"], pubaddr]
 
     #Convert utxo hash to binary, and then sort based on said hash
     def sort_inputs(self):
-        for item in self.inputs:
-            item.append(item[0]["transactionid"])
-        self.inputs = sorted(self.inputs, key=lambda x:x[2])
-        for item in self.inputs:
-            item.pop()
-
+        self.inputs = sorted(self.inputs, key=lambda x:x[0]["data"])
+        
     #Sort outputs based on destination address
     def sort_outputs(self):
         self.outputs.sort(key=lambda x: x[0]["destinationaddr"])
@@ -126,9 +122,12 @@ class JoinState:
         self.outputs.append(output)
         self.sort_outputs()
 
+    def get_fee_after_burn(self):
+        return float(self.collected_fee_amount - Decimal(STANDARD_BURN_AMOUNT))
+
     #Create the fee output data
     def outputs_append_fee(self, pubaddr):
-        self.outputs_append(self.assetid, self.feeaddress, self.collected_fee_amount, pubaddr)
+        self.outputs_append(self.assetid, self.feeaddress, self.get_fee_after_burn(), pubaddr)
         
     #Add a new signature to the list.  Signatures should be in the same order as inputs, so they are ordered as such.
     def signers_append(self, signature, pubaddr):
@@ -153,7 +152,7 @@ class JoinState:
         return outputs
 
     def craft_wire_transaction(self):
-        return {"inputs": self.extract_inputs(),"outputs": self.extract_outputs()}
+        return {"inputs": self.inputs,"outputs": self.extract_outputs()}
 
     #Function that parses data, and makes sure that it is valid
     def process_request(self, request_data, conn, addr):
@@ -167,8 +166,6 @@ class JoinState:
                         if True: #not ip in self.IP_addresses:       #XXX need to comment out for testing purposes
                             if pubaddr not in self.pubaddresses:
                                 #create input and output data when this has been determined to be valid information
-                                print("testingthis")
-                                print(request_data["input"])
 
                                 self.update_last_accessed()
                                 self.connections.append(conn)
@@ -179,19 +176,17 @@ class JoinState:
                                 self.outputs_append(request_data["assetid"],   
                                     request_data["destinationaddr"], 
                                     self.assetamount, pubaddr)
-
-                                #update the fee amounts
-                                self.collected_fee_amount += request_data["assetamount"] - self.assetamount
-                                print("collected fees: " + str(self.collected_fee_amount))
+                                
+                                self.collected_fee_amount += Decimal(request_data["assetamount"]) - Decimal(self.assetamount)
+                                print("collected fees: " + str(float((self.collected_fee_amount))))
                                 conn.sendall(b"transaction data accepted, please wait for other users to input data")
                                 
                                 #when sufficient connections are created, go through the process of sending out the transaction
                                 if len(self.connections) >= self.connect_limit:
-                                    #self.outputs_append_fee(self.feeaddress) #create an output for fee transactions    #XXXuncomment this line
+                                    self.outputs_append_fee(self.feeaddress) #create an output for fee transactions
                                     conn.sendall(b"all transactions complete, please input signature now\r\n\r\n")
                                     wire_tx = self.craft_wire_transaction()
                                     
-                                    print(wire_tx)
                                     #send out transaction to every user
                                     for item in self.connections:
                                         item.sendall(str.encode(json.dumps(wire_tx)))
@@ -268,4 +263,8 @@ class JoinState:
             conn.close()
 
     def __str__(self):
-        return self.get_status()
+        returnstring = ""
+        status =  self.get_status()
+        for item in status:
+            returnstring += item + " = " + str(status[item]) + "\r\n"
+        return returnstring

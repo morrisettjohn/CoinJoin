@@ -36,51 +36,30 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 exports.__esModule = true;
-exports.issuetx = void 0;
-var avalanche_1 = require("avalanche");
-var avm_1 = require("avalanche/dist/apis/avm");
-var platformvm_1 = require("avalanche/dist/apis/platformvm");
-var common_1 = require("avalanche/dist/common");
+var sendutxodata_1 = require("../sendutxodata");
 var utils_1 = require("avalanche/dist/utils");
-var tx_1 = require("avalanche/dist/apis/avm/tx");
-var bintools = avalanche_1.BinTools.getInstance();
-var Ip = "api.avax-test.network";
 var networkID = 5;
-var port = 443;
-var protocol = "https";
-var xchainid = utils_1.Defaults.network[networkID].X.blockchainID;
-var xchainidBuf = bintools.cb58Decode(xchainid);
-var avax = new avalanche_1.Avalanche(Ip, port, protocol, networkID, xchainid);
-avax.setRequestConfig('withCredentials', true);
-var xchain = avax.XChain();
-var issuetx = function (data) { return __awaiter(void 0, void 0, void 0, function () {
-    var unsignedTx, credentialArray, tx, id;
+var joinid = 6;
+var avaxAssetID = utils_1.Defaults.network[networkID].X.avaxAssetID;
+var assetamount = 1.15;
+var destinationaddr1 = "X-fuji1ywknekcr6rkekg9g996dsnsdg20wmvwhpsmup6";
+var pubaddr1 = "X-fuji13a3dm204mh9hfjx3ajpk33cchgszh2qry97ml9";
+var privatekey1 = "PrivateKey-ryjZWerx1vRgQnFrLJ9oxBYUS7TdMRNrBLmSAAP78L4xixvT2";
+var destinationaddr2 = "X-fuji1tunzyk0v8fw5ee73uzdedrtunf26936fy9wg48";
+var pubaddr2 = "X-fuji1d6fetyekv4ec5enm9ltuxrd6n70ng04rpxq443";
+var privatekey2 = "PrivateKey-2t6UmFMctYnZXMY1BFYF41k97ZAtcedN1U9GiQiGQzmzU21oBY";
+var destinationaddr3 = "X-fuji12jwy0ctuankcamu0qv0dcy95pxsr578ju7t7qe";
+var pubaddr3 = "X-fuji10a7tx3xl2cyp3g60d68zh80tzen0lwxd548u82";
+var privatekey3 = "PrivateKey-7f84zwffkNTAjKu1DDDrRBafWq2wE3GxZ3t7EYVFR8fTpJArc";
+var main = function () { return __awaiter(void 0, void 0, void 0, function () {
+    var txdata;
     return __generator(this, function (_a) {
         switch (_a.label) {
-            case 0:
-                console.log("issuing tx"); //XXX each signature should be its own credential
-                console.log("reconstructing unsignedtx");
-                unsignedTx = new avm_1.UnsignedTx();
-                unsignedTx.fromBuffer(avalanche_1.Buffer.from(data["transaction"]));
-                console.log("creating credental array");
-                credentialArray = [];
-                data["signatures"].forEach(function (sig) {
-                    var sigitem = new common_1.Signature();
-                    var sigbuf = avalanche_1.Buffer.from(sig[0]);
-                    sigitem.fromBuffer(sigbuf);
-                    var cred = new platformvm_1.SECPCredential([sigitem]);
-                    credentialArray.push(cred);
-                });
-                console.log("constructing and issuing tx");
-                tx = new tx_1.Tx(unsignedTx, credentialArray);
-                console.log(unsignedTx.getInputTotal(bintools.cb58Decode(utils_1.Defaults.network[networkID].X.avaxAssetID)).toNumber());
-                console.log(unsignedTx.getOutputTotal(bintools.cb58Decode(utils_1.Defaults.network[networkID].X.avaxAssetID)).toNumber());
-                return [4 /*yield*/, xchain.issueTx(tx)];
+            case 0: return [4 /*yield*/, sendutxodata_1.sendutxodata(joinid, avaxAssetID, assetamount, destinationaddr3, pubaddr3, privatekey3)];
             case 1:
-                id = _a.sent();
-                console.log("issued");
+                txdata = _a.sent();
                 return [2 /*return*/];
         }
     });
 }); };
-exports.issuetx = issuetx;
+main();
