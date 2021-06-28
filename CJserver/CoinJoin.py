@@ -105,7 +105,7 @@ class JoinState:
     #Convert utxo hash to binary, and then sort based on said hash
     def sort_inputs(self):
         for item in self.inputs:
-            item.append(int(bin(int(item[0]["transactionid"], 16))[2:]))
+            item.append(item[0]["transactionid"])
         self.inputs = sorted(self.inputs, key=lambda x:x[2])
         for item in self.inputs:
             item.pop()
@@ -135,6 +135,7 @@ class JoinState:
         inputs, pubaddresses = map(list, zip(*self.inputs))
         index = pubaddresses.index(pubaddr)  #Determines where the ip is in the list
         self.signers[index] = [signature, pubaddr]  #Based on the index of the ip established before, assigns the none object to be an index
+        
 
     #Initializes the signer data, by creating a list full of None objects, so that signatures can be appended in the correct order
     def initialize_signers(self):
@@ -151,7 +152,7 @@ class JoinState:
         outputs, ips = map(list, zip(*self.outputs))
         return outputs
 
-    def craft_transaction(self):
+    def craft_wire_transaction(self):
         return {"inputs": self.extract_inputs(),"outputs": self.extract_outputs()}
 
     #Function that parses data, and makes sure that it is valid
@@ -166,6 +167,9 @@ class JoinState:
                         if True: #not ip in self.IP_addresses:       #XXX need to comment out for testing purposes
                             if pubaddr not in self.pubaddresses:
                                 #create input and output data when this has been determined to be valid information
+                                print("testingthis")
+                                print(request_data["input"])
+
                                 self.update_last_accessed()
                                 self.connections.append(conn)
                                 self.IP_addresses.append(ip)
@@ -183,14 +187,14 @@ class JoinState:
                                 
                                 #when sufficient connections are created, go through the process of sending out the transaction
                                 if len(self.connections) >= self.connect_limit:
-                                    self.outputs_append_fee(None) #create an output for fee transactions
+                                    #self.outputs_append_fee(self.feeaddress) #create an output for fee transactions    #XXXuncomment this line
                                     conn.sendall(b"all transactions complete, please input signature now\r\n\r\n")
-                                    tx = self.craft_transaction()
-                                    self.tx = tx
-                                    print(tx)
+                                    wire_tx = self.craft_wire_transaction()
+                                    
+                                    print(wire_tx)
                                     #send out transaction to every user
                                     for item in self.connections:
-                                        item.sendall(str.encode(json.dumps(tx)))
+                                        item.sendall(str.encode(json.dumps(wire_tx)))
                                         item.close()
                                     self.initialize_signers()
                                     self.IP_addresses = [] #delete ip addresses for security
@@ -233,13 +237,14 @@ class JoinState:
                         self.update_last_accessed()
                         self.signers_append(request_data["signature"], pubaddr)
                         self.connections.append(conn)
-                        print(self.signers)
+                        self.tx = request_data["transaction"]
+                        conn.sendall(b"signature registered, waiting for others in the coinjoin")
                         if None not in self.signers and len(self.signers) >= self.connect_limit:
                             print("all signed")
                             for item in self.connections:
                                 item.sendall(str.encode(json.dumps({"signatures": self.signers,"transaction": self.tx})))
                                 item.close()
-                            self.state = DONE
+                            self.state = ISSUE_TX
                         return
                     else:
                         print("already signed")
@@ -256,7 +261,7 @@ class JoinState:
                 conn.sendall(b"Message not applicable, Join in signature state")
                 conn.close()
                 return
-        elif self.state == DONE:
+        elif self.state == ISSUE_TX:
             pass
         else:
             conn.sendall(b"in invalid state")

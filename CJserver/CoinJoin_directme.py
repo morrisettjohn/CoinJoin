@@ -55,8 +55,6 @@ def get_json_data(conn):
                     if data == b'':
                         return b''
                     message += data
-                    print("request length:", request_length)
-                    print(len(message))
             if message == b'':
                 return message
             try:
@@ -139,12 +137,16 @@ def isvalid_jsondata(data):
             return False
     elif data["messagetype"] == COLLECT_INPUTS:
         if not "joinid" in data or not "transactionid" in data or not "transactionoffset" in data or not "assetamount" in data\
-             or not "assetid" in data or not "destinationaddr" in data or not "pubaddr" in data:
+             or not "assetid" in data or not "destinationaddr" in data or not "pubaddr" in data or not "inputbuf":
             print("insufficient data for input message")
             return False
     elif data["messagetype"] == COLLECT_SIGS:
-        if not "joinid" in data or not "signature" in data or not "pubaddr" in data:
+        if not "joinid" in data or not "signature" in data or not "pubaddr" in data or not "transaction" in data or not "inputorder" in data:
             print("insufficient data for signature message")
+            return False
+    elif data["messagetype"] == ISSUE_TX:
+        if not "joinid" in data:
+            print("insufficient data for issue_tx message")
             return False
     else:
         return False
@@ -176,10 +178,12 @@ def process_data(conn, addr):
             conn.sendall(str.encode(json.dumps({"message": "input transaction data", "join_data": join.get_status()})))
             conn.close()
         elif messagetype == COLLECT_INPUTS:
-            print("hi")
             join = get_join(data)
             join.process_request(data, conn, addr)
         elif messagetype == COLLECT_SIGS:
+            join = get_join(data)
+            join.process_request(data, conn, addr)
+        elif messagetype == ISSUE_TX:
             join = get_join(data)
             join.process_request(data, conn, addr)
         else:

@@ -51,10 +51,12 @@ sample5 = JoinState(
 
 sample6 = JoinState(
     id = 6,
-    connect_limit = 3,
+    connect_limit = 2,
     assetid = AVAX,
-    assetamount = 10,
-    feepercent = .15
+    assetamount = 1,
+    feepercent = .15,
+    feeaddress = "X-fuji18gcr997m4cntu2pzp9u5p72pmm53d6376l6cee"
 )
+
 
 samples = {0: sample0, 1: sample1, 2: sample2, 3: sample3, 4: sample4, 5: sample5, 6: sample6}
