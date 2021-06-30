@@ -1,4 +1,4 @@
-import { sendutxodata } from "../sendutxodata";
+import { sendutxodata } from "../../sendutxodata";
 import { Defaults } from "avalanche/dist/utils";
 
 const networkID = 5
@@ -16,6 +16,6 @@ const privatekey2 = "PrivateKey-2t6UmFMctYnZXMY1BFYF41k97ZAtcedN1U9GiQiGQzmzU21o
 
 
 const main = async(): Promise<any> => {
-    const txdata = await sendutxodata(joinid, avaxAssetID, assetamount, destinationaddr2, pubaddr2, privatekey2)
+    const txdata = await sendutxodata(joinid, avaxAssetID, assetamount, destinationaddr1, pubaddr1, privatekey1)
 }
 main()

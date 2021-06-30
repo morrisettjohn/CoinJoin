@@ -78,7 +78,7 @@ var issuetx = function (data) { return __awaiter(void 0, void 0, void 0, functio
                 return [4 /*yield*/, xchain.issueTx(tx)];
             case 1:
                 id = _a.sent();
-                console.log("issued");
+                console.log("issued, coinjoin complete");
                 return [2 /*return*/];
         }
     });

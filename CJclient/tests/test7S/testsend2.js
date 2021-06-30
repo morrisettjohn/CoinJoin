@@ -36,12 +36,12 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 exports.__esModule = true;
-var sendutxodata_1 = require("../sendutxodata");
+var sendutxodata_1 = require("../../sendutxodata");
 var utils_1 = require("avalanche/dist/utils");
 var networkID = 5;
-var joinid = 6;
+var joinid = 7;
 var avaxAssetID = utils_1.Defaults.network[networkID].X.avaxAssetID;
-var assetamount = 1.15;
+var assetamount = 2.2;
 var destinationaddr1 = "X-fuji1ywknekcr6rkekg9g996dsnsdg20wmvwhpsmup6";
 var pubaddr1 = "X-fuji13a3dm204mh9hfjx3ajpk33cchgszh2qry97ml9";
 var privatekey1 = "PrivateKey-ryjZWerx1vRgQnFrLJ9oxBYUS7TdMRNrBLmSAAP78L4xixvT2";

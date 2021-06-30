@@ -57,12 +57,9 @@ const sendsignature = async(joinid: number, data: any, pubaddr: string, privatek
     console.log("constructing inputs")
     for (let i = 0; i < inputData.length; i++){
         const inputObject = inputData[i]
-
         const input: TransferableInput = new TransferableInput()
         input.fromBuffer(Buffer.from(inputObject[0]))
-
         inputs.push(input)
-
     }
     //construct outputs
     console.log("constructing outputs")

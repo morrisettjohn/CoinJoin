@@ -152,7 +152,14 @@ class JoinState:
         return outputs
 
     def craft_wire_transaction(self):
-        return {"inputs": self.inputs,"outputs": self.extract_outputs()}
+        return json.dumps({"inputs": self.inputs,"outputs": self.extract_outputs()})
+        
+
+    def send_message(conn, message):
+        conn.sendall(str.encode("MSG" + message+"\r\n\r\n"))
+
+    def send_wiretx(conn, wiretx):
+        conn.sendall(str.encode("WTX" + wiretx+"\r\n\r\n"))
 
     #Function that parses data, and makes sure that it is valid
     def process_request(self, request_data, conn, addr):
@@ -179,17 +186,20 @@ class JoinState:
                                 
                                 self.collected_fee_amount += Decimal(request_data["assetamount"]) - Decimal(self.assetamount)
                                 print("collected fees: " + str(float((self.collected_fee_amount))))
-                                conn.sendall(b"transaction data accepted, please wait for other users to input data")
+                                JoinState.send_message(conn, "transaction data accepted, please wait for other users to input data")
+
+                                for item in self.connections:
+                                    JoinState.send_message(item, "%d out of %d users connected" % (len(self.inputs), self.connect_limit))
                                 
                                 #when sufficient connections are created, go through the process of sending out the transaction
-                                if len(self.connections) >= self.connect_limit:
+                                if len(self.inputs) >= self.connect_limit:
                                     self.outputs_append_fee(self.feeaddress) #create an output for fee transactions
-                                    conn.sendall(b"all transactions complete, please input signature now\r\n\r\n")
                                     wire_tx = self.craft_wire_transaction()
                                     
                                     #send out transaction to every user
                                     for item in self.connections:
-                                        item.sendall(str.encode(json.dumps(wire_tx)))
+                                        JoinState.send_message(item, "all transactions complete, please input signature now\r\n\r\n")
+                                        JoinState.send_wiretx(item, wire_tx)
                                         item.close()
                                     self.initialize_signers()
                                     self.IP_addresses = [] #delete ip addresses for security

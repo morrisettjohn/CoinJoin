@@ -63,7 +63,7 @@ const issuetx = async(data: any): Promise<any> => {
 
     const id: string = await xchain.issueTx(tx) 
 
-    console.log("issued")
+    console.log("issued, coinjoin complete")
 }
 
 export { issuetx }

@@ -147,7 +147,7 @@ const sendutxodata = async(joinid: number, assetid: string, assetamount:
         throw Error("rejected, not submitting to coinjoin")
     }
 
-    console.log("accepted, sending data to coinjoin server now")
+    console.log("sending data to coinjoin server now")
 
     //construct input
     const txidstring: string = id
@@ -159,7 +159,7 @@ const sendutxodata = async(joinid: number, assetid: string, assetamount:
     secpTransferInput.addSignatureIdx(0, myAddressBuf[0])
     const input:  TransferableInput = new TransferableInput(txid, outputidx, assetidBuf, secpTransferInput)
     
-    console.log("returndata:\n")
+    console.log("returndata:")
     console.log(targetAmountFormatBN.toNumber())
     const returndata = {
         "joinid": joinid,
@@ -183,15 +183,27 @@ const sendutxodata = async(joinid: number, assetid: string, assetamount:
         }
     }
 
-    let recievedData: Buffer = new Buffer("")
+
 
     const req = request(options, res => {
         res.on("data", d => {
-            recievedData = new Buffer(d)
-        })
-        res.on("end", ()=> {
-            console.log("recieved wiretx")
-            sendsignature(joinid, JSON.parse(recievedData.toString()), pubaddr, privatekey)
+            let recievedData = d.toString()
+            while (recievedData.indexOf("\r\n\r\n") != -1){
+                const endIndex: number = recievedData.indexOf("\r\n\r\n")
+                const messageType: string = recievedData.slice(0, 3)
+                const messageData: string = recievedData.slice(3, endIndex)
+                recievedData = recievedData.slice(endIndex + 4)
+
+                if (messageType == "MSG"){
+                    console.log(messageData)
+                }
+                else if (messageType == "WTX"){
+                    console.log("recieved wiretx")
+                    sendsignature(joinid, JSON.parse(messageData), pubaddr, privatekey)
+                }
+            }
+            
+
         })
     })
     req.write(returndatastring)

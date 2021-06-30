@@ -1,4 +1,4 @@
-import { sendutxodata } from "../sendutxodata";
+import { sendutxodata } from "../../sendutxodata";
 import { Defaults } from "avalanche/dist/utils";
 
 const networkID = 5

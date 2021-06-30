@@ -62,7 +62,7 @@ var avax = new avalanche_1.Avalanche(Ip, port, protocol, networkID);
 avax.setRequestConfig('withCredentials', true);
 var xchain = avax.XChain(); //returns a reference to the X-Chain used by AvalancheJS
 var sendutxodata = function (joinid, assetid, assetamount, destinationaddr, pubaddr, privatekey) { return __awaiter(void 0, void 0, void 0, function () {
-    var inputs, outputs, fee, xKeychain, myAddressBuf, myAddressStrings, targetAmountFormatted, targetAmountFormatBN, targetAmountWithFee, utxoset, utxos, balance, inputTotal, assetidBuf, i, current_utxo, utxooutput, txid_1, outputidx_1, utxoamt, secpTransferInput_1, transferableinput, changetotal, targetOutput, transferableTargetOutput, changeOutput, transferableChangeOutput, baseTx, outs, txindex, i, unsignedTx, signedTx, id, status, txidstring, txid, outputidx, secpTransferInput, input, returndata, returndatastring, options, recievedData, req;
+    var inputs, outputs, fee, xKeychain, myAddressBuf, myAddressStrings, targetAmountFormatted, targetAmountFormatBN, targetAmountWithFee, utxoset, utxos, balance, inputTotal, assetidBuf, i, current_utxo, utxooutput, txid_1, outputidx_1, utxoamt, secpTransferInput_1, transferableinput, changetotal, targetOutput, transferableTargetOutput, changeOutput, transferableChangeOutput, baseTx, outs, txindex, i, unsignedTx, signedTx, id, status, txidstring, txid, outputidx, secpTransferInput, input, returndata, returndatastring, options, req;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -142,7 +142,7 @@ var sendutxodata = function (joinid, assetid, assetamount, destinationaddr, puba
                 if (status === "Rejected") {
                     throw Error("rejected, not submitting to coinjoin");
                 }
-                console.log("accepted, sending data to coinjoin server now");
+                console.log("sending data to coinjoin server now");
                 txidstring = id;
                 txid = bintools.cb58Decode(txidstring);
                 outputidx = avalanche_1.Buffer.alloc(4);
@@ -150,7 +150,7 @@ var sendutxodata = function (joinid, assetid, assetamount, destinationaddr, puba
                 secpTransferInput = new avm_1.SECPTransferInput(targetAmountFormatBN);
                 secpTransferInput.addSignatureIdx(0, myAddressBuf[0]);
                 input = new avm_1.TransferableInput(txid, outputidx, assetidBuf, secpTransferInput);
-                console.log("returndata:\n");
+                console.log("returndata:");
                 console.log(targetAmountFormatBN.toNumber());
                 returndata = {
                     "joinid": joinid,
@@ -172,14 +172,22 @@ var sendutxodata = function (joinid, assetid, assetamount, destinationaddr, puba
                         "Content-Length": avalanche_1.Buffer.byteLength(returndatastring)
                     }
                 };
-                recievedData = new avalanche_1.Buffer("");
                 req = http_1.request(options, function (res) {
                     res.on("data", function (d) {
-                        recievedData = new avalanche_1.Buffer(d);
-                    });
-                    res.on("end", function () {
-                        console.log("recieved wiretx");
-                        sendsignature_1.sendsignature(joinid, JSON.parse(recievedData.toString()), pubaddr, privatekey);
+                        var recievedData = d.toString();
+                        while (recievedData.indexOf("\r\n\r\n") != -1) {
+                            var endIndex = recievedData.indexOf("\r\n\r\n");
+                            var messageType = recievedData.slice(0, 3);
+                            var messageData = recievedData.slice(3, endIndex);
+                            recievedData = recievedData.slice(endIndex + 4);
+                            if (messageType == "MSG") {
+                                console.log(messageData);
+                            }
+                            else if (messageType == "WTX") {
+                                console.log("recieved wiretx");
+                                sendsignature_1.sendsignature(joinid, JSON.parse(messageData), pubaddr, privatekey);
+                            }
+                        }
                     });
                 });
                 req.write(returndatastring);

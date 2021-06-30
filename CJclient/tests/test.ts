@@ -56,4 +56,5 @@ const main = async(): Promise<any> => {
   console.log(x.getUnsignedTx().getTransaction().getIns()[0].getInput().getSigIdxs()[0].toString())
 }
 
-main()
+const a = "john"
+console.log("b" == "b")

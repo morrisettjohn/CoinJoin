@@ -36,43 +36,30 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 exports.__esModule = true;
-var avalanche_1 = require("avalanche");
-var avm_1 = require("avalanche/dist/apis/avm");
+var sendutxodata_1 = require("../../sendutxodata");
 var utils_1 = require("avalanche/dist/utils");
-/*const data = {
-  "joinid": 6,
-  "assetid": "23wKfz3viWLmjWo2UZ7xWegjvnZFenGAVkouwQCeB9ubPXodG6",
-  "assetamount": 10,
-  "destinationaddr": "feec1",
-  "pubaddr": "X-avax1slt2dhfu6a6qezcn5sgtagumq8ag8we75f84sw"
-}*/
-//setting up the xchain object
-var BNSCALE = 1000000000;
-var bintools = avalanche_1.BinTools.getInstance();
-var Ip = "api.avax.network";
-var networkID = 1;
-var port = 443;
-var protocol = "https";
-var xchainid = utils_1.Defaults.network[networkID].X.blockchainID;
-var xchainidBuf = bintools.cb58Decode(xchainid);
-var avax = new avalanche_1.Avalanche(Ip, port, protocol, networkID);
-avax.setRequestConfig('withCredentials', true);
-var xchain = avax.XChain(); //returns a reference to the X-Chain used by AvalancheJS
+var networkID = 5;
+var joinid = 7;
+var avaxAssetID = utils_1.Defaults.network[networkID].X.avaxAssetID;
+var assetamount = 2.2;
+var destinationaddr1 = "X-fuji1ywknekcr6rkekg9g996dsnsdg20wmvwhpsmup6";
+var pubaddr1 = "X-fuji13a3dm204mh9hfjx3ajpk33cchgszh2qry97ml9";
+var privatekey1 = "PrivateKey-ryjZWerx1vRgQnFrLJ9oxBYUS7TdMRNrBLmSAAP78L4xixvT2";
+var destinationaddr2 = "X-fuji1tunzyk0v8fw5ee73uzdedrtunf26936fy9wg48";
+var pubaddr2 = "X-fuji1d6fetyekv4ec5enm9ltuxrd6n70ng04rpxq443";
+var privatekey2 = "PrivateKey-2t6UmFMctYnZXMY1BFYF41k97ZAtcedN1U9GiQiGQzmzU21oBY";
+var destinationaddr3 = "X-fuji12jwy0ctuankcamu0qv0dcy95pxsr578ju7t7qe";
+var pubaddr3 = "X-fuji10a7tx3xl2cyp3g60d68zh80tzen0lwxd548u82";
+var privatekey3 = "PrivateKey-7f84zwffkNTAjKu1DDDrRBafWq2wE3GxZ3t7EYVFR8fTpJArc";
 var main = function () { return __awaiter(void 0, void 0, void 0, function () {
-    var x, _a, _b;
-    return __generator(this, function (_c) {
-        switch (_c.label) {
-            case 0:
-                x = new avm_1.Tx();
-                _b = (_a = x).fromString;
-                return [4 /*yield*/, xchain.getTx("2CiKBh5NSeUUfPo3Dobz2AQDcLvykAdxJgLddCJX9XUkApw3SK")];
+    var txdata;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0: return [4 /*yield*/, sendutxodata_1.sendutxodata(joinid, avaxAssetID, assetamount, destinationaddr3, pubaddr3, privatekey3)];
             case 1:
-                _b.apply(_a, [_c.sent()]);
-                console.log(x);
-                console.log(x.getUnsignedTx().getTransaction().getIns()[0].getInput().getSigIdxs()[0].toString());
+                txdata = _a.sent();
                 return [2 /*return*/];
         }
     });
 }); };
-var a = "john";
-console.log("b" == "b");
+main();

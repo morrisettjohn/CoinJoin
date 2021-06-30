@@ -58,5 +58,14 @@ sample6 = JoinState(
     feeaddress = "X-fuji18gcr997m4cntu2pzp9u5p72pmm53d6376l6cee"
 )
 
+sample7 = JoinState(
+    id = 7,
+    connect_limit = 4,
+    assetid = AVAX,
+    assetamount = 2,
+    feepercent = .10,
+    feeaddress = "X-fuji18gcr997m4cntu2pzp9u5p72pmm53d6376l6cee"
+)
 
-samples = {0: sample0, 1: sample1, 2: sample2, 3: sample3, 4: sample4, 5: sample5, 6: sample6}
+
+samples = {0: sample0, 1: sample1, 2: sample2, 3: sample3, 4: sample4, 5: sample5, 6: sample6, 7: sample7}
