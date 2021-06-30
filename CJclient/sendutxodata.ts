@@ -24,6 +24,7 @@ import {
     Defaults
 }from "avalanche/dist/utils"
 import { sendsignature } from "./sendsignature";
+import { processMessage } from "./processmessage";
 
 /*const data = {
     "joinid": 6,
@@ -183,27 +184,10 @@ const sendutxodata = async(joinid: number, assetid: string, assetamount:
         }
     }
 
-
-
     const req = request(options, res => {
         res.on("data", d => {
             let recievedData = d.toString()
-            while (recievedData.indexOf("\r\n\r\n") != -1){
-                const endIndex: number = recievedData.indexOf("\r\n\r\n")
-                const messageType: string = recievedData.slice(0, 3)
-                const messageData: string = recievedData.slice(3, endIndex)
-                recievedData = recievedData.slice(endIndex + 4)
-
-                if (messageType == "MSG"){
-                    console.log(messageData)
-                }
-                else if (messageType == "WTX"){
-                    console.log("recieved wiretx")
-                    sendsignature(joinid, JSON.parse(messageData), pubaddr, privatekey)
-                }
-            }
-            
-
+            processMessage(recievedData, joinid, pubaddr, privatekey)
         })
     })
     req.write(returndatastring)

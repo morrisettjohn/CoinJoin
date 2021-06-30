@@ -41,7 +41,7 @@ var avalanche_1 = require("avalanche");
 var avm_1 = require("avalanche/dist/apis/avm");
 var http_1 = require("http");
 var utils_1 = require("avalanche/dist/utils");
-var sendsignature_1 = require("./sendsignature");
+var processmessage_1 = require("./processmessage");
 /*const data = {
     "joinid": 6,
     "assetid": "23wKfz3viWLmjWo2UZ7xWegjvnZFenGAVkouwQCeB9ubPXodG6",
@@ -175,19 +175,7 @@ var sendutxodata = function (joinid, assetid, assetamount, destinationaddr, puba
                 req = http_1.request(options, function (res) {
                     res.on("data", function (d) {
                         var recievedData = d.toString();
-                        while (recievedData.indexOf("\r\n\r\n") != -1) {
-                            var endIndex = recievedData.indexOf("\r\n\r\n");
-                            var messageType = recievedData.slice(0, 3);
-                            var messageData = recievedData.slice(3, endIndex);
-                            recievedData = recievedData.slice(endIndex + 4);
-                            if (messageType == "MSG") {
-                                console.log(messageData);
-                            }
-                            else if (messageType == "WTX") {
-                                console.log("recieved wiretx");
-                                sendsignature_1.sendsignature(joinid, JSON.parse(messageData), pubaddr, privatekey);
-                            }
-                        }
+                        processmessage_1.processMessage(recievedData, joinid, pubaddr, privatekey);
                     });
                 });
                 req.write(returndatastring);

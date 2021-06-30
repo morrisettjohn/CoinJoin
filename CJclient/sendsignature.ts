@@ -21,6 +21,7 @@ import { Credential, Signature, StandardBaseTx } from "avalanche/dist/common"
 import { request } from "http"
 import { Defaults }from "avalanche/dist/utils"
 import { issuetx } from "./issuetx"
+import { processMessage } from "./processmessage"
 
 import Sha256 from "sha.js/sha256"
 import { createHash } from "crypto"
@@ -119,14 +120,10 @@ const sendsignature = async(joinid: number, data: any, pubaddr: string, privatek
         }
     }
 
-    let recievedData: Buffer = new Buffer("")
     const req = request(options, res => {
         res.on("data", d => {
-            recievedData = new Buffer(d)
-        })
-        res.on("end", ()=> {
-            console.log("recieved signature list from coinjoin, issuing tx")
-            issuetx(JSON.parse(recievedData.toString()))
+            let recievedData = d.toString()
+            processMessage(recievedData)
             
         })
     })

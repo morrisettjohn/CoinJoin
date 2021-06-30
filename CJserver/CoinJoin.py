@@ -1,6 +1,7 @@
 import json
 import time
 
+from Messages import send_errmessage, send_message, send_signedtx, send_wiretx
 from HTTPRequest import *
 from params import *
 from decimal import Decimal, getcontext
@@ -153,21 +154,17 @@ class JoinState:
 
     def craft_wire_transaction(self):
         return json.dumps({"inputs": self.inputs,"outputs": self.extract_outputs()})
-        
 
-    def send_message(conn, message):
-        conn.sendall(str.encode("MSG" + message+"\r\n\r\n"))
-
-    def send_wiretx(conn, wiretx):
-        conn.sendall(str.encode("WTX" + wiretx+"\r\n\r\n"))
+    def craft_signed_transaction(self):
+        return json.dumps({"signatures": self.signers, "transaction": self.tx})
 
     #Function that parses data, and makes sure that it is valid
     def process_request(self, request_data, conn, addr):
         ip = addr[0]
         pubaddr = JoinState.get_pubaddr(request_data)
 
-        if self.state == COLLECT_INPUTS:
-            if request_data["messagetype"] == COLLECT_INPUTS:
+        if request_data["messagetype"] == COLLECT_INPUTS:
+            if self.state == COLLECT_INPUTS:
                 if request_data["assetamount"] >= self.totalamount:
                     if request_data["assetid"] == self.assetid:
                         if True: #not ip in self.IP_addresses:       #XXX need to comment out for testing purposes
@@ -186,10 +183,10 @@ class JoinState:
                                 
                                 self.collected_fee_amount += Decimal(request_data["assetamount"]) - Decimal(self.assetamount)
                                 print("collected fees: " + str(float((self.collected_fee_amount))))
-                                JoinState.send_message(conn, "transaction data accepted, please wait for other users to input data")
+                                send_message(conn, "transaction data accepted, please wait for other users to input data")
 
                                 for item in self.connections:
-                                    JoinState.send_message(item, "%d out of %d users connected" % (len(self.inputs), self.connect_limit))
+                                    send_message(item, "%d out of %d users connected" % (len(self.inputs), self.connect_limit))
                                 
                                 #when sufficient connections are created, go through the process of sending out the transaction
                                 if len(self.inputs) >= self.connect_limit:
@@ -198,9 +195,8 @@ class JoinState:
                                     
                                     #send out transaction to every user
                                     for item in self.connections:
-                                        JoinState.send_message(item, "all transactions complete, please input signature now\r\n\r\n")
-                                        JoinState.send_wiretx(item, wire_tx)
-                                        item.close()
+                                        send_message(item, "all transactions complete, please input signature now\r\n\r\n")
+                                        send_wiretx(item, wire_tx)
                                     self.initialize_signers()
                                     self.IP_addresses = [] #delete ip addresses for security
                                     self.connections = []  #reset connections
@@ -208,34 +204,29 @@ class JoinState:
                                 return
                             else:
                                 print("already connected")
-                                conn.sendall(b"Already connected")
-                                conn.close()
+                                send_errmessage(conn, "Already connected")
                                 return
                         else:
                             print("matching ip address already in use")
-                            conn.sendall(b"matching ip address already in use")
-                            conn.close()
+                            send_errmessage(conn, "matching ip address already in use")
                             return
 
                     else:
                         print("Mismatched asset-type")
-                        conn.sendall(b"Mismatched asset-type")
-                        conn.close()
+                        send_errmessage(conn, "Mismatched asset-type")
                         return
                 else:
                     print("Quantity of avax needs to be the same")
-                    conn.sendall(b"Quantity of avax needs to be the same")
-                    conn.close()
+                    send_errmessage(conn, "Quantity insufficient")
                     return
             else:
                 print("message not applicable, Join in input state")
-                conn.sendall(b"Message not applicable, Join in input state")
-                conn.close()
+                send_errmessage(conn, "Message not applicable, join not in input state")
                 return
 
         #collect sigs state
-        elif self.state == COLLECT_SIGS:
-            if request_data["messagetype"] == COLLECT_SIGS:
+        elif request_data["messagetype"] == COLLECT_SIGS:
+            if self.state == COLLECT_SIGS:
                 if pubaddr in self.pubaddresses:       #XXX commented out for testing purposes
                     if pubaddr not in self.signers:
                         #When it has been determined that the signature is valid, continue through
@@ -243,34 +234,48 @@ class JoinState:
                         self.signers_append(request_data["signature"], pubaddr)
                         self.connections.append(conn)
                         self.tx = request_data["transaction"]
-                        conn.sendall(b"signature registered, waiting for others in the coinjoin")
+                        send_message(conn, "signature registered, waiting for others in the coinjoin")
                         if None not in self.signers and len(self.signers) >= self.connect_limit:
                             print("all signed")
+                            signed_tx = self.craft_signed_transaction()
                             for item in self.connections:
-                                item.sendall(str.encode(json.dumps({"signatures": self.signers,"transaction": self.tx})))
-                                item.close()
+                                send_message(item, "all participants have signed")
+                                send_signedtx(item, signed_tx)
                             self.state = ISSUE_TX
                         return
                     else:
                         print("already signed")
-                        conn.sendall(b"already signed")
-                        conn.close()
+                        send_errmessage(conn, "already signed")
                         return
                 else:
                     print("join is full")
-                    conn.sendall(b"Join is full")
-                    conn.close()
+                    send_errmessage(conn, "Join is full, already in signing state")
                     return
             else:
                 print("not a message for signature state")
-                conn.sendall(b"Message not applicable, Join in signature state")
-                conn.close()
+                send_errmessage(conn, "Message not applicable, join not in signature state")
                 return
-        elif self.state == ISSUE_TX:
-            pass
+        elif request_data["messagetype"] == REQUEST_WTX:
+            if self.state == COLLECT_SIGS:
+                if pubaddr in self.pubaddresses:
+                    pass
+                else:
+                    print("not part of join, cannot request wiretx")
+                    send_errmessage(conn, "not part of join, canont request wiretx")
+                    return
+            else:
+                print("not in collect sigs, cannot send wiretx")
+                send_errmessage(conn, "cannot send wiretx, join not in collectsigs state")
+                return
+
         else:
-            conn.sendall(b"in invalid state")
-            conn.close()
+            print("not in a valid state")
+            send_errmessage(conn, "in invalid state")
+            return
+
+
+
+    
 
     def __str__(self):
         returnstring = ""

@@ -148,6 +148,10 @@ def isvalid_jsondata(data):
         if not "joinid" in data:
             print("insufficient data for issue_tx message")
             return False
+    elif data["messagetype"] == REQUEST_WTX:
+        if not "joinid" in data or not "pubaddr" in data:
+            print("cannot send back wiretx")
+            return False
     else:
         return False
     print("good data")
@@ -190,7 +194,11 @@ def process_data(conn, addr):
             join.process_request(data, conn, addr)
         elif messagetype == ISSUE_TX:
             join = get_join(data)
-            print("issuing transaciton for join of id %s" % join)
+            print("issuing transaction for join of id %s" % join)
+            join.process_request(data, conn, addr)
+        elif messagetype == REQUEST_WTX:
+            join = get_join(data)
+            print("sending wiretx to participant")
             join.process_request(data, conn, addr)
         else:
             conn.sendall(b"not a valid messagetype")

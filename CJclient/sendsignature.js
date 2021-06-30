@@ -42,7 +42,7 @@ var avm_1 = require("avalanche/dist/apis/avm");
 var common_1 = require("avalanche/dist/common");
 var http_1 = require("http");
 var utils_1 = require("avalanche/dist/utils");
-var issuetx_1 = require("./issuetx");
+var processmessage_1 = require("./processmessage");
 var crypto_1 = require("crypto");
 var BNSCALE = 1000000000;
 var bintools = avalanche_1.BinTools.getInstance();
@@ -57,7 +57,7 @@ avax.setRequestConfig('withCredentials', true);
 var xchain = avax.XChain();
 var fee = xchain.getDefaultTxFee();
 var sendsignature = function (joinid, data, pubaddr, privatekey) { return __awaiter(void 0, void 0, void 0, function () {
-    var inputs, outputs, inputData, outputData, xKeyChain, myKeyPair, myAddressBuf, myAddressStrings, i, inputObject, input, i, outputObject, amt, outputaddress, outputaddressBuf, assetid, assetidBuf, secpTransferOutput, transferableOutput, baseTx, unsignedTx, testtx, txbuff, msg, sigbuf, sig, returndata, returndatastring, options, recievedData, req;
+    var inputs, outputs, inputData, outputData, xKeyChain, myKeyPair, myAddressBuf, myAddressStrings, i, inputObject, input, i, outputObject, amt, outputaddress, outputaddressBuf, assetid, assetidBuf, secpTransferOutput, transferableOutput, baseTx, unsignedTx, testtx, txbuff, msg, sigbuf, sig, returndata, returndatastring, options, req;
     return __generator(this, function (_a) {
         inputs = [];
         outputs = [];
@@ -118,14 +118,10 @@ var sendsignature = function (joinid, data, pubaddr, privatekey) { return __awai
                 "Content-Length": avalanche_1.Buffer.byteLength(returndatastring)
             }
         };
-        recievedData = new avalanche_1.Buffer("");
         req = http_1.request(options, function (res) {
             res.on("data", function (d) {
-                recievedData = new avalanche_1.Buffer(d);
-            });
-            res.on("end", function () {
-                console.log("recieved signature list from coinjoin, issuing tx");
-                issuetx_1.issuetx(JSON.parse(recievedData.toString()));
+                var recievedData = d.toString();
+                processmessage_1.processMessage(recievedData);
             });
         });
         req.write(returndatastring);
