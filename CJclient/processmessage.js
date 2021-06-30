@@ -3,6 +3,7 @@ exports.__esModule = true;
 exports.processMessage = void 0;
 var issuetx_1 = require("./issuetx");
 var sendsignature_1 = require("./sendsignature");
+//takes a message from the coinjoin server and processes it, using a 3 character prefix as a messagetype
 var processMessage = function (recievedData, joinid, pubaddr, privatekey) {
     while (recievedData.indexOf("\r\n\r\n") != -1) {
         var endIndex = recievedData.indexOf("\r\n\r\n");

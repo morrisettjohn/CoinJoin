@@ -37,8 +37,6 @@ avax.setRequestConfig('withCredentials', true)
 const xchain: AVMAPI = avax.XChain();
 
 const issuetx = async(data: any): Promise<any> => {
-
-
     console.log("issuing tx")  //XXX each signature should be its own credential
     console.log("reconstructing unsignedtx")
     const unsignedTx: UnsignedTx = new UnsignedTx()
@@ -54,16 +52,20 @@ const issuetx = async(data: any): Promise<any> => {
         credentialArray.push(cred)
     })
     
-
     console.log("constructing and issuing tx")
     const tx: Tx = new Tx(unsignedTx, credentialArray)
-    console.log(unsignedTx.getInputTotal(bintools.cb58Decode(Defaults.network[networkID].X.avaxAssetID)).toNumber())
-    console.log(unsignedTx.getOutputTotal(bintools.cb58Decode(Defaults.network[networkID].X.avaxAssetID)).toNumber())
-
+    
+    console.log("input total:" + unsignedTx.getInputTotal(bintools.cb58Decode(Defaults.network[networkID].X.avaxAssetID)).toNumber())
+    console.log("output total:" + unsignedTx.getOutputTotal(bintools.cb58Decode(Defaults.network[networkID].X.avaxAssetID)).toNumber())
 
     const id: string = await xchain.issueTx(tx) 
 
-    console.log("issued, coinjoin complete")
+    let status: string = ""
+    while (status != "Accepted" && status != "Rejected"){
+        status = await xchain.getTxStatus(id)
+    }
+    console.log(status)
+
 }
 
 export { issuetx }

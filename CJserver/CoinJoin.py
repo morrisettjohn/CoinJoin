@@ -64,8 +64,8 @@ class JoinState:
         return count
 
     #Returns the number of connections that have joined during the input stage
-    def get_current_connection_count(self):
-        return len(self.connections)
+    def get_current_input_count(self):
+        return len(self.inputs)
 
     #function that returns the current status of the join in json form, for easy access
     def get_status(self):
@@ -74,7 +74,7 @@ class JoinState:
                 "id": self.id,
                 "state": self.state,
                 "connect_limit": self.connect_limit,
-                "current_connection_count": self.get_current_connection_count(),
+                "current_input_count": self.get_current_input_count(),
                 "base_amount": self.assetamount,
                 "fee_percent":  self.feepercent,
                 "total_amount": self.totalamount,
@@ -155,7 +155,7 @@ class JoinState:
     def craft_wire_transaction(self):
         return json.dumps({"inputs": self.inputs,"outputs": self.extract_outputs()})
 
-    def craft_signed_transaction(self):
+    def craft_signed_transaction_data(self):
         return json.dumps({"signatures": self.signers, "transaction": self.tx})
 
     #Function that parses data, and makes sure that it is valid
@@ -235,9 +235,13 @@ class JoinState:
                         self.connections.append(conn)
                         self.tx = request_data["transaction"]
                         send_message(conn, "signature registered, waiting for others in the coinjoin")
+
+                        for item in self.connections:
+                            send_message(item, "%d out of %d users signed" % (self.get_current_signature_count(), self.connect_limit))
+
                         if None not in self.signers and len(self.signers) >= self.connect_limit:
                             print("all signed")
-                            signed_tx = self.craft_signed_transaction()
+                            signed_tx = self.craft_signed_transaction_data()
                             for item in self.connections:
                                 send_message(item, "all participants have signed")
                                 send_signedtx(item, signed_tx)
@@ -255,10 +259,13 @@ class JoinState:
                 print("not a message for signature state")
                 send_errmessage(conn, "Message not applicable, join not in signature state")
                 return
+
         elif request_data["messagetype"] == REQUEST_WTX:
             if self.state == COLLECT_SIGS:
                 if pubaddr in self.pubaddresses:
-                    pass
+                    print("sending wiretx to participant")
+                    send_message(conn, "sending wiretx information over")
+                    send_wiretx(conn, self.craft_wire_transaction())
                 else:
                     print("not part of join, cannot request wiretx")
                     send_errmessage(conn, "not part of join, canont request wiretx")
@@ -272,10 +279,6 @@ class JoinState:
             print("not in a valid state")
             send_errmessage(conn, "in invalid state")
             return
-
-
-
-    
 
     def __str__(self):
         returnstring = ""

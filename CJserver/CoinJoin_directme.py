@@ -4,6 +4,7 @@ from HTTPRequest import *
 
 from params import *
 from JoinState_samples import samples
+from Messages import send_wiretx, send_signedtx, send_message, send_errmessage
 import socket
 import sys
 import json
@@ -201,12 +202,10 @@ def process_data(conn, addr):
             print("sending wiretx to participant")
             join.process_request(data, conn, addr)
         else:
-            conn.sendall(b"not a valid messagetype")
-            conn.close()
+            send_errmessage(conn, "not a valid messagetype")
     else:
         print("invalid data")
-        conn.sendall(b"invalid or insufficient data for message")
-        conn.close()
+        send_errmessage(conn, "invalid or insufficient data for message")
 
 #Starts the whole coinjoin process, starting from beginning to end
 def start_findme_service():
