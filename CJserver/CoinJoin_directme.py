@@ -137,8 +137,9 @@ def isvalid_jsondata(data):
             print("no joinid in data for selectjoin message")
             return False
     elif data["messagetype"] == COLLECT_INPUTS:
-        if not "joinid" in data or not "transactionid" in data or not "transactionoffset" in data or not "assetamount" in data\
-             or not "assetid" in data or not "destinationaddr" in data or not "pubaddr" in data or not "inputbuf":
+        if not "joinid" in data or not "transactionid" in data or not "transactionoffset" in data\
+            or not "inputamount" in data or not "outputamount" in data or not "assetid" in data\
+            or not "destinationaddr" in data or not "pubaddr" in data or not "inputbuf" or not "outputbuf" in data:
             print("insufficient data for input message")
             return False
     elif data["messagetype"] == COLLECT_SIGS:

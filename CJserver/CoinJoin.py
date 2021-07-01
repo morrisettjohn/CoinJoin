@@ -5,6 +5,8 @@ from Messages import send_errmessage, send_message, send_signedtx, send_wiretx
 from HTTPRequest import *
 from params import *
 from decimal import Decimal, getcontext
+import struct
+
 getcontext().prec = 9
 
 
@@ -95,9 +97,9 @@ class JoinState:
             Exception("bad")
         return status
 
-    def create_output(self, assetid, destinationaddr, amount, pubaddr):
-        TxOut = {"assetid": assetid, "amount": amount, "destinationaddr": destinationaddr}
-        return [TxOut, pubaddr]
+    def create_output(self, request_data):
+        pubaddr = JoinState.get_pubaddr(request_data)
+        return [request_data["outputbuf"], pubaddr]
         
     def create_input(self, request_data):
         pubaddr = JoinState.get_pubaddr(request_data)
@@ -109,7 +111,7 @@ class JoinState:
         
     #Sort outputs based on destination address
     def sort_outputs(self):
-        self.outputs.sort(key=lambda x: x[0]["destinationaddr"])
+        self.outputs = sorted(self.outputs, key=lambda x: x[0]["data"])
 
     #Creates a new input, and then sorts the entire list
     def inputs_append(self, request_data):  
@@ -118,8 +120,8 @@ class JoinState:
         self.sort_inputs()
 
     #Creates a new output, then sorts the entire list
-    def outputs_append(self, assetid, destination_addr, amount, pubaddr):
-        output = self.create_output(assetid, destination_addr, amount, pubaddr)
+    def outputs_append(self, request_data):
+        output = self.create_output(request_data)
         self.outputs.append(output)
         self.sort_outputs()
 
@@ -162,10 +164,10 @@ class JoinState:
     def process_request(self, request_data, conn, addr):
         ip = addr[0]
         pubaddr = JoinState.get_pubaddr(request_data)
-
+        
         if request_data["messagetype"] == COLLECT_INPUTS:
             if self.state == COLLECT_INPUTS:
-                if request_data["assetamount"] >= self.totalamount:
+                if request_data["inputamount"] >= self.totalamount and request_data["outputamount"] == self.assetamount:
                     if request_data["assetid"] == self.assetid:
                         if True: #not ip in self.IP_addresses:       #XXX need to comment out for testing purposes
                             if pubaddr not in self.pubaddresses:
@@ -177,11 +179,9 @@ class JoinState:
                                 self.pubaddresses.append(pubaddr)
                                 
                                 self.inputs_append(request_data)
-                                self.outputs_append(request_data["assetid"],   
-                                    request_data["destinationaddr"], 
-                                    self.assetamount, pubaddr)
+                                self.outputs_append(request_data)
                                 
-                                self.collected_fee_amount += Decimal(request_data["assetamount"]) - Decimal(self.assetamount)
+                                self.collected_fee_amount += Decimal(request_data["inputamount"]) - Decimal(self.assetamount)
                                 print("collected fees: " + str(float((self.collected_fee_amount))))
                                 send_message(conn, "transaction data accepted, please wait for other users to input data")
 

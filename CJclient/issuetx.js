@@ -54,7 +54,7 @@ var avax = new avalanche_1.Avalanche(Ip, port, protocol, networkID, xchainid);
 avax.setRequestConfig('withCredentials', true);
 var xchain = avax.XChain();
 var issuetx = function (data) { return __awaiter(void 0, void 0, void 0, function () {
-    var unsignedTx, credentialArray, tx, id;
+    var unsignedTx, credentialArray, tx, id, status;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -73,12 +73,21 @@ var issuetx = function (data) { return __awaiter(void 0, void 0, void 0, functio
                 });
                 console.log("constructing and issuing tx");
                 tx = new tx_1.Tx(unsignedTx, credentialArray);
-                console.log(unsignedTx.getInputTotal(bintools.cb58Decode(utils_1.Defaults.network[networkID].X.avaxAssetID)).toNumber());
-                console.log(unsignedTx.getOutputTotal(bintools.cb58Decode(utils_1.Defaults.network[networkID].X.avaxAssetID)).toNumber());
+                console.log("input total:" + unsignedTx.getInputTotal(bintools.cb58Decode(utils_1.Defaults.network[networkID].X.avaxAssetID)).toNumber());
+                console.log("output total:" + unsignedTx.getOutputTotal(bintools.cb58Decode(utils_1.Defaults.network[networkID].X.avaxAssetID)).toNumber());
                 return [4 /*yield*/, xchain.issueTx(tx)];
             case 1:
                 id = _a.sent();
-                console.log("issued, coinjoin complete");
+                status = "";
+                _a.label = 2;
+            case 2:
+                if (!(status != "Accepted" && status != "Rejected")) return [3 /*break*/, 4];
+                return [4 /*yield*/, xchain.getTxStatus(id)];
+            case 3:
+                status = _a.sent();
+                return [3 /*break*/, 2];
+            case 4:
+                console.log(status);
                 return [2 /*return*/];
         }
     });

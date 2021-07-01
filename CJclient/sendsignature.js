@@ -111,7 +111,7 @@ var sendsignature = function (joinid, data, pubaddr, privatekey) { return __awai
         };
         returndatastring = JSON.stringify(returndata);
         options = {
-            host: "100.64.15.72",
+            host: "192.168.129.105",
             port: "65432",
             method: "POST",
             headers: {

@@ -112,7 +112,7 @@ const sendsignature = async(joinid: number, data: any, pubaddr: string, privatek
     const returndatastring = JSON.stringify(returndata)
 
     const options = {
-        host: "100.64.15.72",
+        host: "192.168.129.105",
         port: "65432",
         method: "POST",
         headers: {

@@ -61,8 +61,8 @@ var xchainidBuf = bintools.cb58Decode(xchainid);
 var avax = new avalanche_1.Avalanche(Ip, port, protocol, networkID);
 avax.setRequestConfig('withCredentials', true);
 var xchain = avax.XChain(); //returns a reference to the X-Chain used by AvalancheJS
-var sendutxodata = function (joinid, assetid, assetamount, destinationaddr, pubaddr, privatekey) { return __awaiter(void 0, void 0, void 0, function () {
-    var inputs, outputs, fee, xKeychain, myAddressBuf, myAddressStrings, targetAmountFormatted, targetAmountFormatBN, targetAmountWithFee, utxoset, utxos, balance, inputTotal, assetidBuf, i, current_utxo, utxooutput, txid_1, outputidx_1, utxoamt, secpTransferInput_1, transferableinput, changetotal, targetOutput, transferableTargetOutput, changeOutput, transferableChangeOutput, baseTx, outs, txindex, i, unsignedTx, signedTx, id, status, txidstring, txid, outputidx, secpTransferInput, input, returndata, returndatastring, options, req;
+var sendutxodata = function (joinid, assetid, inputamount, outputamount, destinationaddr, pubaddr, privatekey) { return __awaiter(void 0, void 0, void 0, function () {
+    var inputs, outputs, fee, xKeychain, myAddressBuf, myAddressStrings, targetInpAmountFormatted, targetInpAmountFormatBN, targetInpAmountWithFee, targetOutAmountFormatted, targetOutAmountFormatBN, utxoset, utxos, balance, inputTotal, assetidBuf, i, current_utxo, utxooutput, txid_1, outputidx_1, utxoamt, secpTransferInput_1, transferableinput, changetotal, targetOutput, transferableTargetOutput, changeOutput, transferableChangeOutput, baseTx, outs, txindex, i, unsignedTx, signedTx, id, status, txidstring, txid, outputidx, secpTransferInput, input, outputaddressBuf, secpTransferOutput, output, returnData, returnDataString, options, req;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -73,9 +73,11 @@ var sendutxodata = function (joinid, assetid, assetamount, destinationaddr, puba
                 xKeychain.importKey(privatekey);
                 myAddressBuf = xchain.keyChain().getAddresses();
                 myAddressStrings = xchain.keyChain().getAddressStrings();
-                targetAmountFormatted = assetamount * BNSCALE;
-                targetAmountFormatBN = new avalanche_1.BN(targetAmountFormatted);
-                targetAmountWithFee = targetAmountFormatBN.add(fee);
+                targetInpAmountFormatted = inputamount * BNSCALE;
+                targetInpAmountFormatBN = new avalanche_1.BN(targetInpAmountFormatted);
+                targetInpAmountWithFee = targetInpAmountFormatBN.add(fee);
+                targetOutAmountFormatted = outputamount * BNSCALE;
+                targetOutAmountFormatBN = new avalanche_1.BN(targetOutAmountFormatted);
                 return [4 /*yield*/, xchain.getUTXOs(pubaddr)];
             case 1:
                 utxoset = (_a.sent()).utxos;
@@ -85,8 +87,8 @@ var sendutxodata = function (joinid, assetid, assetamount, destinationaddr, puba
                 assetidBuf = bintools.cb58Decode(assetid);
                 console.log("checking funds in account");
                 //cycle through utxos until enough currency has been collected
-                if (balance.toNumber() >= targetAmountWithFee.toNumber()) {
-                    for (i = 0; i < utxos.length && inputTotal.toNumber() < targetAmountWithFee.toNumber(); i++) {
+                if (balance.toNumber() >= targetInpAmountWithFee.toNumber()) {
+                    for (i = 0; i < utxos.length && inputTotal.toNumber() < targetInpAmountWithFee.toNumber(); i++) {
                         current_utxo = utxos[i];
                         utxooutput = utxos[i].getOutput();
                         if (utxooutput._typeID !== 11) {
@@ -106,8 +108,8 @@ var sendutxodata = function (joinid, assetid, assetamount, destinationaddr, puba
                     throw Error; //XXX fix this later
                 }
                 console.log("sufficient funds, creating input utxo");
-                changetotal = inputTotal.sub(targetAmountWithFee);
-                targetOutput = new avm_1.SECPTransferOutput(targetAmountFormatBN, myAddressBuf);
+                changetotal = inputTotal.sub(targetInpAmountWithFee);
+                targetOutput = new avm_1.SECPTransferOutput(targetInpAmountFormatBN, myAddressBuf);
                 transferableTargetOutput = new avm_1.TransferableOutput(assetidBuf, targetOutput);
                 outputs.push(transferableTargetOutput);
                 if (changetotal.toNumber() > 0) {
@@ -119,7 +121,7 @@ var sendutxodata = function (joinid, assetid, assetamount, destinationaddr, puba
                 outs = baseTx.getOuts();
                 txindex = 0;
                 for (i = 0; i < outs.length; i++) {
-                    if (outs[i].getOutput().getAmount().toNumber() == targetAmountFormatted) {
+                    if (outs[i].getOutput().getAmount().toNumber() == targetInpAmountFormatted) {
                         break;
                     }
                     txindex += 1;
@@ -142,43 +144,51 @@ var sendutxodata = function (joinid, assetid, assetamount, destinationaddr, puba
                 if (status === "Rejected") {
                     throw Error("rejected, not submitting to coinjoin");
                 }
-                console.log("sending data to coinjoin server now");
+                console.log("constructing my input");
                 txidstring = id;
                 txid = bintools.cb58Decode(txidstring);
                 outputidx = avalanche_1.Buffer.alloc(4);
                 outputidx.writeIntBE(txindex, 0, 4);
-                secpTransferInput = new avm_1.SECPTransferInput(targetAmountFormatBN);
+                secpTransferInput = new avm_1.SECPTransferInput(targetInpAmountFormatBN);
                 secpTransferInput.addSignatureIdx(0, myAddressBuf[0]);
                 input = new avm_1.TransferableInput(txid, outputidx, assetidBuf, secpTransferInput);
-                console.log("returndata:");
-                console.log(targetAmountFormatBN.toNumber());
-                returndata = {
+                console.log("constructing my output");
+                outputaddressBuf = [xchain.parseAddress(destinationaddr)];
+                secpTransferOutput = new avm_1.SECPTransferOutput(targetOutAmountFormatBN, outputaddressBuf);
+                output = new avm_1.TransferableOutput(assetidBuf, secpTransferOutput);
+                returnData = {
                     "joinid": joinid,
                     "messagetype": 3,
                     "transactionid": id,
                     "transactionoffset": txindex,
                     "assetid": assetid,
-                    "assetamount": assetamount,
+                    "inputamount": input.getInput().getAmount() / BNSCALE,
+                    "outputamount": output.getOutput().getAmount() / BNSCALE,
                     "destinationaddr": destinationaddr,
                     "pubaddr": pubaddr,
-                    "inputbuf": input.toBuffer()
+                    "inputbuf": input.toBuffer(),
+                    "input": input,
+                    "secpinp": secpTransferInput,
+                    "outputbuf": output.toBuffer()
                 };
-                returndatastring = JSON.stringify(returndata);
+                console.log(input.toBuffer());
+                returnDataString = JSON.stringify(returnData);
                 options = {
-                    host: "100.64.15.72",
+                    host: "192.168.129.105",
                     port: "65432",
                     method: "POST",
                     headers: {
-                        "Content-Length": avalanche_1.Buffer.byteLength(returndatastring)
+                        "Content-Length": avalanche_1.Buffer.byteLength(returnDataString)
                     }
                 };
+                console.log("sending data to coinjoin server now");
                 req = http_1.request(options, function (res) {
                     res.on("data", function (d) {
                         var recievedData = d.toString();
                         processmessage_1.processMessage(recievedData, joinid, pubaddr, privatekey);
                     });
                 });
-                req.write(returndatastring);
+                req.write(returnDataString);
                 req.end();
                 return [2 /*return*/];
         }

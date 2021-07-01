@@ -4,7 +4,8 @@ import { Defaults } from "avalanche/dist/utils";
 const networkID = 5
 const joinid = 6
 const avaxAssetID: string = Defaults.network[networkID].X.avaxAssetID
-const assetamount = 1.15
+const inputamount = 1.15
+const outputamount = 1
 
 const destinationaddr1 = "X-fuji1ywknekcr6rkekg9g996dsnsdg20wmvwhpsmup6"
 const pubaddr1 = "X-fuji13a3dm204mh9hfjx3ajpk33cchgszh2qry97ml9"
@@ -20,6 +21,6 @@ const privatekey3 = "PrivateKey-7f84zwffkNTAjKu1DDDrRBafWq2wE3GxZ3t7EYVFR8fTpJAr
 
 
 const main = async(): Promise<any> => {
-    const txdata = await sendutxodata(joinid, avaxAssetID, assetamount, destinationaddr3, pubaddr3, privatekey3)
+    const txdata = await sendutxodata(joinid, avaxAssetID, inputamount, outputamount, destinationaddr3, pubaddr3, privatekey3)
 }
 main()

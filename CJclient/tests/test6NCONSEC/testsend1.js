@@ -41,22 +41,25 @@ var utils_1 = require("avalanche/dist/utils");
 var networkID = 5;
 var joinid = 6;
 var avaxAssetID = utils_1.Defaults.network[networkID].X.avaxAssetID;
-var assetamount = 1.15;
+var inputamount = 1.15;
+var outputamount = 1;
 var destinationaddr1 = "X-fuji1ywknekcr6rkekg9g996dsnsdg20wmvwhpsmup6";
 var pubaddr1 = "X-fuji13a3dm204mh9hfjx3ajpk33cchgszh2qry97ml9";
 var privatekey1 = "PrivateKey-ryjZWerx1vRgQnFrLJ9oxBYUS7TdMRNrBLmSAAP78L4xixvT2";
+var info1 = [destinationaddr1, pubaddr1, privatekey1];
 var destinationaddr2 = "X-fuji1tunzyk0v8fw5ee73uzdedrtunf26936fy9wg48";
 var pubaddr2 = "X-fuji1d6fetyekv4ec5enm9ltuxrd6n70ng04rpxq443";
 var privatekey2 = "PrivateKey-2t6UmFMctYnZXMY1BFYF41k97ZAtcedN1U9GiQiGQzmzU21oBY";
+var info2 = [destinationaddr2, pubaddr2, privatekey2];
+var destinationaddr3 = "X-fuji12jwy0ctuankcamu0qv0dcy95pxsr578ju7t7qe";
+var pubaddr3 = "X-fuji10a7tx3xl2cyp3g60d68zh80tzen0lwxd548u82";
+var privatekey3 = "PrivateKey-7f84zwffkNTAjKu1DDDrRBafWq2wE3GxZ3t7EYVFR8fTpJArc";
+var info3 = [destinationaddr3, pubaddr3, privatekey3];
+var info = [info1, info2, info3];
 var main = function () { return __awaiter(void 0, void 0, void 0, function () {
-    var txdata;
     return __generator(this, function (_a) {
-        switch (_a.label) {
-            case 0: return [4 /*yield*/, sendutxodata_1.sendutxodata(joinid, avaxAssetID, assetamount, destinationaddr1, pubaddr1, privatekey1)];
-            case 1:
-                txdata = _a.sent();
-                return [2 /*return*/];
-        }
+        sendutxodata_1.sendutxodata(joinid, avaxAssetID, inputamount, outputamount, info[0][0], info[0][1], info[0][2]);
+        return [2 /*return*/];
     });
 }); };
 main();
