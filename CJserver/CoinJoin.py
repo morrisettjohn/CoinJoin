@@ -5,7 +5,8 @@ from Messages import send_errmessage, send_message, send_signedtx, send_wiretx
 from HTTPRequest import *
 from params import *
 from decimal import Decimal, getcontext
-import struct
+from struct import *
+from cb58ref import cb58decode, cb58encode
 
 getcontext().prec = 9
 
@@ -71,28 +72,19 @@ class JoinState:
 
     #function that returns the current status of the join in json form, for easy access
     def get_status(self):
-        if self.state == COLLECT_INPUTS:
-            status = {
-                "id": self.id,
-                "state": self.state,
-                "connect_limit": self.connect_limit,
-                "current_input_count": self.get_current_input_count(),
-                "base_amount": self.assetamount,
-                "fee_percent":  self.feepercent,
-                "total_amount": self.totalamount,
-                "last_accessed": self.last_accessed
-                }
-        elif self.state == COLLECT_SIGS:
-            status = {
-                "id": self.id,
-                "state": self.state,
-                "signatures_needed": self.connect_limit,
-                "current_signature_count": self.get_current_signature_count(),
-                "base_amount": self.assetamount,
-                "fee_percent": self.feepercent,
-                "total_amount": self.totalamount,
-                "last_accessed": self.last_accessed
+        status = {       
+            "id": self.id,
+            "state": self.state,
+            "input_limit": self.connect_limit,
+            "base_amount": self.assetamount,
+            "fee_percent":  self.feepercent,
+            "total_amount": self.totalamount,
+            "last_accessed": self.last_accessed
             }
+        if self.state == COLLECT_INPUTS:
+            status["current_input_count"] = self.get_current_input_count()
+        elif self.state == COLLECT_SIGS:
+                status["current_input_count"] = self.get_current_signature_count(),
         else:
             Exception("bad")
         return status
@@ -129,8 +121,8 @@ class JoinState:
         return float(self.collected_fee_amount - Decimal(STANDARD_BURN_AMOUNT))
 
     #Create the fee output data
-    def outputs_append_fee(self, pubaddr):
-        self.outputs_append(self.assetid, self.feeaddress, self.get_fee_after_burn(), pubaddr)
+    def create_wire_fee_output(self):
+        return {"assetid": self.assetid, "destinationaddr": self.feeaddress, "assetamount": self.get_fee_after_burn()}
         
     #Add a new signature to the list.  Signatures should be in the same order as inputs, so they are ordered as such.
     def signers_append(self, signature, pubaddr):
@@ -155,33 +147,77 @@ class JoinState:
         return outputs
 
     def craft_wire_transaction(self):
-        return json.dumps({"inputs": self.inputs,"outputs": self.extract_outputs()})
+        return json.dumps({"inputs": self.inputs,"outputs": self.extract_outputs(), "feedata": self.create_wire_fee_output()})
 
     def craft_signed_transaction_data(self):
         return json.dumps({"signatures": self.signers, "transaction": self.tx})
 
+    def convert_buffer(data, start, end):
+        returndata = b""
+        while start < end:
+            hex_item = pack(">B", data[start])
+            returndata += hex_item
+            start += 1
+        return returndata
+
+    def unpackInp(inputbuf):
+        start = 0
+        txid = cb58encode(JoinState.convert_buffer(inputbuf, start, start + TXID_BUF_LENGTH))
+        start += TXID_BUF_LENGTH
+        outputidx = unpack(">I", JoinState.convert_buffer(inputbuf, start, start + OUTPUTIDX_BUF_LENGTH))[0]
+        start += OUTPUTIDX_BUF_LENGTH
+        assetid = cb58encode(JoinState.convert_buffer(inputbuf, start, start + ASSETID_BUF_LENGTH))
+        start += ASSETID_BUF_LENGTH
+        typeid = unpack(">I", JoinState.convert_buffer(inputbuf, start, start + TYPEID_BUF_LENGTH))[0]
+        start += TYPEID_BUF_LENGTH
+        assetamount = unpack(">Q", JoinState.convert_buffer(inputbuf, start, start + ASSETAMOUNT_BUF_LENGTH))[0]/BNSCALE
+        start += ASSETAMOUNT_BUF_LENGTH
+        sigcounts = unpack(">I", JoinState.convert_buffer(inputbuf, start, start + SIGCOUNT_BUF_LENGTH))[0]
+        return {"txid": txid, "outputidx": outputidx, "assetid": assetid, "typeid": typeid,\
+             "inputamount": assetamount, "sigcounts": sigcounts}
+
+    def unpackOut(outputbuf):
+        start = 0
+        assetid = cb58encode(JoinState.convert_buffer(outputbuf, start, start+ASSETID_BUF_LENGTH))
+        start += ASSETID_BUF_LENGTH
+        typeid = unpack(">I", JoinState.convert_buffer(outputbuf, start, start + TYPEID_BUF_LENGTH))[0]
+        start += TYPEID_BUF_LENGTH
+        assetamount = unpack(">Q", JoinState.convert_buffer(outputbuf, start, start + ASSETAMOUNT_BUF_LENGTH))[0]/BNSCALE
+        start += ASSETAMOUNT_BUF_LENGTH
+        locktime = unpack(">Q", JoinState.convert_buffer(outputbuf, start, start + LOCKTIME_BUF_LENGTH))[0]
+        start += LOCKTIME_BUF_LENGTH
+        threshold = unpack(">I", JoinState.convert_buffer(outputbuf, start, start + THRESHOLD_BUF_LENGTH))[0]
+        start += THRESHOLD_BUF_LENGTH
+        numaddresses = unpack(">I", JoinState.convert_buffer(outputbuf, start, start + NUMADDRESSES_BUF_LENGTH))[0]
+        start += NUMADDRESSES_BUF_LENGTH
+        address = JoinState.convert_buffer(outputbuf, start, start+ADDRESS_BUF_LENGTH)
+        return {"assetid": assetid, "typeid": typeid, "outputamount": assetamount,\
+             "locktime": locktime, "threshold": threshold, "numaddresses": numaddresses, "address": address}
+        
     #Function that parses data, and makes sure that it is valid
     def process_request(self, request_data, conn, addr):
         ip = addr[0]
         pubaddr = JoinState.get_pubaddr(request_data)
-        
+
         if request_data["messagetype"] == COLLECT_INPUTS:
+            input_data = JoinState.unpackInp(request_data["inputbuf"]["data"])
+            output_data = JoinState.unpackOut(request_data["outputbuf"]["data"])
+            inputamount = input_data["inputamount"]
+            outputamount = output_data["outputamount"]
             if self.state == COLLECT_INPUTS:
-                if request_data["inputamount"] >= self.totalamount and request_data["outputamount"] == self.assetamount:
-                    if request_data["assetid"] == self.assetid:
+                if inputamount >= self.totalamount and outputamount == self.assetamount:
+                    if input_data["assetid"] == output_data["assetid"] == self.assetid:
                         if True: #not ip in self.IP_addresses:       #XXX need to comment out for testing purposes
                             if pubaddr not in self.pubaddresses:
                                 #create input and output data when this has been determined to be valid information
-
                                 self.update_last_accessed()
                                 self.connections.append(conn)
                                 self.IP_addresses.append(ip)
                                 self.pubaddresses.append(pubaddr)
-                                
                                 self.inputs_append(request_data)
                                 self.outputs_append(request_data)
-                                
-                                self.collected_fee_amount += Decimal(request_data["inputamount"]) - Decimal(self.assetamount)
+
+                                self.collected_fee_amount += Decimal(inputamount) - Decimal(self.assetamount)
                                 print("collected fees: " + str(float((self.collected_fee_amount))))
                                 send_message(conn, "transaction data accepted, please wait for other users to input data")
 
@@ -190,12 +226,11 @@ class JoinState:
                                 
                                 #when sufficient connections are created, go through the process of sending out the transaction
                                 if len(self.inputs) >= self.connect_limit:
-                                    self.outputs_append_fee(self.feeaddress) #create an output for fee transactions
                                     wire_tx = self.craft_wire_transaction()
                                     
                                     #send out transaction to every user
                                     for item in self.connections:
-                                        send_message(item, "all transactions complete, please input signature now\r\n\r\n")
+                                        send_message(item, "all transactions complete, please input signature now")
                                         send_wiretx(item, wire_tx)
                                     self.initialize_signers()
                                     self.IP_addresses = [] #delete ip addresses for security

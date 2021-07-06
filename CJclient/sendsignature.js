@@ -40,7 +40,6 @@ exports.sendsignature = void 0;
 var avalanche_1 = require("avalanche");
 var avm_1 = require("avalanche/dist/apis/avm");
 var common_1 = require("avalanche/dist/common");
-var http_1 = require("http");
 var utils_1 = require("avalanche/dist/utils");
 var processmessage_1 = require("./processmessage");
 var crypto_1 = require("crypto");
@@ -56,9 +55,10 @@ var avax = new avalanche_1.Avalanche(Ip, port, protocol, networkID, xchainid);
 avax.setRequestConfig('withCredentials', true);
 var xchain = avax.XChain();
 var fee = xchain.getDefaultTxFee();
-var sendsignature = function (joinid, data, pubaddr, privatekey) { return __awaiter(void 0, void 0, void 0, function () {
-    var inputs, outputs, inputData, outputData, xKeyChain, myKeyPair, myAddressBuf, myAddressStrings, i, inputObject, input, i, outputObject, amt, outputaddress, outputaddressBuf, assetid, assetidBuf, secpTransferOutput, transferableOutput, baseTx, unsignedTx, testtx, txbuff, msg, sigbuf, sig, returndata, returndatastring, options, req;
+var sendsignature = function (joinid, data, pubaddr, privatekey, input, output) { return __awaiter(void 0, void 0, void 0, function () {
+    var inputs, outputs, inputData, outputData, xKeyChain, myKeyPair, myAddressBuf, myAddressStrings, i, inputObject, input_1, myInfo, i, checkItem, i, outputObject, output_1, i, checkItem, feeObj, amt, outputaddress, outputaddressBuf, assetid, assetidBuf, secpTransferOutput, transferableOutput, baseTx, unsignedTx, txbuff, msg, sigbuf, sig, returnData;
     return __generator(this, function (_a) {
+        console.log("try this");
         inputs = [];
         outputs = [];
         inputData = data["inputs"];
@@ -72,28 +72,57 @@ var sendsignature = function (joinid, data, pubaddr, privatekey) { return __awai
         console.log("constructing inputs");
         for (i = 0; i < inputData.length; i++) {
             inputObject = inputData[i];
-            input = new avm_1.TransferableInput();
-            input.fromBuffer(avalanche_1.Buffer.from(inputObject[0]));
-            inputs.push(input);
+            input_1 = new avm_1.TransferableInput();
+            input_1.fromBuffer(avalanche_1.Buffer.from(inputObject[0]));
+            inputs.push(input_1);
         }
+        console.log("checking if my input is in list");
+        myInfo = false;
+        for (i = 0; i < inputs.length; i++) {
+            checkItem = inputs[i];
+            if (checkItem.getTxID().equals(input.getTxID()) && checkItem.getOutputIdx().equals(input.getOutputIdx())) {
+                myInfo = true;
+            }
+        }
+        if (!myInfo) {
+            console.log("my input is not in input list");
+            throw Error;
+        }
+        console.log("input is in list");
         //construct outputs
         console.log("constructing outputs");
         for (i = 0; i < outputData.length; i++) {
             outputObject = outputData[i];
-            amt = new avalanche_1.BN(outputObject["amount"] * BNSCALE);
-            outputaddress = outputObject["destinationaddr"];
-            outputaddressBuf = [xchain.parseAddress(outputaddress)];
-            assetid = outputObject["assetid"];
-            assetidBuf = bintools.cb58Decode(assetid);
-            secpTransferOutput = new avm_1.SECPTransferOutput(amt, outputaddressBuf);
-            transferableOutput = new avm_1.TransferableOutput(assetidBuf, secpTransferOutput);
-            outputs.push(transferableOutput);
+            output_1 = new avm_1.TransferableOutput();
+            output_1.fromBuffer(avalanche_1.Buffer.from(outputObject));
+            outputs.push(output_1);
         }
+        console.log("checking if output is in list");
+        myInfo = false;
+        for (i = 0; i < outputs.length; i++) {
+            checkItem = outputs[i];
+            if (checkItem.toBuffer().equals(output.toBuffer())) {
+                myInfo = true;
+            }
+        }
+        if (!myInfo) {
+            console.log("my output is not in output list");
+            throw Error;
+        }
+        console.log("output is in list");
+        console.log("constructing fee output");
+        feeObj = data["feedata"];
+        amt = new avalanche_1.BN(feeObj["assetamount"] * BNSCALE);
+        outputaddress = feeObj["destinationaddr"];
+        outputaddressBuf = [xchain.parseAddress(outputaddress)];
+        assetid = feeObj["assetid"];
+        assetidBuf = bintools.cb58Decode(assetid);
+        secpTransferOutput = new avm_1.SECPTransferOutput(amt, outputaddressBuf);
+        transferableOutput = new avm_1.TransferableOutput(assetidBuf, secpTransferOutput);
+        outputs.push(transferableOutput);
         console.log("constructing transaction");
         baseTx = new avm_1.BaseTx(networkID, bintools.cb58Decode(xchainid), outputs, inputs, avalanche_1.Buffer.from("test"));
         unsignedTx = new avm_1.UnsignedTx(baseTx);
-        testtx = new avm_1.UnsignedTx();
-        testtx.fromBuffer(unsignedTx.toBuffer());
         console.log("creating signature");
         txbuff = unsignedTx.toBuffer();
         msg = avalanche_1.Buffer.from(crypto_1.createHash("sha256").update(txbuff).digest());
@@ -101,31 +130,14 @@ var sendsignature = function (joinid, data, pubaddr, privatekey) { return __awai
         sig = new common_1.Signature();
         sig.fromBuffer(sigbuf);
         console.log("transaction signed, sending sig to coinJoin");
-        returndata = {
+        returnData = {
             "joinid": joinid,
             "messagetype": 4,
             "signature": sig.toBuffer(),
             "pubaddr": pubaddr,
-            "transaction": txbuff,
-            "inputorder": "2"
+            "transaction": txbuff
         };
-        returndatastring = JSON.stringify(returndata);
-        options = {
-            host: "192.168.129.105",
-            port: "65432",
-            method: "POST",
-            headers: {
-                "Content-Length": avalanche_1.Buffer.byteLength(returndatastring)
-            }
-        };
-        req = http_1.request(options, function (res) {
-            res.on("data", function (d) {
-                var recievedData = d.toString();
-                processmessage_1.processMessage(recievedData);
-            });
-        });
-        req.write(returndatastring);
-        req.end();
+        processmessage_1.sendRecieve(returnData);
         return [2 /*return*/];
     });
 }); };

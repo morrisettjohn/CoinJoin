@@ -6,7 +6,6 @@ import {
   } from "avalanche" 
 import { 
     AVMAPI,
-    UTXOSet,
     TransferableInput,
     TransferableOutput,
     KeyChain,
@@ -14,18 +13,14 @@ import {
     SECPTransferOutput,
     BaseTx,
     UnsignedTx,
-    Tx
  } from "avalanche/dist/apis/avm"
-import { PlatformVMAPI, SECPCredential } from "avalanche/dist/apis/platformvm"
-import { Credential, Signature, StandardBaseTx } from "avalanche/dist/common"
+import { Signature } from "avalanche/dist/common"
 import { request } from "http"
 import { Defaults }from "avalanche/dist/utils"
-import { issuetx } from "./issuetx"
-import { processMessage } from "./processmessage"
+import { processMessage, constructHeaderOptions, sendRecieve } from "./processmessage"
+import * as readline from "readline"
 
-import Sha256 from "sha.js/sha256"
 import { createHash } from "crypto"
-import { SigIdx } from "avalanche/dist/common/credentials"
 
 const BNSCALE: number = 1000000000
 const bintools: BinTools = BinTools.getInstance()
@@ -41,7 +36,9 @@ avax.setRequestConfig('withCredentials', true)
 const xchain: AVMAPI = avax.XChain();
 const fee:  BN = xchain.getDefaultTxFee()
 
-const sendsignature = async(joinid: number, data: any, pubaddr: string, privatekey: string): Promise<any> => {
+const sendsignature = async(joinid: number, data: any, pubaddr: string, privatekey: string, 
+    input?: TransferableInput, output?: TransferableOutput): Promise<any> => {
+    console.log("try this")
     const inputs: TransferableInput[] = []
     const outputs: TransferableOutput[] = []
     const inputData = data["inputs"]
@@ -62,21 +59,56 @@ const sendsignature = async(joinid: number, data: any, pubaddr: string, privatek
         input.fromBuffer(Buffer.from(inputObject[0]))
         inputs.push(input)
     }
+    console.log("checking if my input is in list")
+    let myInfo: boolean = false
+    for (let i = 0; i < inputs.length; i++){
+        const checkItem: TransferableInput = inputs[i]
+        if (checkItem.getTxID().equals(input.getTxID()) && checkItem.getOutputIdx().equals(input.getOutputIdx())){
+            myInfo = true
+        }
+    }
+    if (!myInfo){
+        console.log("my input is not in input list")
+        throw Error
+    }
+
+    console.log("input is in list")
+
     //construct outputs
     console.log("constructing outputs")
     for (let i = 0; i < outputData.length; i++){
         const outputObject = outputData[i]
-        const amt: BN = new BN(outputObject["amount"]*BNSCALE)
-        const outputaddress = outputObject["destinationaddr"]
-        const outputaddressBuf: Buffer[] = [xchain.parseAddress(outputaddress)]
-        const assetid = outputObject["assetid"]
-        const assetidBuf: Buffer = bintools.cb58Decode(assetid)
-
-        const secpTransferOutput: SECPTransferOutput = new SECPTransferOutput(amt, outputaddressBuf)
-        const transferableOutput: TransferableOutput = new TransferableOutput(assetidBuf, secpTransferOutput)
-        outputs.push(transferableOutput)
+        const output: TransferableOutput = new TransferableOutput()
+        output.fromBuffer(Buffer.from(outputObject))
+        outputs.push(output)
     }
 
+    console.log("checking if output is in list")
+    myInfo = false
+    for (let i = 0; i < outputs.length; i++){
+        const checkItem: TransferableOutput = outputs[i]
+        if (checkItem.toBuffer().equals(output.toBuffer())){
+            myInfo = true
+        }
+    }
+    if (!myInfo){
+        console.log("my output is not in output list")
+        throw Error
+    }
+    console.log("output is in list")
+    console.log("constructing fee output")
+
+    const feeObj = data["feedata"]
+    const amt: BN = new BN(feeObj["assetamount"]*BNSCALE)
+    const outputaddress = feeObj["destinationaddr"]
+    const outputaddressBuf: Buffer[] = [xchain.parseAddress(outputaddress)]
+    const assetid = feeObj["assetid"]
+    const assetidBuf: Buffer = bintools.cb58Decode(assetid)
+
+    const secpTransferOutput: SECPTransferOutput = new SECPTransferOutput(amt, outputaddressBuf)
+    const transferableOutput: TransferableOutput = new TransferableOutput(assetidBuf, secpTransferOutput)
+    outputs.push(transferableOutput)
+    
     console.log("constructing transaction")
     const baseTx: BaseTx = new BaseTx (
         networkID,
@@ -88,9 +120,6 @@ const sendsignature = async(joinid: number, data: any, pubaddr: string, privatek
     
     const unsignedTx: UnsignedTx = new UnsignedTx(baseTx)
 
-    const testtx: UnsignedTx = new UnsignedTx()
-    testtx.fromBuffer(unsignedTx.toBuffer())
-
     console.log("creating signature")
     const txbuff = unsignedTx.toBuffer()
     const msg = Buffer.from(createHash("sha256").update(txbuff).digest())
@@ -99,36 +128,16 @@ const sendsignature = async(joinid: number, data: any, pubaddr: string, privatek
     sig.fromBuffer(sigbuf)
 
     console.log("transaction signed, sending sig to coinJoin")
-    
-    const returndata = {
+
+    const returnData = {
         "joinid": joinid,
         "messagetype": 4,
         "signature": sig.toBuffer(),
         "pubaddr": pubaddr,
         "transaction": txbuff,
-        "inputorder": "2"
     }
 
-    const returndatastring = JSON.stringify(returndata)
-
-    const options = {
-        host: "192.168.129.105",
-        port: "65432",
-        method: "POST",
-        headers: {
-            "Content-Length": Buffer.byteLength(returndatastring)
-        }
-    }
-
-    const req = request(options, res => {
-        res.on("data", d => {
-            let recievedData = d.toString()
-            processMessage(recievedData)
-            
-        })
-    })
-    req.write(returndatastring)
-    req.end()
+    sendRecieve(returnData)
     
 }
 

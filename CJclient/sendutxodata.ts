@@ -12,8 +12,6 @@ import {
     BaseTx,
     TransferableInput,
     TransferableOutput,
-    AmountOutput,
-    AmountInput,
     SECPTransferInput,
     SECPTransferOutput,
     KeyChain,
@@ -24,7 +22,7 @@ import {
     Defaults
 }from "avalanche/dist/utils"
 import { sendsignature } from "./sendsignature";
-import { processMessage } from "./processmessage";
+import { processMessage, constructHeaderOptions, sendRecieve } from "./processmessage";
 
 
 /*const data = {
@@ -169,47 +167,17 @@ const sendutxodata = async(joinid: number, assetid: string, inputamount: number,
     const outputaddressBuf: Buffer[] = [xchain.parseAddress(destinationaddr)]
     const secpTransferOutput: SECPTransferOutput = new SECPTransferOutput(targetOutAmountFormatBN, outputaddressBuf)
     const output: TransferableOutput = new TransferableOutput(assetidBuf, secpTransferOutput)
-
+    
     const returnData = {
         "joinid": joinid,
         "messagetype": 3,
-        "transactionid": id,
-        "transactionoffset": txindex,
-        "assetid": assetid,
-        "inputamount": input.getInput().getAmount()/BNSCALE,
-        "outputamount": output.getOutput().getAmount()/BNSCALE,
-        "destinationaddr": destinationaddr,
         "pubaddr": pubaddr,
         "inputbuf": input.toBuffer(),
-        "outputbuf": output.toBuffer()
-    }
-    console.log(input.toBuffer())
-    
-
-    const returnDataString = JSON.stringify(returnData)
-
-    const options = {
-        host: "192.168.129.105",
-        port: "65432",
-        method: "POST",
-        headers: {
-            "Content-Length": Buffer.byteLength(returnDataString)
-        }
+        "outputbuf": output.toBuffer(),
     }
 
     console.log("sending data to coinjoin server now")
-
-
-    const req = request(options, res => {
-        res.on("data", d => {
-            let recievedData = d.toString()
-            processMessage(recievedData, joinid, pubaddr, privatekey)
-        })
-    })
-       
-    req.write(returnDataString)
-    req.end()
-    
+    sendRecieve(returnData, joinid, pubaddr, privatekey, input, output)
 }
 
 

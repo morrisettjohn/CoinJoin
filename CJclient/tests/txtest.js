@@ -36,29 +36,60 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 exports.__esModule = true;
-var sendutxodata_1 = require("../../sendutxodata");
+var sendutxodata_1 = require("../sendutxodata");
 var utils_1 = require("avalanche/dist/utils");
+var destinationaddr1S = "X-fuji1ywknekcr6rkekg9g996dsnsdg20wmvwhpsmup6";
+var pubaddr1S = "X-fuji13a3dm204mh9hfjx3ajpk33cchgszh2qry97ml9";
+var privatekey1S = "PrivateKey-ryjZWerx1vRgQnFrLJ9oxBYUS7TdMRNrBLmSAAP78L4xixvT2";
+var destinationaddr2S = "X-fuji1tunzyk0v8fw5ee73uzdedrtunf26936fy9wg48";
+var pubaddr2S = "X-fuji1d6fetyekv4ec5enm9ltuxrd6n70ng04rpxq443";
+var privatekey2S = "PrivateKey-2t6UmFMctYnZXMY1BFYF41k97ZAtcedN1U9GiQiGQzmzU21oBY";
+var destinationaddr3S = "X-fuji12jwy0ctuankcamu0qv0dcy95pxsr578ju7t7qe";
+var pubaddr3S = "X-fuji10a7tx3xl2cyp3g60d68zh80tzen0lwxd548u82";
+var privatekey3S = "PrivateKey-7f84zwffkNTAjKu1DDDrRBafWq2wE3GxZ3t7EYVFR8fTpJArc";
+var destinationaddr4S = "X-fuji1ga8cr9eu7fq9x6f7zvwq26xmm4vdmdg7zrveav";
+var pubaddr4S = "X-fuji1408364q97l7x6hjjqdmkjl09hjn5r3uyqwfa9l";
+var privatekey4S = "PrivateKey-Wt2ztXTUVj4bcMyuQtxRGCMXJmGH17rC7J8kQQvCnGxgZDyxv";
+var destinationaddr1R = "X-fuji13a3dm204mh9hfjx3ajpk33cchgszh2qry97ml9";
+var pubaddr1R = "X-fuji1ywknekcr6rkekg9g996dsnsdg20wmvwhpsmup6";
+var privatekey1R = "PrivateKey-ji3ENE83u1451cu8GCaL1mHYdn9tDUL2L8hJtEHsTSJNVEnbd";
+var destinationaddr2R = "X-fuji1d6fetyekv4ec5enm9ltuxrd6n70ng04rpxq443";
+var pubaddr2R = "X-fuji1tunzyk0v8fw5ee73uzdedrtunf26936fy9wg48";
+var privatekey2R = "PrivateKey-24Nw3joRD8WVV4nviVTVpQcMGWX7Mg3DkYFY2NKcqDZbCRzXpC";
+var destinationaddr3R = "X-fuji10a7tx3xl2cyp3g60d68zh80tzen0lwxd548u82";
+var pubaddr3R = "X-fuji12jwy0ctuankcamu0qv0dcy95pxsr578ju7t7qe";
+var privatekey3R = "PrivateKey-2iSH7BA88LF5mozMd2cRmkFdGHQdksMRnmQADhWPfGhNFRPiii";
+var destinationaddr4R = "X-fuji1408364q97l7x6hjjqdmkjl09hjn5r3uyqwfa9l";
+var pubaddr4R = "X-fuji1ga8cr9eu7fq9x6f7zvwq26xmm4vdmdg7zrveav";
+var privatekey4R = "PrivateKey-28895VhkPjCeVwj8eThqMeFrCX4A44LucRbU9pSBucd1x4LnvT";
+var test1S = [destinationaddr1S, pubaddr1S, privatekey1S];
+var test2S = [destinationaddr2S, pubaddr2S, privatekey2S];
+var test3S = [destinationaddr3S, pubaddr3S, privatekey3S];
+var test4S = [destinationaddr4S, pubaddr4S, privatekey4S];
+var test1R = [destinationaddr1R, pubaddr1R, privatekey1R];
+var test2R = [destinationaddr2R, pubaddr2R, privatekey2R];
+var test3R = [destinationaddr3R, pubaddr3R, privatekey3R];
+var test4R = [destinationaddr4R, pubaddr4R, privatekey4R];
+var tests = { "1S": test1S, "2S": test2S, "3S": test3S, "4S": test4S, "1R": test1R, "2R": test2R, "3R": test3R, "4R": test4R };
 var networkID = 5;
-var joinid = 6;
 var avaxAssetID = utils_1.Defaults.network[networkID].X.avaxAssetID;
-var assetamount = 1.15;
-var destinationaddr1 = "X-fuji13a3dm204mh9hfjx3ajpk33cchgszh2qry97ml9";
-var pubaddr1 = "X-fuji1ywknekcr6rkekg9g996dsnsdg20wmvwhpsmup6";
-var privatekey1 = "PrivateKey-ji3ENE83u1451cu8GCaL1mHYdn9tDUL2L8hJtEHsTSJNVEnbd";
-var destinationaddr2 = "X-fuji1d6fetyekv4ec5enm9ltuxrd6n70ng04rpxq443";
-var pubaddr2 = "X-fuji1tunzyk0v8fw5ee73uzdedrtunf26936fy9wg48";
-var privatekey2 = "PrivateKey-24Nw3joRD8WVV4nviVTVpQcMGWX7Mg3DkYFY2NKcqDZbCRzXpC";
-var destinationaddr3 = "X-fuji10a7tx3xl2cyp3g60d68zh80tzen0lwxd548u82";
-var pubaddr3 = "X-fuji12jwy0ctuankcamu0qv0dcy95pxsr578ju7t7qe";
-var privatekey3 = "PrivateKey-2iSH7BA88LF5mozMd2cRmkFdGHQdksMRnmQADhWPfGhNFRPiii";
-var destinationaddr4 = "X-fuji1408364q97l7x6hjjqdmkjl09hjn5r3uyqwfa9l";
-var pubaddr4 = "X-fuji1ga8cr9eu7fq9x6f7zvwq26xmm4vdmdg7zrveav";
-var privatekey4 = "PrivateKey-28895VhkPjCeVwj8eThqMeFrCX4A44LucRbU9pSBucd1x4LnvT";
+var inputamount = 1.15;
+var outputamount = 1;
+//usage:  node test.js *joinid (number)* *testid (1-8) *inputamount?* *outputamount?*
+var args = process.argv.slice(2);
+var joinid = parseInt(args[0]);
+var testdata = tests[args[1]];
+if (args.length > 2) {
+    inputamount = parseInt(args[2]);
+}
+if (args.length > 3) {
+    outputamount = parseInt(args[3]);
+}
 var main = function () { return __awaiter(void 0, void 0, void 0, function () {
     var txdata;
     return __generator(this, function (_a) {
         switch (_a.label) {
-            case 0: return [4 /*yield*/, sendutxodata_1.sendutxodata(joinid, avaxAssetID, assetamount, destinationaddr1, pubaddr1, privatekey1)];
+            case 0: return [4 /*yield*/, sendutxodata_1.sendutxodata(joinid, avaxAssetID, inputamount, outputamount, testdata[0], testdata[1], testdata[2])];
             case 1:
                 txdata = _a.sent();
                 return [2 /*return*/];

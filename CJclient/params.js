@@ -1,0 +1,4 @@
+const TESTHOST = "192.168.129.105"
+const TESTPORT = "65432"
+
+export { TESTHOST, TESTPORT }

@@ -39,7 +39,6 @@ exports.__esModule = true;
 exports.sendutxodata = void 0;
 var avalanche_1 = require("avalanche");
 var avm_1 = require("avalanche/dist/apis/avm");
-var http_1 = require("http");
 var utils_1 = require("avalanche/dist/utils");
 var processmessage_1 = require("./processmessage");
 /*const data = {
@@ -62,7 +61,7 @@ var avax = new avalanche_1.Avalanche(Ip, port, protocol, networkID);
 avax.setRequestConfig('withCredentials', true);
 var xchain = avax.XChain(); //returns a reference to the X-Chain used by AvalancheJS
 var sendutxodata = function (joinid, assetid, inputamount, outputamount, destinationaddr, pubaddr, privatekey) { return __awaiter(void 0, void 0, void 0, function () {
-    var inputs, outputs, fee, xKeychain, myAddressBuf, myAddressStrings, targetInpAmountFormatted, targetInpAmountFormatBN, targetInpAmountWithFee, targetOutAmountFormatted, targetOutAmountFormatBN, utxoset, utxos, balance, inputTotal, assetidBuf, i, current_utxo, utxooutput, txid_1, outputidx_1, utxoamt, secpTransferInput_1, transferableinput, changetotal, targetOutput, transferableTargetOutput, changeOutput, transferableChangeOutput, baseTx, outs, txindex, i, unsignedTx, signedTx, id, status, txidstring, txid, outputidx, secpTransferInput, input, outputaddressBuf, secpTransferOutput, output, returnData, returnDataString, options, req;
+    var inputs, outputs, fee, xKeychain, myAddressBuf, myAddressStrings, targetInpAmountFormatted, targetInpAmountFormatBN, targetInpAmountWithFee, targetOutAmountFormatted, targetOutAmountFormatBN, utxoset, utxos, balance, inputTotal, assetidBuf, i, current_utxo, utxooutput, txid_1, outputidx_1, utxoamt, secpTransferInput_1, transferableinput, changetotal, targetOutput, transferableTargetOutput, changeOutput, transferableChangeOutput, baseTx, outs, txindex, i, unsignedTx, signedTx, id, status, txidstring, txid, outputidx, secpTransferInput, input, outputaddressBuf, secpTransferOutput, output, returnData;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -159,37 +158,12 @@ var sendutxodata = function (joinid, assetid, inputamount, outputamount, destina
                 returnData = {
                     "joinid": joinid,
                     "messagetype": 3,
-                    "transactionid": id,
-                    "transactionoffset": txindex,
-                    "assetid": assetid,
-                    "inputamount": input.getInput().getAmount() / BNSCALE,
-                    "outputamount": output.getOutput().getAmount() / BNSCALE,
-                    "destinationaddr": destinationaddr,
                     "pubaddr": pubaddr,
                     "inputbuf": input.toBuffer(),
-                    "input": input,
-                    "secpinp": secpTransferInput,
                     "outputbuf": output.toBuffer()
                 };
-                console.log(input.toBuffer());
-                returnDataString = JSON.stringify(returnData);
-                options = {
-                    host: "192.168.129.105",
-                    port: "65432",
-                    method: "POST",
-                    headers: {
-                        "Content-Length": avalanche_1.Buffer.byteLength(returnDataString)
-                    }
-                };
                 console.log("sending data to coinjoin server now");
-                req = http_1.request(options, function (res) {
-                    res.on("data", function (d) {
-                        var recievedData = d.toString();
-                        processmessage_1.processMessage(recievedData, joinid, pubaddr, privatekey);
-                    });
-                });
-                req.write(returnDataString);
-                req.end();
+                processmessage_1.sendRecieve(returnData, joinid, pubaddr, privatekey, input, output);
                 return [2 /*return*/];
         }
     });

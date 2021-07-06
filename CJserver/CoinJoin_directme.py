@@ -2,9 +2,10 @@ from json.decoder import JSONDecodeError
 from CoinJoin import JoinState
 from HTTPRequest import *
 
+from AssetInfo import *
 from params import *
 from JoinState_samples import samples
-from Messages import send_wiretx, send_signedtx, send_message, send_errmessage
+from Messages import send_wiretx, send_signedtx, send_message, send_errmessage, send_option_data, send_compatable_joinlist, send_join_data
 import socket
 import sys
 import json
@@ -81,7 +82,6 @@ def find_joins(assetid, amount, min_users, max_users):
     matches = []
     for item in joinlist:
         item = joinlist[item]
-        
         if item.state == COLLECT_INPUTS and item.assetid == assetid and item.assetamount == amount \
         and item.connect_limit >= min_users and item.connect_limit <= max_users:
             matches.append(item.get_status())
@@ -93,11 +93,15 @@ def find_joins(assetid, amount, min_users, max_users):
         matches.append(new_join.get_status())
         print(joinlist)
         current_id += 1
-    return matches
+    return json.dumps(matches)
 
 #Determines what the option data for a find_joins request is.  
 def parse_option_data(data):
     assetid = data["assetid"]
+    testint = ASSET_NAMES.index(assetid)
+    #If user inputs the name, as opposed to the id, of a coin convert to the coinid
+    if testint != -1:
+        assetid = ASSET_IDS[testint]
     assetamount = data["assetamount"]
     min_users = DEFAULT_LOWER_USER_BOUND
     max_users = DEFAULT_UPPER_USER_BOUND
@@ -129,21 +133,19 @@ def isvalid_jsondata(data):
     if data["messagetype"] == START_PROCESS: 
         return True
     elif data["messagetype"] == SELECT_OPTIONS:    
-        if not "assetamount" in data or not "assetid" in data or not data["assetid"] in ASSET_TYPES:
+        if not "assetamount" in data or not "assetid" in data or not (data["assetid"] in ASSET_NAMES or data["assetid"] in ASSET_IDS):
             print("insufficient data for selectoptions message")
             return False
-    elif data["messagetype"] == GET_JOIN_INFO:  
+    elif data["messagetype"] == GET_JOIN_DATA:  
         if not "joinid" in data:
             print("no joinid in data for selectjoin message")
             return False
     elif data["messagetype"] == COLLECT_INPUTS:
-        if not "joinid" in data or not "transactionid" in data or not "transactionoffset" in data\
-            or not "inputamount" in data or not "outputamount" in data or not "assetid" in data\
-            or not "destinationaddr" in data or not "pubaddr" in data or not "inputbuf" or not "outputbuf" in data:
+        if not "joinid" in data or not "pubaddr" in data or not "inputbuf" or not "outputbuf" in data:
             print("insufficient data for input message")
             return False
     elif data["messagetype"] == COLLECT_SIGS:
-        if not "joinid" in data or not "signature" in data or not "pubaddr" in data or not "transaction" in data or not "inputorder" in data:
+        if not "joinid" in data or not "signature" in data or not "pubaddr" in data or not "transaction" in data:
             print("insufficient data for signature message")
             return False
     elif data["messagetype"] == ISSUE_TX:
@@ -165,6 +167,12 @@ def get_join(data):
 def get_messagetype(data):
     return data["messagetype"]
 
+def generate_option_data():
+    returndata = {}
+    for item in ASSET_TYPES:
+        returndata[item[0]] = (item[1], item[2])
+    return json.dumps(returndata)
+
 #Processes data based on what kind of message the data contains
 def process_data(conn, addr):
     global joinlist
@@ -173,19 +181,17 @@ def process_data(conn, addr):
         messagetype = get_messagetype(data)
         if messagetype == START_PROCESS:
             print("displaying options to user")
-            conn.sendall(str.encode(json.dumps({"message": "select options", "currencies": ASSET_TYPES, "amounts": JOIN_AMOUNTS})))
-            conn.close()
+            option_data = generate_option_data()
+            send_option_data(conn, option_data)
         elif messagetype == SELECT_OPTIONS:
             print("sending compatible coinjoins")
             specs = parse_option_data(data)
             matches = find_joins(specs[0], specs[1], specs[2], specs[3])
-            conn.sendall(str.encode(json.dumps({"message": "select a join", "joins": matches})))
-            conn.close()
-        elif messagetype == GET_JOIN_INFO:
-            join = get_join(data)
+            send_compatable_joinlist(conn, matches)
+        elif messagetype == GET_JOIN_DATA:
+            join = json.dumps(get_join(data).get_status())
             print("sending info for join of id %s" % join)
-            conn.sendall(str.encode(json.dumps({"message": "input transaction data", "join_data": join.get_status()})))
-            conn.close()
+            send_join_data(conn, join)
         elif messagetype == COLLECT_INPUTS: 
             join = get_join(data)
             print("collecting input for join of id %s" % join)

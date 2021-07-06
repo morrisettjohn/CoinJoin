@@ -36,27 +36,24 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 exports.__esModule = true;
-var sendutxodata_1 = require("../../sendutxodata");
-var utils_1 = require("avalanche/dist/utils");
-var networkID = 5;
-var joinid = 7;
-var avaxAssetID = utils_1.Defaults.network[networkID].X.avaxAssetID;
-var assetamount = 2.2;
-var destinationaddr1 = "X-fuji1ywknekcr6rkekg9g996dsnsdg20wmvwhpsmup6";
-var pubaddr1 = "X-fuji13a3dm204mh9hfjx3ajpk33cchgszh2qry97ml9";
-var privatekey1 = "PrivateKey-ryjZWerx1vRgQnFrLJ9oxBYUS7TdMRNrBLmSAAP78L4xixvT2";
-var destinationaddr2 = "X-fuji1tunzyk0v8fw5ee73uzdedrtunf26936fy9wg48";
-var pubaddr2 = "X-fuji1d6fetyekv4ec5enm9ltuxrd6n70ng04rpxq443";
-var privatekey2 = "PrivateKey-2t6UmFMctYnZXMY1BFYF41k97ZAtcedN1U9GiQiGQzmzU21oBY";
-var main = function () { return __awaiter(void 0, void 0, void 0, function () {
-    var txdata;
+exports.selectjoin = void 0;
+var processmessage_1 = require("./processmessage");
+var selectjoin = function (assetid, assetamount, min_users, max_users) { return __awaiter(void 0, void 0, void 0, function () {
+    var returnData;
     return __generator(this, function (_a) {
-        switch (_a.label) {
-            case 0: return [4 /*yield*/, sendutxodata_1.sendutxodata(joinid, avaxAssetID, assetamount, destinationaddr2, pubaddr2, privatekey2)];
-            case 1:
-                txdata = _a.sent();
-                return [2 /*return*/];
+        returnData = {
+            "messagetype": 1,
+            "assetid": assetid,
+            "assetamount": assetamount
+        };
+        if (min_users) {
+            returnData["min_users"] = min_users;
         }
+        if (max_users) {
+            returnData["max_users"] = max_users;
+        }
+        processmessage_1.sendRecieve(returnData);
+        return [2 /*return*/];
     });
 }); };
-main();
+exports.selectjoin = selectjoin;
