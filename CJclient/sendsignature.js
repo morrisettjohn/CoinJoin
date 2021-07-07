@@ -56,7 +56,7 @@ avax.setRequestConfig('withCredentials', true);
 var xchain = avax.XChain();
 var fee = xchain.getDefaultTxFee();
 var sendsignature = function (joinid, data, pubaddr, privatekey, input, output) { return __awaiter(void 0, void 0, void 0, function () {
-    var inputs, outputs, inputData, outputData, xKeyChain, myKeyPair, myAddressBuf, myAddressStrings, i, inputObject, input_1, myInfo, i, checkItem, i, outputObject, output_1, i, checkItem, feeObj, amt, outputaddress, outputaddressBuf, assetid, assetidBuf, secpTransferOutput, transferableOutput, baseTx, unsignedTx, txbuff, msg, sigbuf, sig, returnData;
+    var inputs, outputs, inputData, outputData, xKeyChain, myKeyPair, myAddressBuf, myAddressStrings, i, inputObject, input_1, myInfo, i, checkItem, i, outputObject, output_1, i, checkItem, baseTx, unsignedTx, txbuff, msg, sigbuf, sig, returnData;
     return __generator(this, function (_a) {
         console.log("try this");
         inputs = [];
@@ -110,16 +110,6 @@ var sendsignature = function (joinid, data, pubaddr, privatekey, input, output) 
             throw Error;
         }
         console.log("output is in list");
-        console.log("constructing fee output");
-        feeObj = data["feedata"];
-        amt = new avalanche_1.BN(feeObj["assetamount"] * BNSCALE);
-        outputaddress = feeObj["destinationaddr"];
-        outputaddressBuf = [xchain.parseAddress(outputaddress)];
-        assetid = feeObj["assetid"];
-        assetidBuf = bintools.cb58Decode(assetid);
-        secpTransferOutput = new avm_1.SECPTransferOutput(amt, outputaddressBuf);
-        transferableOutput = new avm_1.TransferableOutput(assetidBuf, secpTransferOutput);
-        outputs.push(transferableOutput);
         console.log("constructing transaction");
         baseTx = new avm_1.BaseTx(networkID, bintools.cb58Decode(xchainid), outputs, inputs, avalanche_1.Buffer.from("test"));
         unsignedTx = new avm_1.UnsignedTx(baseTx);

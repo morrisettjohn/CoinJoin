@@ -1,6 +1,5 @@
 import { issuetx } from "./issuetx"
 import { sendsignature } from "./sendsignature"
-import { TESTHOST, TESTPORT } from "./params"
 import { request } from "http"
 import { join } from "path"
 

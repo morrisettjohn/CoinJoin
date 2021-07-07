@@ -96,18 +96,6 @@ const sendsignature = async(joinid: number, data: any, pubaddr: string, privatek
         throw Error
     }
     console.log("output is in list")
-    console.log("constructing fee output")
-
-    const feeObj = data["feedata"]
-    const amt: BN = new BN(feeObj["assetamount"]*BNSCALE)
-    const outputaddress = feeObj["destinationaddr"]
-    const outputaddressBuf: Buffer[] = [xchain.parseAddress(outputaddress)]
-    const assetid = feeObj["assetid"]
-    const assetidBuf: Buffer = bintools.cb58Decode(assetid)
-
-    const secpTransferOutput: SECPTransferOutput = new SECPTransferOutput(amt, outputaddressBuf)
-    const transferableOutput: TransferableOutput = new TransferableOutput(assetidBuf, secpTransferOutput)
-    outputs.push(transferableOutput)
     
     console.log("constructing transaction")
     const baseTx: BaseTx = new BaseTx (

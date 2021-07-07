@@ -1,1 +1,2 @@
-npm install node-fetch
+pip install cb58
+pip install bech32

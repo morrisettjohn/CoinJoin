@@ -2,6 +2,7 @@
 exports.__esModule = true;
 exports.sendRecieve = exports.constructHeaderOptions = exports.processMessage = void 0;
 var issuetx_1 = require("./issuetx");
+var sendsignature_1 = require("./sendsignature");
 var http_1 = require("http");
 //takes a message from the coinjoin server and processes it, using a 3 character prefix as a messagetype
 var processMessage = function (recievedData, joinid, pubaddr, privatekey, input, output) {
@@ -39,7 +40,7 @@ var processMessage = function (recievedData, joinid, pubaddr, privatekey, input,
         //handling send_utxo data
         else if (messageType == "WTX") {
             console.log("recieved wiretx");
-            //sendsignature(joinid, JSON.parse(messageData), pubaddr, privatekey, input, output)
+            sendsignature_1.sendsignature(joinid, JSON.parse(messageData), pubaddr, privatekey, input, output);
         }
         //handling signed_tx data
         else if (messageType == "STX") {

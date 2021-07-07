@@ -1,12 +1,17 @@
 import json
 import time
 
+import bech32
+
 from Messages import send_errmessage, send_message, send_signedtx, send_wiretx
 from HTTPRequest import *
 from params import *
 from decimal import Decimal, getcontext
 from struct import *
 from cb58ref import cb58decode, cb58encode
+from bech32 import bech32_encode, bech32_decode
+from bech32utils import fromWords, toWords, bech32_pack_address
+from BufferUtils import pack_out, unpack_inp, unpack_out
 
 getcontext().prec = 9
 
@@ -40,23 +45,9 @@ class JoinState:
         if not self.isvalid_join():
             raise Exception("bad parameters")
 
-    def update_last_accessed(self):
-        self.last_accessed = time.time()
-
-    #error checking when creating joins, check if parameters are valid
-    def isvalid_join(self):
-        if type(self.id) != int:
-            return False
-        if self.connect_limit < MIN_USER_BOUND or self.connect_limit > MAX_USER_BOUND:
-            return False
-        if self.assetamount <= 0:
-            return False
-        if self.feepercent < 0 or self.feepercent >= 1:
-            return False
-        return True
-
-    def get_pubaddr(request_data):
-        return request_data["pubaddr"]
+    #Returns the number of connections that have joined during the input stage
+    def get_current_input_count(self):
+        return len(self.inputs)
 
     #Returns the number of signatures that have joined during the signature stage
     def get_current_signature_count(self):
@@ -65,10 +56,6 @@ class JoinState:
             if item != None:
                 count += 1
         return count
-
-    #Returns the number of connections that have joined during the input stage
-    def get_current_input_count(self):
-        return len(self.inputs)
 
     #function that returns the current status of the join in json form, for easy access
     def get_status(self):
@@ -89,21 +76,23 @@ class JoinState:
             Exception("bad")
         return status
 
-    def create_output(self, request_data):
-        pubaddr = JoinState.get_pubaddr(request_data)
-        return [request_data["outputbuf"], pubaddr]
-        
-    def create_input(self, request_data):
-        pubaddr = JoinState.get_pubaddr(request_data)
-        return [request_data["inputbuf"], pubaddr]
+    def get_fee_after_burn(self):
+        return float(self.collected_fee_amount - Decimal(STANDARD_BURN_AMOUNT))
 
-    #Convert utxo hash to binary, and then sort based on said hash
-    def sort_inputs(self):
-        self.inputs = sorted(self.inputs, key=lambda x:x[0]["data"])
-        
-    #Sort outputs based on destination address
-    def sort_outputs(self):
-        self.outputs = sorted(self.outputs, key=lambda x: x[0]["data"])
+    def update_last_accessed(self):
+        self.last_accessed = time.time()
+
+    #error checking when creating joins, check if parameters are valid
+    def isvalid_join(self):
+        if type(self.id) != int:
+            return False
+        if self.connect_limit < MIN_USER_BOUND or self.connect_limit > MAX_USER_BOUND:
+            return False
+        if self.assetamount <= 0:
+            return False
+        if self.feepercent < 0 or self.feepercent >= 1:
+            return False
+        return True
 
     #Creates a new input, and then sorts the entire list
     def inputs_append(self, request_data):  
@@ -117,12 +106,21 @@ class JoinState:
         self.outputs.append(output)
         self.sort_outputs()
 
-    def get_fee_after_burn(self):
-        return float(self.collected_fee_amount - Decimal(STANDARD_BURN_AMOUNT))
+    def create_input(self, request_data):
+        pubaddr = JoinState.extract_pubaddr(request_data)
+        return [request_data["inputbuf"], pubaddr]
 
-    #Create the fee output data
-    def create_wire_fee_output(self):
-        return {"assetid": self.assetid, "destinationaddr": self.feeaddress, "assetamount": self.get_fee_after_burn()}
+    def create_output(self, request_data):
+        pubaddr = JoinState.extract_pubaddr(request_data)
+        return [request_data["outputbuf"], pubaddr]
+        
+    #Convert utxo hash to binary, and then sort based on said hash
+    def sort_inputs(self):
+        self.inputs = sorted(self.inputs, key=lambda x:x[0]["data"])
+        
+    #Sort outputs based on destination address
+    def sort_outputs(self):
+        self.outputs = sorted(self.outputs, key=lambda x: x[0]["data"])
         
     #Add a new signature to the list.  Signatures should be in the same order as inputs, so they are ordered as such.
     def signers_append(self, signature, pubaddr):
@@ -130,80 +128,39 @@ class JoinState:
         index = pubaddresses.index(pubaddr)  #Determines where the ip is in the list
         self.signers[index] = [signature, pubaddr]  #Based on the index of the ip established before, assigns the none object to be an index
         
-
     #Initializes the signer data, by creating a list full of None objects, so that signatures can be appended in the correct order
     def initialize_signers(self):
         for i in range(len(self.connections)):
             self.signers.append(None)
-
-    #returns only the input data, not the ip addreses, from the input list
-    def extract_inputs(self):
-        inputs, ips = map(list, zip(*self.inputs))
-        return inputs
 
     #returns only the output data, not the ip addresses, from the output list
     def extract_outputs(self):
         outputs, ips = map(list, zip(*self.outputs))
         return outputs
 
+    def extract_pubaddr(request_data):
+        return request_data["pubaddr"]
+
     def craft_wire_transaction(self):
-        return json.dumps({"inputs": self.inputs,"outputs": self.extract_outputs(), "feedata": self.create_wire_fee_output()})
+        outputs = self.extract_outputs()
+        #create buffer for fee output
+        fee_buffer_data = pack_out(self.assetid, int(self.get_fee_after_burn()*BNSCALE), 0, 1, [self.feeaddress])
+        outputs.append({"type": "Buffer", "data": fee_buffer_data})
+        return json.dumps({"inputs": self.inputs,"outputs": outputs})
 
     def craft_signed_transaction_data(self):
         return json.dumps({"signatures": self.signers, "transaction": self.tx})
 
-    def convert_buffer(data, start, end):
-        returndata = b""
-        while start < end:
-            hex_item = pack(">B", data[start])
-            returndata += hex_item
-            start += 1
-        return returndata
-
-    def unpackInp(inputbuf):
-        start = 0
-        txid = cb58encode(JoinState.convert_buffer(inputbuf, start, start + TXID_BUF_LENGTH))
-        start += TXID_BUF_LENGTH
-        outputidx = unpack(">I", JoinState.convert_buffer(inputbuf, start, start + OUTPUTIDX_BUF_LENGTH))[0]
-        start += OUTPUTIDX_BUF_LENGTH
-        assetid = cb58encode(JoinState.convert_buffer(inputbuf, start, start + ASSETID_BUF_LENGTH))
-        start += ASSETID_BUF_LENGTH
-        typeid = unpack(">I", JoinState.convert_buffer(inputbuf, start, start + TYPEID_BUF_LENGTH))[0]
-        start += TYPEID_BUF_LENGTH
-        assetamount = unpack(">Q", JoinState.convert_buffer(inputbuf, start, start + ASSETAMOUNT_BUF_LENGTH))[0]/BNSCALE
-        start += ASSETAMOUNT_BUF_LENGTH
-        sigcounts = unpack(">I", JoinState.convert_buffer(inputbuf, start, start + SIGCOUNT_BUF_LENGTH))[0]
-        return {"txid": txid, "outputidx": outputidx, "assetid": assetid, "typeid": typeid,\
-             "inputamount": assetamount, "sigcounts": sigcounts}
-
-    def unpackOut(outputbuf):
-        start = 0
-        assetid = cb58encode(JoinState.convert_buffer(outputbuf, start, start+ASSETID_BUF_LENGTH))
-        start += ASSETID_BUF_LENGTH
-        typeid = unpack(">I", JoinState.convert_buffer(outputbuf, start, start + TYPEID_BUF_LENGTH))[0]
-        start += TYPEID_BUF_LENGTH
-        assetamount = unpack(">Q", JoinState.convert_buffer(outputbuf, start, start + ASSETAMOUNT_BUF_LENGTH))[0]/BNSCALE
-        start += ASSETAMOUNT_BUF_LENGTH
-        locktime = unpack(">Q", JoinState.convert_buffer(outputbuf, start, start + LOCKTIME_BUF_LENGTH))[0]
-        start += LOCKTIME_BUF_LENGTH
-        threshold = unpack(">I", JoinState.convert_buffer(outputbuf, start, start + THRESHOLD_BUF_LENGTH))[0]
-        start += THRESHOLD_BUF_LENGTH
-        numaddresses = unpack(">I", JoinState.convert_buffer(outputbuf, start, start + NUMADDRESSES_BUF_LENGTH))[0]
-        start += NUMADDRESSES_BUF_LENGTH
-        address = JoinState.convert_buffer(outputbuf, start, start+ADDRESS_BUF_LENGTH)
-        return {"assetid": assetid, "typeid": typeid, "outputamount": assetamount,\
-             "locktime": locktime, "threshold": threshold, "numaddresses": numaddresses, "address": address}
-        
     #Function that parses data, and makes sure that it is valid
     def process_request(self, request_data, conn, addr):
         ip = addr[0]
-        pubaddr = JoinState.get_pubaddr(request_data)
+        pubaddr = JoinState.extract_pubaddr(request_data)
 
         if request_data["messagetype"] == COLLECT_INPUTS:
-            input_data = JoinState.unpackInp(request_data["inputbuf"]["data"])
-            output_data = JoinState.unpackOut(request_data["outputbuf"]["data"])
-            inputamount = input_data["inputamount"]
-            outputamount = output_data["outputamount"]
+            input_data = unpack_inp(request_data["inputbuf"]["data"])
+            output_data = unpack_out(request_data["outputbuf"]["data"])
+            inputamount = input_data["inputamount"]/BNSCALE
+            outputamount = output_data["outputamount"]/BNSCALE
             if self.state == COLLECT_INPUTS:
                 if inputamount >= self.totalamount and outputamount == self.assetamount:
                     if input_data["assetid"] == output_data["assetid"] == self.assetid:

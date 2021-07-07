@@ -41,13 +41,6 @@ var avalanche_1 = require("avalanche");
 var avm_1 = require("avalanche/dist/apis/avm");
 var utils_1 = require("avalanche/dist/utils");
 var processmessage_1 = require("./processmessage");
-/*const data = {
-    "joinid": 6,
-    "assetid": "23wKfz3viWLmjWo2UZ7xWegjvnZFenGAVkouwQCeB9ubPXodG6",
-    "assetamount": 10,
-    "destinationaddr": "feec1",
-    "pubaddr": "X-avax1slt2dhfu6a6qezcn5sgtagumq8ag8we75f84sw"
-}*/
 //setting up the xchain object
 var BNSCALE = 1000000000;
 var bintools = avalanche_1.BinTools.getInstance();
@@ -160,7 +153,9 @@ var sendutxodata = function (joinid, assetid, inputamount, outputamount, destina
                     "messagetype": 3,
                     "pubaddr": pubaddr,
                     "inputbuf": input.toBuffer(),
-                    "outputbuf": output.toBuffer()
+                    "outputbuf": output.toBuffer(),
+                    "input": input,
+                    "output": output //XXX also for testing
                 };
                 console.log("sending data to coinjoin server now");
                 processmessage_1.sendRecieve(returnData, joinid, pubaddr, privatekey, input, output);

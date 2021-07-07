@@ -21,17 +21,7 @@ import {
  import {
     Defaults
 }from "avalanche/dist/utils"
-import { sendsignature } from "./sendsignature";
-import { processMessage, constructHeaderOptions, sendRecieve } from "./processmessage";
-
-
-/*const data = {
-    "joinid": 6,
-    "assetid": "23wKfz3viWLmjWo2UZ7xWegjvnZFenGAVkouwQCeB9ubPXodG6",
-    "assetamount": 10,
-    "destinationaddr": "feec1",
-    "pubaddr": "X-avax1slt2dhfu6a6qezcn5sgtagumq8ag8we75f84sw"
-}*/
+import { sendRecieve } from "./processmessage";
 
 //setting up the xchain object
 const BNSCALE: number = 1000000000
@@ -105,9 +95,11 @@ const sendutxodata = async(joinid: number, assetid: string, inputamount: number,
 
     const changetotal: BN = inputTotal.sub(targetInpAmountWithFee)
 
+
     //construct outputs for the target and change utxos
     const targetOutput: SECPTransferOutput = new SECPTransferOutput(targetInpAmountFormatBN, myAddressBuf)
     const transferableTargetOutput: TransferableOutput = new TransferableOutput(assetidBuf, targetOutput)
+    
     outputs.push(transferableTargetOutput)
 
     if (changetotal.toNumber() > 0){
@@ -167,13 +159,15 @@ const sendutxodata = async(joinid: number, assetid: string, inputamount: number,
     const outputaddressBuf: Buffer[] = [xchain.parseAddress(destinationaddr)]
     const secpTransferOutput: SECPTransferOutput = new SECPTransferOutput(targetOutAmountFormatBN, outputaddressBuf)
     const output: TransferableOutput = new TransferableOutput(assetidBuf, secpTransferOutput)
-    
+
     const returnData = {
         "joinid": joinid,
         "messagetype": 3,
         "pubaddr": pubaddr,
         "inputbuf": input.toBuffer(),
         "outputbuf": output.toBuffer(),
+        "input": input, //XXX this is just for testing
+        "output": output //XXX also for testing
     }
 
     console.log("sending data to coinjoin server now")
