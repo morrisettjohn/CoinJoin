@@ -1,5 +1,5 @@
 from json.decoder import JSONDecodeError
-from CoinJoin import JoinState
+from coinjoin import JoinState
 from httprequest import *
 
 from assetinfo import *

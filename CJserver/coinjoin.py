@@ -76,9 +76,11 @@ class JoinState:
             Exception("bad")
         return status
 
+    #returns the value of the fee after burning the minimum avax amount
     def get_fee_after_burn(self):
         return float(self.collected_fee_amount - Decimal(STANDARD_BURN_AMOUNT))
 
+    #updates when the join was last accessed
     def update_last_accessed(self):
         self.last_accessed = time.time()
 
@@ -95,24 +97,27 @@ class JoinState:
         return True
 
     #Creates a new input, and then sorts the entire list
-    def inputs_append(self, request_data):  
-        input = self.create_input(request_data)
+    def inputs_append(self, inputbuf, pubaddr):  
+        input = self.create_input(inputbuf, pubaddr)
         self.inputs.append(input)
         self.sort_inputs()
 
     #Creates a new output, then sorts the entire list
-    def outputs_append(self, request_data):
-        output = self.create_output(request_data)
+    def outputs_append(self, outputbuf, pubaddr):
+        output = self.create_output(outputbuf, pubaddr)
         self.outputs.append(output)
         self.sort_outputs()
 
-    def create_input(self, request_data):
-        pubaddr = JoinState.extract_pubaddr(request_data)
-        return [request_data["inputbuf"], pubaddr]
+    def add_fee_output(self):
+        fee_buffer_data = pack_out(self.assetid, int(self.get_fee_after_burn()*BNSCALE), 0, 1, [self.feeaddress])
+        fee_output = {"type": "Buffer", "data": fee_buffer_data}
+        self.outputs_append(fee_output, self.feeaddress)
 
-    def create_output(self, request_data):
-        pubaddr = JoinState.extract_pubaddr(request_data)
-        return [request_data["outputbuf"], pubaddr]
+    def create_input(self, inputbuf, pubaddr):
+        return [inputbuf, pubaddr]
+
+    def create_output(self, outputbuf, pubaddr):
+        return [outputbuf, pubaddr]
         
     #Convert utxo hash to binary, and then sort based on said hash
     def sort_inputs(self):
@@ -133,20 +138,26 @@ class JoinState:
         for i in range(len(self.connections)):
             self.signers.append(None)
 
-    #returns only the output data, not the ip addresses, from the output list
-    def extract_outputs(self):
-        outputs, ips = map(list, zip(*self.outputs))
-        return outputs
+    #extracts inputs from request data
+    def extract_inputbuf(request_data):
+        return request_data["inputbuf"]
 
+    #extracts outputs from request data
+    def extract_outputbuf(request_data):
+        return request_data["outputbuf"]
+
+    #extracts the public address from request data
     def extract_pubaddr(request_data):
         return request_data["pubaddr"]
 
+    #returns only the output data, not the ip addresses, from the output list
+    def extract_outputs(self):
+        outputs, pubaddresses = map(list, zip(*self.outputs))
+        return outputs
+    
+    #creates all of the 
     def craft_wire_transaction(self):
-        outputs = self.extract_outputs()
-        #create buffer for fee output
-        fee_buffer_data = pack_out(self.assetid, int(self.get_fee_after_burn()*BNSCALE), 0, 1, [self.feeaddress])
-        outputs.append({"type": "Buffer", "data": fee_buffer_data})
-        return json.dumps({"inputs": self.inputs,"outputs": outputs})
+        return json.dumps({"inputs": self.inputs,"outputs": self.extract_outputs()})
 
     def craft_signed_transaction_data(self):
         return json.dumps({"signatures": self.signers, "transaction": self.tx})
@@ -157,8 +168,11 @@ class JoinState:
         pubaddr = JoinState.extract_pubaddr(request_data)
 
         if request_data["messagetype"] == COLLECT_INPUTS:
-            input_data = unpack_inp(request_data["inputbuf"]["data"])
-            output_data = unpack_out(request_data["outputbuf"]["data"])
+            input_buf = JoinState.extract_inputbuf(request_data)
+            output_buf = JoinState.extract_outputbuf(request_data)
+            request_address = JoinState.extract_pubaddr(request_data)
+            input_data = unpack_inp(input_buf["data"])
+            output_data = unpack_out(output_buf["data"])
             inputamount = input_data["inputamount"]/BNSCALE
             outputamount = output_data["outputamount"]/BNSCALE
             if self.state == COLLECT_INPUTS:
@@ -171,8 +185,9 @@ class JoinState:
                                 self.connections.append(conn)
                                 self.IP_addresses.append(ip)
                                 self.pubaddresses.append(pubaddr)
-                                self.inputs_append(request_data)
-                                self.outputs_append(request_data)
+
+                                self.inputs_append(input_buf, request_address)
+                                self.outputs_append(output_buf, request_address)
 
                                 self.collected_fee_amount += Decimal(inputamount) - Decimal(self.assetamount)
                                 print("collected fees: " + str(float((self.collected_fee_amount))))
@@ -183,6 +198,8 @@ class JoinState:
                                 
                                 #when sufficient connections are created, go through the process of sending out the transaction
                                 if len(self.inputs) >= self.connect_limit:
+                                    #add the fee to the outputs
+                                    self.add_fee_output()
                                     wire_tx = self.craft_wire_transaction()
                                     
                                     #send out transaction to every user

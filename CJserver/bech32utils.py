@@ -19,6 +19,9 @@ def bech32_pack_address(address: str):
             raise Exception('Error - Invalid HRP')
         return fromWords(bech32_decode(parts[1])[1])
 
+def bech32_unpack_address(bytes: list):
+    pass
+
 def convert (data, inBits, outBits, pad):
     value = 0
     bits = 0
