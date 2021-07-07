@@ -80,6 +80,18 @@ class JoinState:
     def get_fee_after_burn(self):
         return float(self.collected_fee_amount - Decimal(STANDARD_BURN_AMOUNT))
 
+    def reset_join(self):
+        self.state = COLLECT_INPUTS
+        self.collected_fee_amount = Decimal(0)
+        self.last_accessed = time.time()
+        self.tx = None
+        self.pubaddresses = []
+        self.IP_addresses = []
+        self.connections = []
+        self.signers = []
+        self.inputs = []
+        self.outputs = []
+
     #updates when the join was last accessed
     def update_last_accessed(self):
         self.last_accessed = time.time()
@@ -254,7 +266,7 @@ class JoinState:
                             for item in self.connections:
                                 send_message(item, "all participants have signed")
                                 send_signedtx(item, signed_tx)
-                            self.state = ISSUE_TX
+                            self.reset_join()
                         return
                     else:
                         print("already signed")

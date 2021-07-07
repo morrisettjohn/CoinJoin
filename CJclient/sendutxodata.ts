@@ -166,8 +166,6 @@ const sendutxodata = async(joinid: number, assetid: string, inputamount: number,
         "pubaddr": pubaddr,
         "inputbuf": input.toBuffer(),
         "outputbuf": output.toBuffer(),
-        "input": input, //XXX this is just for testing
-        "output": output //XXX also for testing
     }
 
     console.log("sending data to coinjoin server now")
