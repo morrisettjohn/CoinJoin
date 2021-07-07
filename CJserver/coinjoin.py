@@ -3,15 +3,15 @@ import time
 
 import bech32
 
-from Messages import send_errmessage, send_message, send_signedtx, send_wiretx
-from HTTPRequest import *
+from messages import send_errmessage, send_message, send_signedtx, send_wiretx
+from httprequest import *
 from params import *
 from decimal import Decimal, getcontext
 from struct import *
 from cb58ref import cb58decode, cb58encode
 from bech32 import bech32_encode, bech32_decode
 from bech32utils import fromWords, toWords, bech32_pack_address
-from BufferUtils import pack_out, unpack_inp, unpack_out
+from bufferutils import pack_out, unpack_inp, unpack_out
 
 getcontext().prec = 9
 

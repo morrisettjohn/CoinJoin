@@ -1,6 +1,6 @@
-from CoinJoin import JoinState
+from coinjoin import JoinState
 from params import *
-from AssetInfo import *
+from assetinfo import *
 
 sample0 = JoinState(
     id = 0,

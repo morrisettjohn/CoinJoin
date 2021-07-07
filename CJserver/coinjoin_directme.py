@@ -1,11 +1,11 @@
 from json.decoder import JSONDecodeError
 from CoinJoin import JoinState
-from HTTPRequest import *
+from httprequest import *
 
-from AssetInfo import *
+from assetinfo import *
 from params import *
-from JoinState_samples import samples
-from Messages import send_wiretx, send_signedtx, send_message, send_errmessage, send_option_data, send_compatable_joinlist, send_join_data
+from joinstatesamples import samples
+from messages import send_wiretx, send_signedtx, send_message, send_errmessage, send_option_data, send_compatable_joinlist, send_join_data
 import socket
 import sys
 import json
