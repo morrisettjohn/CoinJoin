@@ -39,32 +39,25 @@ exports.__esModule = true;
 exports.sendutxodata = void 0;
 var avalanche_1 = require("avalanche");
 var avm_1 = require("avalanche/dist/apis/avm");
-var utils_1 = require("avalanche/dist/utils");
 var processmessage_1 = require("./processmessage");
+var avalancheutils_1 = require("./avalancheutils");
 //setting up the xchain object
 var BNSCALE = 1000000000;
 var bintools = avalanche_1.BinTools.getInstance();
-var Ip = "api.avax-test.network";
-var networkID = 5;
-var port = 443;
-var protocol = "https";
-var xchainid = utils_1.Defaults.network[networkID].X.blockchainID;
-var xchainidBuf = bintools.cb58Decode(xchainid);
-var avax = new avalanche_1.Avalanche(Ip, port, protocol, networkID);
-avax.setRequestConfig('withCredentials', true);
-var xchain = avax.XChain(); //returns a reference to the X-Chain used by AvalancheJS
-var sendutxodata = function (joinid, assetid, inputamount, outputamount, destinationaddr, pubaddr, privatekey) { return __awaiter(void 0, void 0, void 0, function () {
-    var inputs, outputs, fee, xKeychain, myAddressBuf, myAddressStrings, targetInpAmountFormatted, targetInpAmountFormatBN, targetInpAmountWithFee, targetOutAmountFormatted, targetOutAmountFormatBN, utxoset, utxos, balance, inputTotal, assetidBuf, i, current_utxo, utxooutput, txid_1, outputidx_1, utxoamt, secpTransferInput_1, transferableinput, changetotal, targetOutput, transferableTargetOutput, changeOutput, transferableChangeOutput, baseTx, outs, txindex, i, unsignedTx, signedTx, id, status, txidstring, txid, outputidx, secpTransferInput, input, outputaddressBuf, secpTransferOutput, output, returnData;
+var sendutxodata = function (joinid, assetid, inputamount, outputamount, destinationaddr, pubaddr, privatekey, networkID) { return __awaiter(void 0, void 0, void 0, function () {
+    var networkData, keyData, xchain, myAddressBuf, inputs, outputs, fee, targetInpAmountFormatted, targetInpAmountFormatBN, targetInpAmountWithFee, targetOutAmountFormatted, targetOutAmountFormatBN, utxoset, utxos, balance, inputTotal, assetidBuf, i, current_utxo, utxooutput, txid_1, outputidx_1, utxoamt, secpTransferInput_1, transferableinput, changetotal, targetOutput, transferableTargetOutput, changeOutput, transferableChangeOutput, baseTx, outs, txindex, i, unsignedTx, signedTx, id, status, txidstring, txid, outputidx, secpTransferInput, input, outputaddressBuf, secpTransferOutput, output, returnData;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
+                networkData = avalancheutils_1.generatexchain(networkID);
+                console.log(privatekey);
+                console.log("here");
+                keyData = avalancheutils_1.generatekeychain(networkData.xchain, privatekey);
+                xchain = networkData.xchain;
+                myAddressBuf = keyData.myAddressBuf;
                 inputs = [];
                 outputs = [];
                 fee = xchain.getDefaultTxFee();
-                xKeychain = xchain.keyChain();
-                xKeychain.importKey(privatekey);
-                myAddressBuf = xchain.keyChain().getAddresses();
-                myAddressStrings = xchain.keyChain().getAddressStrings();
                 targetInpAmountFormatted = inputamount * BNSCALE;
                 targetInpAmountFormatBN = new avalanche_1.BN(targetInpAmountFormatted);
                 targetInpAmountWithFee = targetInpAmountFormatBN.add(fee);
@@ -109,7 +102,7 @@ var sendutxodata = function (joinid, assetid, inputamount, outputamount, destina
                     transferableChangeOutput = new avm_1.TransferableOutput(assetidBuf, changeOutput);
                     outputs.push(transferableChangeOutput);
                 }
-                baseTx = new avm_1.BaseTx(networkID, xchainidBuf, outputs, inputs, avalanche_1.Buffer.from("test"));
+                baseTx = new avm_1.BaseTx(networkID, networkData.xchainidBuf, outputs, inputs, avalanche_1.Buffer.from("test"));
                 outs = baseTx.getOuts();
                 txindex = 0;
                 for (i = 0; i < outs.length; i++) {
@@ -119,7 +112,7 @@ var sendutxodata = function (joinid, assetid, inputamount, outputamount, destina
                     txindex += 1;
                 }
                 unsignedTx = new avm_1.UnsignedTx(baseTx);
-                signedTx = unsignedTx.sign(xKeychain);
+                signedTx = unsignedTx.sign(keyData.xKeyChain);
                 return [4 /*yield*/, xchain.issueTx(signedTx)];
             case 2:
                 id = _a.sent();
@@ -153,12 +146,10 @@ var sendutxodata = function (joinid, assetid, inputamount, outputamount, destina
                     "messagetype": 3,
                     "pubaddr": pubaddr,
                     "inputbuf": input.toBuffer(),
-                    "outputbuf": output.toBuffer(),
-                    "input": input,
-                    "output": output //XXX also for testing
+                    "outputbuf": output.toBuffer()
                 };
                 console.log("sending data to coinjoin server now");
-                processmessage_1.sendRecieve(returnData, joinid, pubaddr, privatekey, input, output);
+                processmessage_1.sendRecieve(returnData, networkID, joinid, pubaddr, privatekey, input, output);
                 return [2 /*return*/];
         }
     });

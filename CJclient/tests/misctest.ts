@@ -1,4 +1,15 @@
-const x = {"1": 1, "2": 2}
-console.log(x)
-x["3"] = 3
-console.log(x)
+var person = {
+    firstname: "John",
+    lastname: "Morrisett",
+    midname: undefined,
+    sayHello:function(){}
+}
+
+person.sayHello = function(){
+    console.log("hello" + person.firstname)
+}
+
+
+console.log(person.midname)
+person.midname = "Caudle"
+console.log(person.midname)

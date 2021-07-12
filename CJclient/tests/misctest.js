@@ -1,6 +1,12 @@
-
-
-
-let z = 5 | 6
-
-console.log(z)
+var person = {
+    firstname: "John",
+    lastname: "Morrisett",
+    midname: undefined,
+    sayHello: function () { }
+};
+person.sayHello = function () {
+    console.log("hello" + person.firstname);
+};
+console.log(person.midname);
+person.midname = "Caudle";
+console.log(person.midname);

@@ -43,22 +43,15 @@ var platformvm_1 = require("avalanche/dist/apis/platformvm");
 var common_1 = require("avalanche/dist/common");
 var utils_1 = require("avalanche/dist/utils");
 var tx_1 = require("avalanche/dist/apis/avm/tx");
+var avalancheutils_1 = require("./avalancheutils");
 var bintools = avalanche_1.BinTools.getInstance();
-var Ip = "api.avax-test.network";
-var networkID = 5;
-var port = 443;
-var protocol = "https";
-var xchainid = utils_1.Defaults.network[networkID].X.blockchainID;
-var xchainidBuf = bintools.cb58Decode(xchainid);
-var avax = new avalanche_1.Avalanche(Ip, port, protocol, networkID, xchainid);
-avax.setRequestConfig('withCredentials', true);
-var xchain = avax.XChain();
-var issuetx = function (data) { return __awaiter(void 0, void 0, void 0, function () {
-    var unsignedTx, credentialArray, tx, id, status;
+var issuetx = function (data, networkID) { return __awaiter(void 0, void 0, void 0, function () {
+    var networkData, unsignedTx, credentialArray, tx, id, status;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
-                console.log("issuing tx"); //XXX each signature should be its own credential
+                networkData = avalancheutils_1.generatexchain(networkID);
+                console.log("issuing tx");
                 console.log("reconstructing unsignedtx");
                 unsignedTx = new avm_1.UnsignedTx();
                 unsignedTx.fromBuffer(avalanche_1.Buffer.from(data["transaction"]));
@@ -75,14 +68,14 @@ var issuetx = function (data) { return __awaiter(void 0, void 0, void 0, functio
                 tx = new tx_1.Tx(unsignedTx, credentialArray);
                 console.log("input total:" + unsignedTx.getInputTotal(bintools.cb58Decode(utils_1.Defaults.network[networkID].X.avaxAssetID)).toNumber());
                 console.log("output total:" + unsignedTx.getOutputTotal(bintools.cb58Decode(utils_1.Defaults.network[networkID].X.avaxAssetID)).toNumber());
-                return [4 /*yield*/, xchain.issueTx(tx)];
+                return [4 /*yield*/, networkData.xchain.issueTx(tx)];
             case 1:
                 id = _a.sent();
                 status = "";
                 _a.label = 2;
             case 2:
                 if (!(status != "Accepted" && status != "Rejected")) return [3 /*break*/, 4];
-                return [4 /*yield*/, xchain.getTxStatus(id)];
+                return [4 /*yield*/, networkData.xchain.getTxStatus(id)];
             case 3:
                 status = _a.sent();
                 return [3 /*break*/, 2];

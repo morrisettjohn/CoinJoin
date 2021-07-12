@@ -22,34 +22,25 @@ import {
     Defaults
 }from "avalanche/dist/utils"
 import { sendRecieve } from "./processmessage";
+import { generatekeychain, generatexchain } from "./avalancheutils";
 
 //setting up the xchain object
 const BNSCALE: number = 1000000000
 const bintools: BinTools = BinTools.getInstance()
-const Ip: string = "api.avax-test.network"
-const networkID: number = 5
-const port: number = 443
-const protocol: string = "https"
-const xchainid: string = Defaults.network[networkID].X.blockchainID
-const xchainidBuf: Buffer = bintools.cb58Decode(xchainid)
-const avax: Avalanche = new Avalanche(Ip, port, protocol, networkID);
-avax.setRequestConfig('withCredentials', true)
-const xchain: AVMAPI = avax.XChain(); //returns a reference to the X-Chain used by AvalancheJS
-
 
 const sendutxodata = async(joinid: number, assetid: string, inputamount: number, 
-    outputamount: number, destinationaddr: string, pubaddr: string, privatekey: string): Promise<any> => {
+    outputamount: number, destinationaddr: string, pubaddr: string, privatekey: string, networkID: number): Promise<any> => {
+    const networkData = generatexchain(networkID)
+    console.log(privatekey)
+    console.log("here")
+    const keyData = generatekeychain(networkData.xchain, privatekey)
+    const xchain = networkData.xchain
+    const myAddressBuf = keyData.myAddressBuf
 
     //establish inputs, outputs, and fees
     const inputs: TransferableInput[] = []
     const outputs: TransferableOutput[] = []
     const fee: BN = xchain.getDefaultTxFee()
-
-    //retrieve addresses
-    const xKeychain: KeyChain = xchain.keyChain()
-    xKeychain.importKey(privatekey)
-    const myAddressBuf = xchain.keyChain().getAddresses()
-    const myAddressStrings = xchain.keyChain().getAddressStrings()
     
     //get the input and output amounts
     const targetInpAmountFormatted: number = inputamount*BNSCALE
@@ -95,7 +86,6 @@ const sendutxodata = async(joinid: number, assetid: string, inputamount: number,
 
     const changetotal: BN = inputTotal.sub(targetInpAmountWithFee)
 
-
     //construct outputs for the target and change utxos
     const targetOutput: SECPTransferOutput = new SECPTransferOutput(targetInpAmountFormatBN, myAddressBuf)
     const transferableTargetOutput: TransferableOutput = new TransferableOutput(assetidBuf, targetOutput)
@@ -110,7 +100,7 @@ const sendutxodata = async(joinid: number, assetid: string, inputamount: number,
 
     const baseTx: BaseTx = new BaseTx (
         networkID,
-        xchainidBuf,
+        networkData.xchainidBuf,
         outputs,
         inputs,
         Buffer.from("test")
@@ -127,7 +117,7 @@ const sendutxodata = async(joinid: number, assetid: string, inputamount: number,
     }
     
     const unsignedTx: UnsignedTx = new UnsignedTx(baseTx)
-    const signedTx: Tx = unsignedTx.sign(xKeychain)
+    const signedTx: Tx = unsignedTx.sign(keyData.xKeyChain)
     const id: string = await xchain.issueTx(signedTx)
 
     console.log("issued")
@@ -140,7 +130,6 @@ const sendutxodata = async(joinid: number, assetid: string, inputamount: number,
     if (status === "Rejected"){
         throw Error("rejected, not submitting to coinjoin")
     }
-
 
     console.log("constructing my input")
 
@@ -169,7 +158,7 @@ const sendutxodata = async(joinid: number, assetid: string, inputamount: number,
     }
 
     console.log("sending data to coinjoin server now")
-    sendRecieve(returnData, joinid, pubaddr, privatekey, input, output)
+    sendRecieve(returnData, networkID, joinid, pubaddr, privatekey, input, output)
 }
 
 

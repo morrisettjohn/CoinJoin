@@ -72,20 +72,26 @@ var args = process.argv.slice(2);
 var joinid = parseInt(args[0]);
 var fromaddr = tests[args[1]];
 var toaddr = tests[args[2]];
-if (args.length > 3) {
-    inputamount = parseInt(args[3]);
-}
+var networkid = parseInt(args[3]);
 if (args.length > 4) {
-    outputamount = parseInt(args[4]);
+    inputamount = parseInt(args[4]);
+}
+if (args.length > 5) {
+    outputamount = parseInt(args[5]);
 }
 var main = function () { return __awaiter(void 0, void 0, void 0, function () {
     var txdata;
     return __generator(this, function (_a) {
         switch (_a.label) {
-            case 0: return [4 /*yield*/, sendutxodata_1.sendutxodata(joinid, avaxAssetID, inputamount, outputamount, toaddr[0], fromaddr[0], fromaddr[1])];
-            case 1:
+            case 0:
+                if (!(args[0] == "help")) return [3 /*break*/, 1];
+                console.log("usage: node txtest.js *joinid* *fromaddr* *toaddr* *inputamount?* *outputamount?*");
+                return [3 /*break*/, 3];
+            case 1: return [4 /*yield*/, sendutxodata_1.sendutxodata(joinid, avaxAssetID, inputamount, outputamount, toaddr[0], fromaddr[0], fromaddr[1], networkid)];
+            case 2:
                 txdata = _a.sent();
-                return [2 /*return*/];
+                _a.label = 3;
+            case 3: return [2 /*return*/];
         }
     });
 }); };

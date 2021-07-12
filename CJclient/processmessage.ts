@@ -2,9 +2,40 @@ import { issuetx } from "./issuetx"
 import { sendsignature } from "./sendsignature"
 import { request } from "http"
 import { join } from "path"
+import { isValidMnemonic } from "@ethersproject/hdnode"
+
+const isValidWTX = function(data: any): boolean {
+    if (!("inputs" in data && "outputs" in data)){
+        return false
+    }
+    if (data["inputs"].length < 1 || data["outputs"].length < 1){
+        return false
+    }
+    data["inputs"].forEach(item => {
+        if (!("pubaddr" in item && "inputbuf" in item)){
+            return false
+        }
+    })
+    data["inputs"].forEach(item => {
+        if (!("outputbuf" in item)){
+            return false
+        }
+    })
+    return true
+}
+
+const isValidSTX = function(data: any): boolean {
+    if (!("signatures" in data && "transaction" in data)){
+        return false
+    }
+    if (data["signatures"].length < 1 || data["transaction"].length != 1){
+        return false
+    }
+    return true
+}
 
 //takes a message from the coinjoin server and processes it, using a 3 character prefix as a messagetype
-const processMessage = function (recievedData: string, joinid?: any, pubaddr?: any, privatekey?: any,
+const processMessage = function (recievedData: string, networkID?: number, joinid?: any, pubaddr?: any, privatekey?: any,
     input?: any, output?: any): any{
     while (recievedData.indexOf("\r\n\r\n") != -1){
         const endIndex: number = recievedData.indexOf("\r\n\r\n")
@@ -13,7 +44,7 @@ const processMessage = function (recievedData: string, joinid?: any, pubaddr?: a
         recievedData = recievedData.slice(endIndex + 4)
         //handling message
         if (messageType == "MSG"){
-            console.log(messageData)
+            console.log("SERVER MESSAGE: " + messageData)
         }
         //handling error message
         else if (messageType == "ERR"){
@@ -40,12 +71,19 @@ const processMessage = function (recievedData: string, joinid?: any, pubaddr?: a
         //handling send_utxo data
         else if (messageType == "WTX"){
             console.log("recieved wiretx")
-            sendsignature(joinid, JSON.parse(messageData), pubaddr, privatekey, input, output)
+            const data = JSON.parse(messageData)
+            if (isValidWTX(data)){
+                sendsignature(joinid, data, pubaddr, privatekey, networkID, input, output)
+            }
+            else {
+                return new Error("Incomplete wtx")
+            }
         }
         //handling signed_tx data
         else if (messageType == "STX"){
-            console.log("recieved signedtx")
-            issuetx(JSON.parse(messageData))
+            console.log("messagedata")
+            console.log(messageData)
+            issuetx(JSON.parse(messageData), networkID)
         }
         else {
             console.log("not a valid messagetype")
@@ -77,7 +115,7 @@ const printReadableJoinData = function(join: any) {
     console.log(`\tTotal ${state} collected:  ${join["current_input_count"]}/${join["input_limit"]}\r\n`)
 }
 
-const sendRecieve = function (sendData: any, joinid?: any, pubaddr?: any, privatekey?: any,
+const sendRecieve = function (sendData: any, networkID?: any, joinid?: any, pubaddr?: any, privatekey?: any,
     input?: any, output?: any) {
     const returnDataString = JSON.stringify(sendData)
     const options = constructHeaderOptions(returnDataString)
@@ -85,7 +123,7 @@ const sendRecieve = function (sendData: any, joinid?: any, pubaddr?: any, privat
     const req = request(options, res => {
         res.on("data", d => {
             let recievedData = d.toString()
-            processMessage(recievedData, joinid, pubaddr, privatekey, input, output)
+            processMessage(recievedData, networkID, joinid, pubaddr, privatekey, input, output)
         })
     })
     req.write(returnDataString)

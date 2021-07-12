@@ -46,14 +46,21 @@ const args = process.argv.slice(2)
 const joinid = parseInt(args[0])
 const fromaddr = tests[args[1]]
 const toaddr = tests[args[2]]
+const networkid = parseInt(args[3])
 
-if (args.length > 3){
-  inputamount = parseInt(args[3])
-}
 if (args.length > 4){
-  outputamount = parseInt(args[4])
+  inputamount = parseInt(args[4])
 }
+if (args.length > 5){
+  outputamount = parseInt(args[5])
+}
+
 const main = async(): Promise<any> => {
-    const txdata = await sendutxodata(joinid, avaxAssetID, inputamount, outputamount, toaddr[0], fromaddr[0], fromaddr[1])
+  if (args[0] == "help"){
+    console.log("usage: node txtest.js *joinid* *fromaddr* *toaddr* *inputamount?* *outputamount?*")
+  } 
+  else {
+    const txdata = await sendutxodata(joinid, avaxAssetID, inputamount, outputamount, toaddr[0], fromaddr[0], fromaddr[1], networkid)
+  }
 }
 main()
