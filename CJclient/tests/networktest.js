@@ -39,90 +39,54 @@ exports.__esModule = true;
 var avm_1 = require("avalanche/dist/apis/avm");
 var avalancheutils_1 = require("../avalancheutils");
 var avalanche_1 = require("avalanche");
-var avalanche_2 = require("avalanche");
-var crypto_1 = require("crypto");
-var avalanche_3 = require("avalanche");
-var crypto_2 = require("crypto");
-require("module-alias/register");
-var MnemonicWallet_1 = require("../../avalanche-wallet/src/js/wallets/MnemonicWallet");
+var constants_1 = require("../constants");
+var avm_2 = require("@avalabs/avalanche-wallet-sdk/node_modules/avalanche/dist/apis/avm");
+var avalanche_wallet_sdk_1 = require("@avalabs/avalanche-wallet-sdk");
+var utils_1 = require("avalanche/dist/utils");
+var mnemonicKey = "dismiss spoon penalty gentle unable music buffalo cause bundle rural twist cheese discover this oyster garden globe excite kitchen rival diamond please clog swing";
+var bintools = avalanche_1.BinTools.getInstance();
 var test = function (networkID) { return __awaiter(void 0, void 0, void 0, function () {
-    var networkData, xchain, keyData, myUTXOs, utxos, testTx, txid;
+    var networkData, xchain, avaxAssetID, mwallet, outputaddressBuf, id, txid, outputidx, assetidBuf, secpTransferInput, input, secpTransferOutput, output, baseTx, unsignedTx, txbuff, tx, standardTx;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
-                networkData = avalancheutils_1.generatexchain(networkID);
+                networkData = avalancheutils_1.generatexchain(5);
                 xchain = networkData.xchain;
-                keyData = avalancheutils_1.generatekeychain(xchain, "PrivateKey-ji3ENE83u1451cu8GCaL1mHYdn9tDUL2L8hJtEHsTSJNVEnbd");
-                return [4 /*yield*/, xchain.getUTXOs(keyData.myAddressStrings)];
+                avaxAssetID = utils_1.Defaults.network[networkID].X.avaxAssetID;
+                avalanche_wallet_sdk_1.Network.setNetwork(avalanche_wallet_sdk_1.NetworkConstants.TestnetConfig); //if you want to switch pass it through again
+                mwallet = avalanche_wallet_sdk_1.MnemonicWallet.fromMnemonic(mnemonicKey);
+                return [4 /*yield*/, mwallet.resetHdIndices()];
             case 1:
-                myUTXOs = (_a.sent()).utxos;
-                utxos = myUTXOs.getAllUTXOs();
-                utxos.forEach(function (item) {
-                    console.log(item.getUTXOID());
-                });
-                testTx = new avm_1.Tx();
-                return [4 /*yield*/, (xchain.getTx("2p3kj5KqvF1rcqjqYrupDYnGMYuJEHiGY3ovU5h3r7v5P3fJPi"))];
+                _a.sent();
+                return [4 /*yield*/, mwallet.updateUtxosX()];
             case 2:
-                txid = _a.sent();
-                testTx.fromString(txid);
-                testTx.getUnsignedTx().getTransaction().getIns();
+                _a.sent();
+                outputaddressBuf = [xchain.parseAddress(mwallet.getAddressX())];
+                id = "Lj6TJDDb7NVZM59YLZdpKsZDkF8Jw5Gqxuxgn5AxiCKTGZDMj";
+                txid = bintools.cb58Decode(id);
+                outputidx = avalanche_1.Buffer.alloc(4);
+                outputidx.writeIntBE(0, 0, 4);
+                assetidBuf = bintools.cb58Decode(avaxAssetID);
+                secpTransferInput = new avm_2.SECPTransferInput(new avalanche_1.BN(.689 * constants_1.BNSCALE));
+                secpTransferInput.addSignatureIdx(0, xchain.parseAddress(mwallet.getAddressX()));
+                input = new avm_2.TransferableInput(txid, outputidx, assetidBuf, secpTransferInput);
+                console.log("constructing my output");
+                secpTransferOutput = new avm_2.SECPTransferOutput(new avalanche_1.BN(.688 * constants_1.BNSCALE), outputaddressBuf);
+                output = new avm_2.TransferableOutput(assetidBuf, secpTransferOutput);
+                baseTx = new avm_2.BaseTx(5, networkData.xchainidBuf, [output], [input]);
+                unsignedTx = new avm_2.UnsignedTx(baseTx);
+                txbuff = unsignedTx.toBuffer();
+                mwallet.resetHdIndices();
+                return [4 /*yield*/, mwallet.signX(unsignedTx)];
+            case 3:
+                tx = _a.sent();
+                standardTx = new avm_1.Tx();
+                standardTx.fromString(tx.toString());
+                xchain.issueTx(standardTx);
                 return [2 /*return*/];
         }
     });
 }); };
-var test2 = function (networkID) { return __awaiter(void 0, void 0, void 0, function () {
-    var networkData, xchain, xKeyChain, mnemonic, strength, wordlist, m, seed, hdnode, i, child, xAddressStrings;
-    return __generator(this, function (_a) {
-        networkData = avalancheutils_1.generatexchain(networkID);
-        xchain = networkData.xchain;
-        xKeyChain = networkData.xchain.keyChain();
-        mnemonic = avalanche_2.Mnemonic.getInstance();
-        strength = 256;
-        wordlist = mnemonic.getWordlists("english");
-        m = mnemonic.generateMnemonic(strength, crypto_1.randomBytes, wordlist);
-        seed = mnemonic.mnemonicToSeedSync(m);
-        hdnode = new avalanche_3.HDNode(seed);
-        for (i = 0; i <= 2; i++) {
-            child = hdnode.derive("m/44'/9000'/0'/0/" + i);
-            xKeyChain.importKey(child.privateKeyCB58);
-        }
-        xAddressStrings = xchain.keyChain().getAddressStrings();
-        console.log(xAddressStrings);
-        return [2 /*return*/];
-    });
-}); };
-var test3 = function (networkID) { return __awaiter(void 0, void 0, void 0, function () {
-    var networkData, xchain, mnemonic, seed, hdnode;
-    return __generator(this, function (_a) {
-        networkData = avalancheutils_1.generatexchain(networkID);
-        xchain = networkData.xchain;
-        mnemonic = avalanche_2.Mnemonic.getInstance();
-        seed = mnemonic.mnemonicToSeedSync("dismiss spoon penalty gentle unable music buffalo cause bundle rural twist cheese discover this oyster garden globe excite kitchen rival diamond please clog swing");
-        console.log(seed);
-        hdnode = new avalanche_3.HDNode(seed);
-        return [2 /*return*/];
-    });
-}); };
-var sign = function (message) {
-    var pkey = "PrivateKey-ryjZWerx1vRgQnFrLJ9oxBYUS7TdMRNrBLmSAAP78L4xixvT2";
-    var publickey = "X-fuji13a3dm204mh9hfjx3ajpk33cchgszh2qry97ml9";
-    var networkData = avalancheutils_1.generatexchain(5);
-    var keyData = avalancheutils_1.generatekeychain(networkData.xchain, pkey);
-    var msgbuf = avalanche_1.Buffer.from(message);
-    var msghash = avalanche_1.Buffer.from(crypto_2.createHash("sha256").update(msgbuf).digest());
-    console.log(crypto_2.createHash("sha256").update(msgbuf).digest());
-    var signedmsg = keyData.myKeyPair.sign(msghash);
-};
-var mnemonicKey = "dismiss spoon penalty gentle unable music buffalo cause bundle rural twist cheese discover this oyster garden globe excite kitchen rival diamond please clog swing";
-var test4 = function (networkID) { return __awaiter(void 0, void 0, void 0, function () {
-    var mwallet, current_key;
-    return __generator(this, function (_a) {
-        mwallet = new MnemonicWallet_1["default"](mnemonicKey);
-        current_key = mwallet.getCurrentKey();
-        console.log(current_key);
-        return [2 /*return*/];
-    });
-}); };
 var args = process.argv.slice(2);
 //test(parseInt(args[0]))
-test4(5);
+test(5);

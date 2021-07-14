@@ -23,8 +23,8 @@ import { processMessage, constructHeaderOptions, sendRecieve } from "./processme
 import * as readline from "readline"
 import { createHash } from "crypto"
 import { generatekeychain, generatexchain } from "./avalancheutils"
+import { BNSCALE } from "./constants"
 
-const BNSCALE: number = 1000000000
 const bintools: BinTools = BinTools.getInstance()
 
 const sendsignature = async(joinid: number, data: any, pubaddr: string, privatekey: string, networkID: number,

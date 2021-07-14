@@ -40,4 +40,15 @@ const generatekeychain = function(xchain: AVMAPI, privatekey: string){
     return {"xKeyChain": xKeyChain, "myKeyPair": myKeyPair, "myAddressBuf": myAddressBuf, "myAddressStrings": myAddressStrings}
 }
 
-export {generatexchain, generatekeychain}
+const getKeyType = function(key: string){
+    if (key.startsWith("PrivateKey-")){
+        return 0
+    }
+    else if (key.split(" ").length == 24){
+        return 1
+    }
+    else
+        return -1
+}
+
+export {generatexchain, generatekeychain, getKeyType}

@@ -1,0 +1,1 @@
+export const BNSCALE = 1000000000

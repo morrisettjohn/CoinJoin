@@ -33,3 +33,14 @@ var generatekeychain = function (xchain, privatekey) {
     return { "xKeyChain": xKeyChain, "myKeyPair": myKeyPair, "myAddressBuf": myAddressBuf, "myAddressStrings": myAddressStrings };
 };
 exports.generatekeychain = generatekeychain;
+var getKeyType = function (key) {
+    if (key.startsWith("PrivateKey-")) {
+        return 0;
+    }
+    else if (key.split(" ").length == 24) {
+        return 1;
+    }
+    else
+        return -1;
+};
+exports.getKeyType = getKeyType;
