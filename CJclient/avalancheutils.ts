@@ -2,9 +2,10 @@ import {
     Avalanche,
     Buffer,
     BinTools
-} from "avalanche"
-import { AVMAPI, KeyChain } from "avalanche/dist/apis/avm"
-import { Defaults } from "avalanche/dist/utils"
+} from "@avalabs/avalanche-wallet-sdk/node_modules/avalanche"
+import { AVMAPI, KeyChain } from "@avalabs/avalanche-wallet-sdk/node_modules/avalanche/dist/apis/avm"
+import { Defaults } from "@avalabs/avalanche-wallet-sdk/node_modules/avalanche/dist/utils"
+import { Network, NetworkConstants } from "@avalabs/avalanche-wallet-sdk"
 
 const bintools: BinTools = BinTools.getInstance()
 
@@ -16,11 +17,13 @@ const generatexchain = function(networkID: number){
         Ip = "api.avax-test.network"
         port = 443
         protocol = "https"
+        Network.setNetwork(NetworkConstants.TestnetConfig)
     }
     else if (networkID == 1){
         Ip = "api.avax.network"
         port = 443
         protocol = "https"
+        Network.setNetwork(NetworkConstants.MainnetConfig)
     }
     const xchainid: string = Defaults.network[networkID].X.blockchainID
     const xchainidBuf: Buffer = bintools.cb58Decode(xchainid)

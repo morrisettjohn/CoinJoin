@@ -36,14 +36,12 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 exports.__esModule = true;
-exports.sendsignature = void 0;
-var avalanche_1 = require("avalanche");
-var avm_1 = require("avalanche/dist/apis/avm");
-var common_1 = require("avalanche/dist/common");
+var avalanche_1 = require("@avalabs/avalanche-wallet-sdk/node_modules/avalanche");
+var avm_1 = require("@avalabs/avalanche-wallet-sdk/node_modules/avalanche/dist/apis/avm");
+var common_1 = require("@avalabs/avalanche-wallet-sdk/node_modules/avalanche/dist/common");
 var processmessage_1 = require("./processmessage");
 var crypto_1 = require("crypto");
 var avalancheutils_1 = require("./avalancheutils");
-var BNSCALE = 1000000000;
 var bintools = avalanche_1.BinTools.getInstance();
 var sendsignature = function (joinid, data, pubaddr, privatekey, networkID, input, output) { return __awaiter(void 0, void 0, void 0, function () {
     var networkData, keyData, utxoset, myutxos, inputs, outputs, inputData, outputData, i, inputObject, input_1, myInfo, myTxIndex, i, checkItem, hasUnwantedUTXOs, i, checkItem, j, testutxo, i, outputObject, output_1, i, checkItem, baseTx, unsignedTx, txbuff, msg, sigbuf, sig, returnData;

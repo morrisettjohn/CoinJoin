@@ -1,6 +1,5 @@
 "use strict";
 exports.__esModule = true;
-exports.sendRecieve = exports.constructHeaderOptions = exports.processMessage = void 0;
 var issuetx_1 = require("./issuetx");
 var sendsignature_1 = require("./sendsignature");
 var http_1 = require("http");
@@ -57,8 +56,8 @@ var processMessage = function (recievedData, networkID, joinid, pubaddr, private
             console.log("recieved list of compatible joins\r\n");
             var joinlist = JSON.parse(messageData);
             for (var i = 0; i < joinlist.length; i++) {
-                var join_1 = joinlist[i];
-                printReadableJoinData(join_1);
+                var join = joinlist[i];
+                printReadableJoinData(join);
             }
         }
         else if (messageType == "JDT") {

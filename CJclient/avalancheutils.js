@@ -1,7 +1,8 @@
 "use strict";
 exports.__esModule = true;
-var avalanche_1 = require("avalanche");
-var utils_1 = require("avalanche/dist/utils");
+var avalanche_1 = require("@avalabs/avalanche-wallet-sdk/node_modules/avalanche");
+var utils_1 = require("@avalabs/avalanche-wallet-sdk/node_modules/avalanche/dist/utils");
+var avalanche_wallet_sdk_1 = require("@avalabs/avalanche-wallet-sdk");
 var bintools = avalanche_1.BinTools.getInstance();
 var generatexchain = function (networkID) {
     var Ip = "";
@@ -11,11 +12,13 @@ var generatexchain = function (networkID) {
         Ip = "api.avax-test.network";
         port = 443;
         protocol = "https";
+        avalanche_wallet_sdk_1.Network.setNetwork(avalanche_wallet_sdk_1.NetworkConstants.MainnetConfig);
     }
     else if (networkID == 1) {
         Ip = "api.avax.network";
         port = 443;
         protocol = "https";
+        avalanche_wallet_sdk_1.Network.setNetwork(avalanche_wallet_sdk_1.NetworkConstants.MainnetConfig);
     }
     var xchainid = utils_1.Defaults.network[networkID].X.blockchainID;
     var xchainidBuf = bintools.cb58Decode(xchainid);

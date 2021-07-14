@@ -3,19 +3,19 @@ import {
     BinTools,
     Buffer,
     BN
-  } from "avalanche" 
+  } from "@avalabs/avalanche-wallet-sdk/node_modules/avalanche" 
 import { 
-
     UnsignedTx,
- } from "avalanche/dist/apis/avm"
-import { PlatformVMAPI, SECPCredential } from "avalanche/dist/apis/platformvm"
-import { Credential, Signature, StandardBaseTx } from "avalanche/dist/common"
-import { request } from "http"
+    Tx
+ } from "@avalabs/avalanche-wallet-sdk/node_modules/avalanche/dist/apis/avm"
+import { SECPCredential } from "@avalabs/avalanche-wallet-sdk/node_modules/avalanche/dist/apis/platformvm"
+import { Signature } from "@avalabs/avalanche-wallet-sdk/node_modules/avalanche/dist/common"
+
  import {
      Defaults
- }from "avalanche/dist/utils"
-import { Address } from "avalanche/src/common"
-import { Tx } from "avalanche/dist/apis/avm/tx"
+ }from "@avalabs/avalanche-wallet-sdk/node_modules/avalanche/dist/utils"
+
+
 import { generatekeychain, generatexchain } from "./avalancheutils"
 
 

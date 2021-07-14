@@ -3,7 +3,7 @@ import {
     BinTools,
     Buffer,
     BN
-  } from "avalanche" 
+  } from "@avalabs/avalanche-wallet-sdk/node_modules/avalanche" 
 import { 
     AVMAPI,
     TransferableInput,
@@ -15,27 +15,33 @@ import {
     UnsignedTx,
     UTXOSet,
     UTXO,
- } from "avalanche/dist/apis/avm"
-import { Signature } from "avalanche/dist/common"
-import { request } from "http"
-import { Defaults, XChainAlias }from "avalanche/dist/utils"
-import { processMessage, constructHeaderOptions, sendRecieve } from "./processmessage"
-import * as readline from "readline"
+ } from "@avalabs/avalanche-wallet-sdk/node_modules/avalanche/dist/apis/avm"
+import { Signature } from "@avalabs/avalanche-wallet-sdk/node_modules/avalanche/dist/common"
+import { sendRecieve } from "./processmessage"
 import { createHash } from "crypto"
-import { generatekeychain, generatexchain } from "./avalancheutils"
-import { BNSCALE } from "./constants"
+import { generatekeychain, generatexchain, getKeyType } from "./avalancheutils"
 
 const bintools: BinTools = BinTools.getInstance()
 
 const sendsignature = async(joinid: number, data: any, pubaddr: string, privatekey: string, networkID: number,
     input?: TransferableInput, output?: TransferableOutput): Promise<any> => {
-    console.log(networkID)
     const networkData = generatexchain(networkID)
+    const keyType = getKeyType(privatekey)
+
+    if (keyType == 0){ //privatekeys
+        const keyData = generatekeychain(networkData.xchain, privatekey)
+        const utxoset: UTXOSet = (await networkData.xchain.getUTXOs(pubaddr)).utxos
+        const myutxos: UTXO[] = utxoset.getAllUTXOs()
+    }
+    else if (keyType == 1){
+
+    }
+    
+
     const keyData = generatekeychain(networkData.xchain, privatekey)
     const utxoset: UTXOSet = (await networkData.xchain.getUTXOs(pubaddr)).utxos
     const myutxos: UTXO[] = utxoset.getAllUTXOs()
     console.log(myutxos)
-    
     
     const inputs: TransferableInput[] = []
     const outputs: TransferableOutput[] = []

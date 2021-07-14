@@ -36,120 +36,90 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 exports.__esModule = true;
-exports.sendutxodata = void 0;
-var avalanche_1 = require("avalanche");
-var avm_1 = require("avalanche/dist/apis/avm");
-var processmessage_1 = require("./processmessage");
+var avalanche_1 = require("@avalabs/avalanche-wallet-sdk/node_modules/avalanche");
+var avm_1 = require("@avalabs/avalanche-wallet-sdk/node_modules/avalanche/dist/apis/avm");
 var avalancheutils_1 = require("./avalancheutils");
+var constants_1 = require("./constants");
+var avalanche_wallet_sdk_1 = require("@avalabs/avalanche-wallet-sdk");
+var avalanche_wallet_sdk_2 = require("@avalabs/avalanche-wallet-sdk");
 //setting up the xchain object
-var BNSCALE = 1000000000;
 var bintools = avalanche_1.BinTools.getInstance();
 var sendutxodata = function (joinid, assetid, inputamount, outputamount, destinationaddr, pubaddr, privatekey, networkID) { return __awaiter(void 0, void 0, void 0, function () {
-    var networkData, keyData, xchain, myAddressBuf, inputs, outputs, fee, targetInpAmountFormatted, targetInpAmountFormatBN, targetInpAmountWithFee, targetOutAmountFormatted, targetOutAmountFormatBN, utxoset, utxos, balance, inputTotal, assetidBuf, i, current_utxo, utxooutput, txid_1, outputidx_1, utxoamt, secpTransferInput_1, transferableinput, changetotal, targetOutput, transferableTargetOutput, changeOutput, transferableChangeOutput, baseTx, outs, txindex, i, unsignedTx, signedTx, id, status, txidstring, txid, outputidx, secpTransferInput, input, outputaddressBuf, secpTransferOutput, output, returnData;
+    var networkData, xchain, assetidBuf, fee, targetInpAmountFormatted, targetInpAmountFormatBN, targetInpAmountWithFee, targetOutAmountFormatted, targetOutAmountFormatBN, keyType, id, signedTx, keyData, myAddresses, myAddressBuf, utxoset, balance, unsignedTx, mwallet, from, to, change, walletutxos, unsignedTx, status;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
                 networkData = avalancheutils_1.generatexchain(networkID);
-                console.log(privatekey);
-                console.log("here");
-                keyData = avalancheutils_1.generatekeychain(networkData.xchain, privatekey);
                 xchain = networkData.xchain;
-                myAddressBuf = keyData.myAddressBuf;
-                inputs = [];
-                outputs = [];
+                assetidBuf = bintools.cb58Decode(assetid);
                 fee = xchain.getDefaultTxFee();
-                targetInpAmountFormatted = inputamount * BNSCALE;
+                targetInpAmountFormatted = inputamount * constants_1.BNSCALE;
                 targetInpAmountFormatBN = new avalanche_1.BN(targetInpAmountFormatted);
                 targetInpAmountWithFee = targetInpAmountFormatBN.add(fee);
-                targetOutAmountFormatted = outputamount * BNSCALE;
+                targetOutAmountFormatted = outputamount * constants_1.BNSCALE;
                 targetOutAmountFormatBN = new avalanche_1.BN(targetOutAmountFormatted);
+                keyType = avalancheutils_1.getKeyType(privatekey);
+                id = "";
+                signedTx = new avm_1.Tx();
+                if (!(keyType == 0)) return [3 /*break*/, 5];
+                keyData = avalancheutils_1.generatekeychain(networkData.xchain, privatekey);
+                myAddresses = keyData.myAddressStrings;
+                myAddressBuf = keyData.myAddressBuf;
                 return [4 /*yield*/, xchain.getUTXOs(pubaddr)];
             case 1:
                 utxoset = (_a.sent()).utxos;
-                utxos = utxoset.getAllUTXOs();
                 balance = utxoset.getBalance(myAddressBuf, assetid);
-                inputTotal = new avalanche_1.BN(0);
-                assetidBuf = bintools.cb58Decode(assetid);
-                console.log("checking funds in account");
-                //cycle through utxos until enough currency has been collected
-                if (balance.toNumber() >= targetInpAmountWithFee.toNumber()) {
-                    for (i = 0; i < utxos.length && inputTotal.toNumber() < targetInpAmountWithFee.toNumber(); i++) {
-                        current_utxo = utxos[i];
-                        utxooutput = utxos[i].getOutput();
-                        if (utxooutput._typeID !== 11) {
-                            txid_1 = current_utxo.getTxID();
-                            outputidx_1 = current_utxo.getOutputIdx();
-                            utxoamt = utxooutput.getAmount().clone();
-                            inputTotal = inputTotal.add(utxoamt);
-                            secpTransferInput_1 = new avm_1.SECPTransferInput(utxoamt);
-                            secpTransferInput_1.addSignatureIdx(0, myAddressBuf[0]);
-                            transferableinput = new avm_1.TransferableInput(txid_1, outputidx_1, assetidBuf, secpTransferInput_1);
-                            inputs.push(transferableinput);
-                        }
-                    }
-                }
-                else {
-                    console.log("insufficient funds");
-                    throw Error; //XXX fix this later
-                }
-                console.log("sufficient funds, creating input utxo");
-                changetotal = inputTotal.sub(targetInpAmountWithFee);
-                targetOutput = new avm_1.SECPTransferOutput(targetInpAmountFormatBN, myAddressBuf);
-                transferableTargetOutput = new avm_1.TransferableOutput(assetidBuf, targetOutput);
-                outputs.push(transferableTargetOutput);
-                if (changetotal.toNumber() > 0) {
-                    changeOutput = new avm_1.SECPTransferOutput(changetotal, myAddressBuf);
-                    transferableChangeOutput = new avm_1.TransferableOutput(assetidBuf, changeOutput);
-                    outputs.push(transferableChangeOutput);
-                }
-                baseTx = new avm_1.BaseTx(networkID, networkData.xchainidBuf, outputs, inputs, avalanche_1.Buffer.from("test"));
-                outs = baseTx.getOuts();
-                txindex = 0;
-                for (i = 0; i < outs.length; i++) {
-                    if (outs[i].getOutput().getAmount().toNumber() == targetInpAmountFormatted) {
-                        break;
-                    }
-                    txindex += 1;
-                }
-                unsignedTx = new avm_1.UnsignedTx(baseTx);
-                signedTx = unsignedTx.sign(keyData.xKeyChain);
-                return [4 /*yield*/, xchain.issueTx(signedTx)];
+                if (!(balance.toNumber() >= targetInpAmountWithFee.toNumber())) return [3 /*break*/, 3];
+                return [4 /*yield*/, xchain.buildBaseTx(utxoset, targetInpAmountFormatBN, assetid, myAddresses, myAddresses, myAddresses)];
             case 2:
+                unsignedTx = _a.sent();
+                signedTx = unsignedTx.sign(keyData.xKeyChain);
+                return [3 /*break*/, 4];
+            case 3:
+                console.log("insufficient funds");
+                throw Error; //XXX fix this later
+            case 4: return [3 /*break*/, 11];
+            case 5:
+                if (!(keyType == 1)) return [3 /*break*/, 11];
+                console.log(avalanche_wallet_sdk_1.Network);
+                console.log("yo");
+                mwallet = avalanche_wallet_sdk_2.MnemonicWallet.fromMnemonic(privatekey);
+                return [4 /*yield*/, mwallet.resetHdIndices()];
+            case 6:
+                _a.sent();
+                return [4 /*yield*/, mwallet.updateUtxosX()];
+            case 7:
+                _a.sent();
+                from = mwallet.getAllAddressesX();
+                to = mwallet.getAddressX();
+                change = mwallet.getChangeAddressX();
+                walletutxos = mwallet.utxosX;
+                if (!(mwallet.getBalanceX()[assetid].unlocked.toNumber() >= targetInpAmountWithFee.toNumber())) return [3 /*break*/, 10];
+                return [4 /*yield*/, xchain.buildBaseTx(walletutxos, targetInpAmountFormatBN, assetid, [to], from, [change])];
+            case 8:
+                unsignedTx = _a.sent();
+                return [4 /*yield*/, mwallet.signX(unsignedTx)];
+            case 9:
+                signedTx = _a.sent();
+                return [3 /*break*/, 11];
+            case 10: throw Error("insufficient funds in wallet");
+            case 11: return [4 /*yield*/, xchain.issueTx(signedTx)];
+            case 12:
                 id = _a.sent();
                 console.log("issued");
                 status = "";
-                _a.label = 3;
-            case 3:
-                if (!(status != "Accepted" && status != "Rejected")) return [3 /*break*/, 5];
+                _a.label = 13;
+            case 13:
+                if (!(status != "Accepted" && status != "Rejected")) return [3 /*break*/, 15];
                 return [4 /*yield*/, xchain.getTxStatus(id)];
-            case 4:
+            case 14:
                 status = _a.sent();
-                return [3 /*break*/, 3];
-            case 5:
+                return [3 /*break*/, 13];
+            case 15:
                 if (status === "Rejected") {
                     throw Error("rejected, not submitting to coinjoin");
                 }
-                console.log("constructing my input");
-                txidstring = id;
-                txid = bintools.cb58Decode(txidstring);
-                outputidx = avalanche_1.Buffer.alloc(4);
-                outputidx.writeIntBE(txindex, 0, 4);
-                secpTransferInput = new avm_1.SECPTransferInput(targetInpAmountFormatBN);
-                secpTransferInput.addSignatureIdx(0, myAddressBuf[0]);
-                input = new avm_1.TransferableInput(txid, outputidx, assetidBuf, secpTransferInput);
-                console.log("constructing my output");
-                outputaddressBuf = [xchain.parseAddress(destinationaddr)];
-                secpTransferOutput = new avm_1.SECPTransferOutput(targetOutAmountFormatBN, outputaddressBuf);
-                output = new avm_1.TransferableOutput(assetidBuf, secpTransferOutput);
-                returnData = {
-                    "joinid": joinid,
-                    "messagetype": 3,
-                    "pubaddr": pubaddr,
-                    "inputbuf": input.toBuffer(),
-                    "outputbuf": output.toBuffer()
-                };
-                console.log("sending data to coinjoin server now");
-                processmessage_1.sendRecieve(returnData, networkID, joinid, pubaddr, privatekey, input, output);
+                console.log("Accepted");
                 return [2 /*return*/];
         }
     });

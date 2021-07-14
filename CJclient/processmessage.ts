@@ -1,8 +1,6 @@
 import { issuetx } from "./issuetx"
 import { sendsignature } from "./sendsignature"
 import { request } from "http"
-import { join } from "path"
-import { isValidMnemonic } from "@ethersproject/hdnode"
 
 const isValidWTX = function(data: any): boolean {
     if (!("inputs" in data && "outputs" in data)){

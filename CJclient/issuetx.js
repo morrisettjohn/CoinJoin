@@ -36,13 +36,11 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 exports.__esModule = true;
-exports.issuetx = void 0;
-var avalanche_1 = require("avalanche");
-var avm_1 = require("avalanche/dist/apis/avm");
-var platformvm_1 = require("avalanche/dist/apis/platformvm");
-var common_1 = require("avalanche/dist/common");
-var utils_1 = require("avalanche/dist/utils");
-var tx_1 = require("avalanche/dist/apis/avm/tx");
+var avalanche_1 = require("@avalabs/avalanche-wallet-sdk/node_modules/avalanche");
+var avm_1 = require("@avalabs/avalanche-wallet-sdk/node_modules/avalanche/dist/apis/avm");
+var platformvm_1 = require("@avalabs/avalanche-wallet-sdk/node_modules/avalanche/dist/apis/platformvm");
+var common_1 = require("@avalabs/avalanche-wallet-sdk/node_modules/avalanche/dist/common");
+var utils_1 = require("@avalabs/avalanche-wallet-sdk/node_modules/avalanche/dist/utils");
 var avalancheutils_1 = require("./avalancheutils");
 var bintools = avalanche_1.BinTools.getInstance();
 var issuetx = function (data, networkID) { return __awaiter(void 0, void 0, void 0, function () {
@@ -65,7 +63,7 @@ var issuetx = function (data, networkID) { return __awaiter(void 0, void 0, void
                     credentialArray.push(cred);
                 });
                 console.log("constructing and issuing tx");
-                tx = new tx_1.Tx(unsignedTx, credentialArray);
+                tx = new avm_1.Tx(unsignedTx, credentialArray);
                 console.log("input total:" + unsignedTx.getInputTotal(bintools.cb58Decode(utils_1.Defaults.network[networkID].X.avaxAssetID)).toNumber());
                 console.log("output total:" + unsignedTx.getOutputTotal(bintools.cb58Decode(utils_1.Defaults.network[networkID].X.avaxAssetID)).toNumber());
                 return [4 /*yield*/, networkData.xchain.issueTx(tx)];

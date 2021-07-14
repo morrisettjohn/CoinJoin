@@ -54,6 +54,7 @@ var pubaddr3R = "X-fuji12jwy0ctuankcamu0qv0dcy95pxsr578ju7t7qe";
 var privatekey3R = "PrivateKey-2iSH7BA88LF5mozMd2cRmkFdGHQdksMRnmQADhWPfGhNFRPiii";
 var pubaddr4R = "X-fuji1ga8cr9eu7fq9x6f7zvwq26xmm4vdmdg7zrveav";
 var privatekey4R = "PrivateKey-28895VhkPjCeVwj8eThqMeFrCX4A44LucRbU9pSBucd1x4LnvT";
+var wallet1 = "dismiss spoon penalty gentle unable music buffalo cause bundle rural twist cheese discover this oyster garden globe excite kitchen rival diamond please clog swing";
 var test1S = [pubaddr1S, privatekey1S];
 var test2S = [pubaddr2S, privatekey2S];
 var test3S = [pubaddr3S, privatekey3S];
@@ -62,7 +63,18 @@ var test1R = [pubaddr1R, privatekey1R];
 var test2R = [pubaddr2R, privatekey2R];
 var test3R = [pubaddr3R, privatekey3R];
 var test4R = [pubaddr4R, privatekey4R];
-var tests = { "1S": test1S, "2S": test2S, "3S": test3S, "4S": test4S, "1R": test1R, "2R": test2R, "3R": test3R, "4R": test4R };
+var test1W = [undefined, wallet1];
+var tests = {
+    "1S": test1S,
+    "2S": test2S,
+    "3S": test3S,
+    "4S": test4S,
+    "1R": test1R,
+    "2R": test2R,
+    "3R": test3R,
+    "4R": test4R,
+    "1W": test1W
+};
 var networkID = 5;
 var avaxAssetID = utils_1.Defaults.network[networkID].X.avaxAssetID;
 var inputamount = 1.15;
@@ -85,7 +97,7 @@ var main = function () { return __awaiter(void 0, void 0, void 0, function () {
         switch (_a.label) {
             case 0:
                 if (!(args[0] == "help")) return [3 /*break*/, 1];
-                console.log("usage: node txtest.js *joinid* *fromaddr* *toaddr* *inputamount?* *outputamount?*");
+                console.log("usage: node txtest.js *joinid* *fromaddr* *toaddr* *networkid* *inputamount?* *outputamount?* ");
                 return [3 /*break*/, 3];
             case 1: return [4 /*yield*/, sendutxodata_1.sendutxodata(joinid, avaxAssetID, inputamount, outputamount, toaddr[0], fromaddr[0], fromaddr[1], networkid)];
             case 2:
