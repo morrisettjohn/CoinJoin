@@ -146,7 +146,7 @@ var sendutxodata = function (joinid, assetid, inputamount, outputamount, destina
                 outputaddressBuf = [xchain.parseAddress(destinationaddr)];
                 secpTransferOutput = new avm_1.SECPTransferOutput(targetOutAmountFormatBN, outputaddressBuf);
                 output = new avm_1.TransferableOutput(assetidBuf, secpTransferOutput);
-                return [4 /*yield*/, requestjoin_1.requestToJoin(joinid, pubaddr, privatekey, networkID)];
+                return [4 /*yield*/, requestjoin_1.requestNonce(joinid, pubaddr, privatekey, networkID)];
             case 17:
                 ticket = _a.sent();
                 sendData = {

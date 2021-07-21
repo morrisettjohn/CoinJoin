@@ -34,7 +34,7 @@ class JoinState:
         self.last_accessed = time.time()
         self.tx = None
         self.pubaddresses = []
-        self.potential_users = []
+        self.pending_users = []
         self.IP_addresses = []  #XXX
         self.connections = []
         self.signers = []
@@ -86,7 +86,7 @@ class JoinState:
         self.last_accessed = time.time()
         self.tx = None
         self.pubaddresses = []
-        self.potential_users = []
+        self.pending_users = []
         self.IP_addresses = []
         self.connections = []
         self.signers = []
@@ -175,19 +175,21 @@ class JoinState:
     def craft_signed_transaction_data(self):
         return json.dumps({"signatures": self.signers, "transaction": self.tx})
 
-    def in_potential_users(self, pubaddress):
-        pubaddresses, nonces = map(list, zip(*self.potential_users))
+    def in_pending_users(self, pubaddress):
+        if self.pending_users == []:
+            return False
+        pubaddresses, nonces = map(list, zip(*self.pending_users))
         if pubaddress in pubaddresses:
             return True
         return False
     
     def get_nonce(self, pubaddress):
-        pubaddresses, nonces = map(list, zip(*self.potential_users))
+        pubaddresses, nonces = map(list, zip(*self.pending_users))
         return nonces[pubaddresses.index(pubaddress)]
         
-
     def verify_ticket(pubaddr: string, ticket: string, nonce: string):
         z = check_output(['node', './verifyticket.js', pubaddr, json.dumps(ticket), nonce]).decode().strip()
+        print(z)
         if z == "true":
             return True
         return False
@@ -198,13 +200,17 @@ class JoinState:
         pubaddr = JoinState.extract_pubaddr(request_data)
 
         if request_data["messagetype"] == REQUEST_TO_JOIN:
+            if self.state == COLLECT_SIGS:
+                if pubaddr not in self.pubaddresses:
+                    send_errmessage(conn, "Verification request denied, not in the coinjoin in the collect sigs stage")
+            if self.in_pending_users(pubaddr):
+                pubaddresses, nonces = map(list, zip(*self.pending_users))
+                self.pending_users.pop(pubaddresses.index(pubaddr))
             nonce = ''.join(choice(string.ascii_letters) for i in range(10))
-            print(nonce)
-            print("this is the nonce")
-            self.potential_users.append([pubaddr, nonce])
+            self.pending_users.append([pubaddr, nonce])
             send_nonce(conn, nonce)
 
-        if request_data["messagetype"] == COLLECT_INPUTS:
+        elif request_data["messagetype"] == COLLECT_INPUTS:
             input_buf = JoinState.extract_inputbuf(request_data)
             output_buf = JoinState.extract_outputbuf(request_data)
             request_address = JoinState.extract_pubaddr(request_data)
@@ -212,13 +218,12 @@ class JoinState:
             output_data = unpack_out(output_buf["data"])
             inputamount = input_data["inputamount"]/BNSCALE
             outputamount = output_data["outputamount"]/BNSCALE
-            print("checking that stuff works")
             if self.state == COLLECT_INPUTS:
                 if inputamount >= self.totalamount and outputamount == self.assetamount:
                     if input_data["assetid"] == output_data["assetid"] == self.assetid:
                         if True: #not ip in self.IP_addresses:       #XXX need to comment out for testing purposes
                             if pubaddr not in self.pubaddresses:
-                                if self.in_potential_users(pubaddr):
+                                if self.in_pending_users(pubaddr):
                                     if JoinState.verify_ticket(pubaddr, request_data["ticket"], self.get_nonce(pubaddr)):
                                         #create input and output data when this has been determined to be valid information
                                         self.update_last_accessed()
@@ -249,12 +254,17 @@ class JoinState:
                                             self.initialize_signers()
                                             self.IP_addresses = [] #delete ip addresses for security
                                             self.connections = []  #reset connections
+                                            self.pending_users = []
                                             self.state = COLLECT_SIGS
                                         return
                                     else:
                                         print("nonce did not verify to pubaddr")
                                         send_errmessage(conn, "signature not associated with pubkey")
                                         return
+                                else:
+                                    print("user did not request permission to enter coinjoin")
+                                    send_errmessage(conn, "did not request nonce to enter server")
+                                    return
                             else:
                                 print("already connected")
                                 send_errmessage(conn, "Already connected")
@@ -280,26 +290,35 @@ class JoinState:
         #collect sigs state
         elif request_data["messagetype"] == COLLECT_SIGS:
             if self.state == COLLECT_SIGS:
-                if pubaddr in self.pubaddresses:       #XXX commented out for testing purposes
+                if pubaddr in self.pubaddresses:
                     if pubaddr not in self.signers:
-                        #When it has been determined that the signature is valid, continue through
-                        self.update_last_accessed()
-                        self.signers_append(request_data["signature"], pubaddr)
-                        self.connections.append(conn)
-                        self.tx = request_data["transaction"]
-                        send_message(conn, "signature registered, waiting for others in the coinjoin")
+                        if self.in_pending_users(pubaddr):
+                            if JoinState.verify_ticket(pubaddr, request_data["ticket"], self.get_nonce(pubaddr)):
+                                #When it has been determined that the signature is valid, continue through
+                                self.update_last_accessed()
+                                self.signers_append(request_data["signature"], pubaddr)
+                                self.connections.append(conn)
+                                self.tx = request_data["transaction"]
+                                send_message(conn, "signature registered, waiting for others in the coinjoin")
 
-                        for item in self.connections:
-                            send_message(item, "%d out of %d users signed" % (self.get_current_signature_count(), self.connect_limit))
+                                for item in self.connections:
+                                    send_message(item, "%d out of %d users signed" % (self.get_current_signature_count(), self.connect_limit))
 
-                        if None not in self.signers and len(self.signers) >= self.connect_limit:
-                            print("all signed")
-                            signed_tx = self.craft_signed_transaction_data()
-                            for item in self.connections:
-                                send_message(item, "all participants have signed")
-                                send_signedtx(item, signed_tx)
-                            self.reset_join()
-                        return
+                                if None not in self.signers and len(self.signers) >= self.connect_limit:
+                                    print("all signed")
+                                    signed_tx = self.craft_signed_transaction_data()
+                                    for item in self.connections:
+                                        send_message(item, "all participants have signed")
+                                        send_signedtx(item, signed_tx)
+                                    self.reset_join()
+                                return
+                            else:
+                                print("verification failed")
+                                send_errmessage(conn, "verification failed")
+                        else:
+                            print("did not request verification nonce")
+                            send_errmessage(conn, "please request a verification nonce before signing")
+                            return
                     else:
                         print("already signed")
                         send_errmessage(conn, "already signed")

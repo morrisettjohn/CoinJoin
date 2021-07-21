@@ -13,4 +13,5 @@ const newpub = keyPair.recover(nonce, ticket)
 const newPubBuf = keyPair.addressFromPublicKey(newpub)
 const pubaddrBuf = networkData.xchain.parseAddress(pubaddr)
 
+
 console.log(newPubBuf.equals(pubaddrBuf))

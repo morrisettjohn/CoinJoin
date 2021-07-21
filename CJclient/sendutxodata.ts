@@ -16,7 +16,7 @@ import { generatekeychain, generatexchain, getKeyType } from "./avalancheutils";
 import { BNSCALE } from "./constants";
 import { MnemonicWallet } from "@avalabs/avalanche-wallet-sdk";
 import * as consts from "./constants"
-import { requestToJoin } from "./requestjoin";
+import { requestNonce } from "./requestjoin";
 
 //setting up the xchain object
 const bintools: BinTools = BinTools.getInstance()
@@ -124,7 +124,7 @@ const sendutxodata = async(joinid: number, assetid: string, inputamount: number,
     const secpTransferOutput: SECPTransferOutput = new SECPTransferOutput(targetOutAmountFormatBN, outputaddressBuf)
     const output: TransferableOutput = new TransferableOutput(assetidBuf, secpTransferOutput)
 
-    const ticket = await requestToJoin(joinid, pubaddr, privatekey, networkID)
+    const ticket = await requestNonce(joinid, pubaddr, privatekey, networkID)
 
     const sendData = {
         "joinid": joinid,
@@ -137,7 +137,6 @@ const sendutxodata = async(joinid: number, assetid: string, inputamount: number,
 
     console.log("sending data to coinjoin server now")
     const recievedData = await sendRecieve(sendData)
-
     return [recievedData, input, output, pubaddr]
 }
 

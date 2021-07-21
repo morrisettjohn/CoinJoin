@@ -44,9 +44,10 @@ var crypto_1 = require("crypto");
 var avalancheutils_1 = require("./avalancheutils");
 var avalanche_wallet_sdk_1 = require("@avalabs/avalanche-wallet-sdk");
 var consts = require("./constants");
+var requestjoin_1 = require("./requestjoin");
 var bintools = avalanche_1.BinTools.getInstance();
 var sendsignature = function (joinid, data, pubaddr, privatekey, networkID, myInput, myOutput) { return __awaiter(void 0, void 0, void 0, function () {
-    var networkData, keyType, inputs, outputs, i, inputObject, input, i, outputObject, output, baseTx, unsignedTx, txbuff, msg, sigbuf, sig, keyData, utxoset, myUtxos, mwallet, sigString, sendData, recievedData;
+    var networkData, keyType, inputs, outputs, i, inputObject, input, i, outputObject, output, baseTx, unsignedTx, txbuff, msg, sigbuf, sig, keyData, utxoset, myUtxos, mwallet, sigString, ticket, sendData, recievedData;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -97,17 +98,20 @@ var sendsignature = function (joinid, data, pubaddr, privatekey, networkID, myIn
                 sigString = mwallet.getSigFromUTX(msg, mwallet.getAllAddressesX().indexOf(pubaddr));
                 sig.fromBuffer(sigString);
                 _a.label = 5;
-            case 5:
+            case 5: return [4 /*yield*/, requestjoin_1.requestNonce(joinid, pubaddr, privatekey, networkID)];
+            case 6:
+                ticket = _a.sent();
                 console.log("transaction signed, sending sig to coinJoin");
                 sendData = {
                     "joinid": joinid,
                     "messagetype": consts.COLLECT_SIGS,
                     "signature": sig.toBuffer(),
                     "pubaddr": pubaddr,
-                    "transaction": txbuff
+                    "transaction": txbuff,
+                    "ticket": ticket
                 };
                 return [4 /*yield*/, processmessage_1.sendRecieve(sendData)];
-            case 6:
+            case 7:
                 recievedData = _a.sent();
                 return [2 /*return*/, recievedData];
         }

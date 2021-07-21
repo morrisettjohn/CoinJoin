@@ -11,7 +11,7 @@ import { Address } from "@avalabs/avalanche-wallet-sdk/node_modules/avalanche/di
 
 const bintools: BinTools = BinTools.getInstance()
 
-const requestToJoin = async(joinid: number, pubaddr: string, privatekey: string, networkID: number): Promise<any> => {
+const requestNonce = async(joinid: number, pubaddr: string, privatekey: string, networkID: number): Promise<any> => {
     const networkData = generatexchain(networkID)
     const xchain = networkData.xchain
     const keyType = getKeyType(privatekey)
@@ -22,24 +22,17 @@ const requestToJoin = async(joinid: number, pubaddr: string, privatekey: string,
         "pubaddr": pubaddr,
     }
 
-    const nonce: string = await sendRecieve(sendData)
+    const nonce: Buffer = Buffer.from(await sendRecieve(sendData))
 
     let sig: Buffer = undefined
     if (keyType == 0){
         const keyData = generatekeychain(networkData.xchain, privatekey)
-        sig = keyData.myKeyPair.sign(Buffer.from(nonce))
-        console.log(nonce)
-        console.log(keyData.myKeyPair.verify(Buffer.from(nonce), sig))
-        const z = keyData.myKeyPair.recover(Buffer.from(nonce), sig)
-        console.log(keyData.myKeyPair.addressFromPublicKey(z))
-
-         
+        sig = keyData.myKeyPair.sign(nonce)         
     }
     else if (keyType == 1){
         const mwallet = MnemonicWallet.fromMnemonic(privatekey)
         await mwallet.resetHdIndices()
-        mwallet.getAllAddressesX
-        sig = Buffer.from(mwallet.signMessage(nonce, mwallet.getExternalAddressesX().indexOf(pubaddr)))
+        sig = mwallet.getSigFromUTX(nonce, mwallet.getExternalAddressesX().indexOf(pubaddr))
     }
 
     
@@ -49,4 +42,4 @@ const requestToJoin = async(joinid: number, pubaddr: string, privatekey: string,
     return sig
 }
 
-export {requestToJoin}
+export {requestNonce}
