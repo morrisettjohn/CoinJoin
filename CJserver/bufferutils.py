@@ -42,7 +42,6 @@ def unpack_out(outputbuf):
     numaddresses = unpack(">I", convert_to_pybuffer(outputbuf, start, start + NUMADDRESSES_BUF_LENGTH))[0]
     start += NUMADDRESSES_BUF_LENGTH
     address = convert_to_pybuffer(outputbuf, start, start+ADDRESS_BUF_LENGTH)
-    print(address)
     return {"assetid": assetid, "typeid": typeid, "outputamount": assetamount,\
             "locktime": locktime, "threshold": threshold, "numaddresses": numaddresses, "address": address}
 

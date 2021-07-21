@@ -1,8 +1,6 @@
 import {
-    Avalanche,
     BinTools,
     Buffer,
-    BN
   } from "@avalabs/avalanche-wallet-sdk/node_modules/avalanche" 
 import { 
     UnsignedTx,
@@ -15,15 +13,13 @@ import { Signature } from "@avalabs/avalanche-wallet-sdk/node_modules/avalanche/
      Defaults
  }from "@avalabs/avalanche-wallet-sdk/node_modules/avalanche/dist/utils"
 
-
-import { generatekeychain, generatexchain } from "./avalancheutils"
+import { generatexchain } from "./avalancheutils"
 
 
 const bintools: BinTools = BinTools.getInstance()
 
 const issuetx = async(data: any, networkID: number): Promise<any> => {
     const networkData = generatexchain(networkID)
-
     console.log("issuing tx")
     console.log("reconstructing unsignedtx")
     const unsignedTx: UnsignedTx = new UnsignedTx()

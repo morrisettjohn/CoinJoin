@@ -1,1 +1,9 @@
 export const BNSCALE = 1000000000
+export const START_PROCESS = 0 
+export const SELECT_OPTIONS = 1
+export const GET_JOIN_DATA = 2
+export const COLLECT_INPUTS = 3
+export const COLLECT_SIGS = 4
+export const ISSUE_TX = 5
+export const REQUEST_WTX = 6
+export const REQUEST_TO_JOIN = 7

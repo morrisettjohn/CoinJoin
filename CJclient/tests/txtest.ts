@@ -2,6 +2,7 @@ import { sendutxodata } from "../sendutxodata";
 import { Defaults } from "avalanche/dist/utils";
 import { processMessage } from "../processmessage";
 import { MnemonicWallet } from "@avalabs/avalanche-wallet-sdk";
+import { startCJInstance } from "../cjinstance";
 
 const pubaddr1S = "X-fuji13a3dm204mh9hfjx3ajpk33cchgszh2qry97ml9"
 const privatekey1S = "PrivateKey-ryjZWerx1vRgQnFrLJ9oxBYUS7TdMRNrBLmSAAP78L4xixvT2"
@@ -28,6 +29,7 @@ const pubaddr4R = "X-fuji1ga8cr9eu7fq9x6f7zvwq26xmm4vdmdg7zrveav"
 const privatekey4R = "PrivateKey-28895VhkPjCeVwj8eThqMeFrCX4A44LucRbU9pSBucd1x4LnvT"
 
 const wallet1 = "dismiss spoon penalty gentle unable music buffalo cause bundle rural twist cheese discover this oyster garden globe excite kitchen rival diamond please clog swing"
+const wallet2 = "manage smile coin benefit taxi close view motion pact confirm feature cannon royal alien soft moment throw miracle material axis solid pool reflect vintage"
 
 const test1S = [pubaddr1S, privatekey1S]
 const test2S = [pubaddr2S, privatekey2S]
@@ -38,6 +40,7 @@ const test2R = [pubaddr2R, privatekey2R]
 const test3R = [pubaddr3R, privatekey3R]
 const test4R = [pubaddr4R, privatekey4R]
 const test1W = [undefined, wallet1]
+const test2W = [undefined, wallet2]
 const tests = {
   "1S": test1S, 
   "2S": test2S, 
@@ -47,7 +50,8 @@ const tests = {
   "2R": test2R, 
   "3R": test3R, 
   "4R": test4R,
-  "1W": test1W
+  "1W": test1W,
+  "2W": test2W
 }
 
 const networkID = 5
@@ -74,7 +78,7 @@ const main = async(): Promise<any> => {
     console.log("usage: node txtest.js *joinid* *fromaddr* *toaddr* *networkid* *inputamount?* *outputamount?* ")
   } 
   else {
-    const txdata = await sendutxodata(joinid, avaxAssetID, inputamount, outputamount, toaddr[0], fromaddr[0], fromaddr[1], networkid)
+    startCJInstance(joinid, avaxAssetID, inputamount, outputamount, toaddr[0], fromaddr[0], fromaddr[1], networkid)
   }
 }
 main()

@@ -42,109 +42,117 @@ var common_1 = require("@avalabs/avalanche-wallet-sdk/node_modules/avalanche/dis
 var processmessage_1 = require("./processmessage");
 var crypto_1 = require("crypto");
 var avalancheutils_1 = require("./avalancheutils");
+var avalanche_wallet_sdk_1 = require("@avalabs/avalanche-wallet-sdk");
+var consts = require("./constants");
 var bintools = avalanche_1.BinTools.getInstance();
-var sendsignature = function (joinid, data, pubaddr, privatekey, networkID, input, output) { return __awaiter(void 0, void 0, void 0, function () {
-    var networkData, keyData, utxoset, myutxos, inputs, outputs, inputData, outputData, i, inputObject, input_1, myInfo, myTxIndex, i, checkItem, hasUnwantedUTXOs, i, checkItem, j, testutxo, i, outputObject, output_1, i, checkItem, baseTx, unsignedTx, txbuff, msg, sigbuf, sig, returnData;
+var sendsignature = function (joinid, data, pubaddr, privatekey, networkID, myInput, myOutput) { return __awaiter(void 0, void 0, void 0, function () {
+    var networkData, keyType, inputs, outputs, i, inputObject, input, i, outputObject, output, baseTx, unsignedTx, txbuff, msg, sigbuf, sig, keyData, utxoset, myUtxos, mwallet, sigString, sendData, recievedData;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
-                console.log(networkID);
                 networkData = avalancheutils_1.generatexchain(networkID);
+                keyType = avalancheutils_1.getKeyType(privatekey);
+                inputs = [];
+                outputs = [];
+                console.log("constructing inputs");
+                for (i = 0; i < data["inputs"].length; i++) {
+                    inputObject = data["inputs"][i];
+                    input = new avm_1.TransferableInput();
+                    input.fromBuffer(avalanche_1.Buffer.from(inputObject[0]));
+                    inputs.push(input);
+                }
+                console.log("constructing outputs");
+                for (i = 0; i < data["outputs"].length; i++) {
+                    outputObject = data["outputs"][i];
+                    output = new avm_1.TransferableOutput();
+                    output.fromBuffer(avalanche_1.Buffer.from(outputObject));
+                    outputs.push(output);
+                }
+                baseTx = new avm_1.BaseTx(networkID, networkData.xchainidBuf, outputs, inputs, avalanche_1.Buffer.from("test"));
+                unsignedTx = new avm_1.UnsignedTx(baseTx);
+                txbuff = unsignedTx.toBuffer();
+                msg = avalanche_1.Buffer.from(crypto_1.createHash("sha256").update(txbuff).digest());
+                sigbuf = undefined;
+                sig = new common_1.Signature();
+                if (!(keyType == 0)) return [3 /*break*/, 2];
                 keyData = avalancheutils_1.generatekeychain(networkData.xchain, privatekey);
                 return [4 /*yield*/, networkData.xchain.getUTXOs(pubaddr)];
             case 1:
                 utxoset = (_a.sent()).utxos;
-                myutxos = utxoset.getAllUTXOs();
-                console.log(myutxos);
-                inputs = [];
-                outputs = [];
-                inputData = data["inputs"];
-                outputData = data["outputs"];
-                //construct inputs
-                console.log("constructing tx from wiretx");
-                console.log("constructing inputs");
-                for (i = 0; i < inputData.length; i++) {
-                    inputObject = inputData[i];
-                    input_1 = new avm_1.TransferableInput();
-                    input_1.fromBuffer(avalanche_1.Buffer.from(inputObject[0]));
-                    inputs.push(input_1);
-                }
-                console.log("checking if my input is in list");
-                myInfo = false;
-                myTxIndex = 0;
-                for (i = 0; i < inputs.length; i++) {
-                    checkItem = inputs[i];
-                    if (checkItem.getTxID().equals(input.getTxID()) && checkItem.getOutputIdx().equals(input.getOutputIdx())) {
-                        myInfo = true;
-                        myTxIndex = i;
-                        break;
-                    }
-                }
-                if (!myInfo) {
-                    console.log("my input is not in input list");
-                    throw Error;
-                }
-                hasUnwantedUTXOs = false;
-                console.log("checking if any other of my utxos are in the list");
-                for (i = 0; i < inputs.length; i++) {
-                    checkItem = inputs[i];
-                    if (i != myTxIndex) {
-                        for (j = 0; j < myutxos.length; j++) {
-                            testutxo = myutxos[j];
-                            if (checkItem.getTxID().equals(testutxo.getTxID()) && checkItem.getOutputIdx().equals(testutxo.getOutputIdx())) {
-                                hasUnwantedUTXOs = true;
-                            }
-                        }
-                    }
-                }
-                if (hasUnwantedUTXOs) {
-                    console.log("warning: one of your other utxos was included in the input list.  Another participant may be behaving maliciously");
-                    throw Error;
-                }
-                console.log("input is in list");
-                //construct outputs
-                console.log("constructing outputs");
-                for (i = 0; i < outputData.length; i++) {
-                    outputObject = outputData[i];
-                    output_1 = new avm_1.TransferableOutput();
-                    output_1.fromBuffer(avalanche_1.Buffer.from(outputObject));
-                    outputs.push(output_1);
-                }
-                console.log("checking if output is in list");
-                myInfo = false;
-                for (i = 0; i < outputs.length; i++) {
-                    checkItem = outputs[i];
-                    console.log(checkItem);
-                    if (checkItem.toBuffer().equals(output.toBuffer())) {
-                        myInfo = true;
-                    }
-                }
-                console.log("checking if any of my other utxos are in this list");
-                if (!myInfo) {
-                    console.log("my output is not in output list");
-                    throw Error;
-                }
-                console.log("output is in list");
-                console.log("constructing transaction");
-                baseTx = new avm_1.BaseTx(networkID, networkData.xchainidBuf, outputs, inputs, avalanche_1.Buffer.from("test"));
-                unsignedTx = new avm_1.UnsignedTx(baseTx);
-                console.log("creating signature");
-                txbuff = unsignedTx.toBuffer();
-                msg = avalanche_1.Buffer.from(crypto_1.createHash("sha256").update(txbuff).digest());
+                myUtxos = utxoset.getAllUTXOs();
+                runSecurityChecks(inputs, outputs, myInput, myOutput, myUtxos);
                 sigbuf = keyData.myKeyPair.sign(msg);
-                sig = new common_1.Signature();
                 sig.fromBuffer(sigbuf);
+                return [3 /*break*/, 5];
+            case 2:
+                if (!(keyType == 1)) return [3 /*break*/, 5];
+                mwallet = avalanche_wallet_sdk_1.MnemonicWallet.fromMnemonic(privatekey);
+                return [4 /*yield*/, mwallet.resetHdIndices()];
+            case 3:
+                _a.sent();
+                return [4 /*yield*/, mwallet.updateUtxosX()];
+            case 4:
+                _a.sent();
+                runSecurityChecks(inputs, outputs, myInput, myOutput, mwallet.utxosX.getAllUTXOs());
+                sigString = mwallet.getSigFromUTX(msg, mwallet.getAllAddressesX().indexOf(pubaddr));
+                sig.fromBuffer(sigString);
+                _a.label = 5;
+            case 5:
                 console.log("transaction signed, sending sig to coinJoin");
-                returnData = {
+                sendData = {
                     "joinid": joinid,
-                    "messagetype": 4,
+                    "messagetype": consts.COLLECT_SIGS,
                     "signature": sig.toBuffer(),
                     "pubaddr": pubaddr,
                     "transaction": txbuff
                 };
-                processmessage_1.sendRecieve(returnData, networkID);
-                return [2 /*return*/];
+                return [4 /*yield*/, processmessage_1.sendRecieve(sendData)];
+            case 6:
+                recievedData = _a.sent();
+                return [2 /*return*/, recievedData];
         }
     });
 }); };
 exports.sendsignature = sendsignature;
+var checkInputs = function (inputs, myInput, myUtxos) {
+    var hasInput = false;
+    var unwantedUTXOcount = 0;
+    for (var i = 0; i < inputs.length; i++) {
+        var checkItem = inputs[i];
+        if (checkItem.getTxID().equals(myInput.getTxID()) && checkItem.getOutputIdx().equals(myInput.getOutputIdx())) {
+            hasInput = true;
+        }
+        else {
+            for (var j = 0; j < myUtxos.length; j++) {
+                var testutxo = myUtxos[j];
+                if (checkItem.getTxID().equals(testutxo.getTxID()) && checkItem.getOutputIdx().equals(testutxo.getOutputIdx())) {
+                    unwantedUTXOcount++;
+                    break;
+                }
+            }
+        }
+    }
+    if (!hasInput) {
+        throw Error("Your input is not recorded in the transaction, server or coinjoin participants may be malicious");
+    }
+    if (unwantedUTXOcount > 0) {
+        throw Error(unwantedUTXOcount + " other utxo(s) that you own were recorded in the tx.  Serer or cj participants may be malicious");
+    }
+};
+var checkOutputs = function (outputs, myOutput) {
+    var hasOutput = false;
+    for (var i = 0; i < outputs.length; i++) {
+        var checkItem = outputs[i];
+        if (checkItem.toBuffer().equals(myOutput.toBuffer())) {
+            hasOutput = true;
+        }
+    }
+    if (!hasOutput) {
+        throw Error("Your output is not recorded in the transaction, server or coinjoin participants may be malicious");
+    }
+};
+var runSecurityChecks = function (inputs, outputs, myInput, myOutput, myUtxos) {
+    checkInputs(inputs, myInput, myUtxos);
+    checkOutputs(outputs, myOutput);
+    console.log("All checks run, tx is good");
+};

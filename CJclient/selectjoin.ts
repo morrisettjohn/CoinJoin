@@ -1,10 +1,10 @@
 import { sendRecieve } from "./processmessage"
-import { request } from "http"
+import * as consts from "./constants"
 
 const selectjoin = async(assetid: string, assetamount: number, min_users?: number, max_users?: number): Promise<any> => {
     
     const returnData = {
-        "messagetype": 1,
+        "messagetype": consts.SELECT_OPTIONS,
         "assetid": assetid,
         "assetamount": assetamount,
     }

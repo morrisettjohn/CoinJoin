@@ -5,7 +5,7 @@ from httprequest import *
 from assetinfo import *
 from params import *
 from joinstatesamples import samples
-from messages import send_wiretx, send_signedtx, send_message, send_errmessage, send_option_data, send_compatable_joinlist, send_join_data
+from messages import send_wiretx, send_signedtx, send_message, send_errmessage, send_option_data, send_compatable_joinlist, send_join_data, send_nonce
 import socket
 import sys
 import json
@@ -140,8 +140,11 @@ def isvalid_jsondata(data):
         if not "joinid" in data:
             print("no joinid in data for selectjoin message")
             return False
+    elif data["messagetype"] == REQUEST_TO_JOIN:
+        if not "joinid" in data or not "pubaddr" in data:
+            print("insufficient information to request nonce")
     elif data["messagetype"] == COLLECT_INPUTS:
-        if not "joinid" in data or not "pubaddr" in data or not "inputbuf" or not "outputbuf" in data:
+        if not "joinid" in data or not "pubaddr" in data or not "inputbuf" in data or not "outputbuf" in data or not "ticket" in data:
             print("insufficient data for input message")
             return False
     elif data["messagetype"] == COLLECT_SIGS:
@@ -192,6 +195,10 @@ def process_data(conn, addr):
             join = json.dumps(get_join(data).get_status())
             print("sending info for join of id %s" % join)
             send_join_data(conn, join)
+        elif messagetype == REQUEST_TO_JOIN:
+            join = get_join(data)
+            print("sending nonce to address")
+            join.process_request(data, conn, addr)
         elif messagetype == COLLECT_INPUTS: 
             join = get_join(data)
             print("collecting input for join of id %s" % join)

@@ -1,31 +1,22 @@
 import {
-    Avalanche,
     BinTools,
     Buffer,
     BN
   } from "@avalabs/avalanche-wallet-sdk/node_modules/avalanche" 
 import { 
-    AVMAPI,
     UTXOSet,
-    UTXO,
-    UnsignedTx,
-    BaseTx,
     TransferableInput,
     TransferableOutput,
     SECPTransferInput,
     SECPTransferOutput,
-    KeyChain,
     Tx
  } from "@avalabs/avalanche-wallet-sdk/node_modules/avalanche/dist/apis/avm";
-import { request } from "http"
-import {
-    Defaults
-}from "avalanche/dist/utils"
 import { sendRecieve } from "./processmessage";
 import { generatekeychain, generatexchain, getKeyType } from "./avalancheutils";
 import { BNSCALE } from "./constants";
-import { Network, NetworkConstants } from "@avalabs/avalanche-wallet-sdk";
 import { MnemonicWallet } from "@avalabs/avalanche-wallet-sdk";
+import * as consts from "./constants"
+import { requestToJoin } from "./requestjoin";
 
 //setting up the xchain object
 const bintools: BinTools = BinTools.getInstance()
@@ -46,6 +37,7 @@ const sendutxodata = async(joinid: number, assetid: string, inputamount: number,
     const targetOutAmountFormatBN: BN = new BN(targetOutAmountFormatted)
 
     const keyType = getKeyType(privatekey)
+    
 
     let id = ""
     let signedTx: Tx = new Tx()
@@ -71,8 +63,6 @@ const sendutxodata = async(joinid: number, assetid: string, inputamount: number,
     }
 
     else if (keyType == 1){  //for mnemonics
-        console.log(Network)
-        console.log("yo")
         const mwallet = MnemonicWallet.fromMnemonic(privatekey)
         await mwallet.resetHdIndices()
         await mwallet.updateUtxosX()
@@ -84,6 +74,7 @@ const sendutxodata = async(joinid: number, assetid: string, inputamount: number,
         if (mwallet.getBalanceX()[assetid].unlocked.toNumber() >= targetInpAmountWithFee.toNumber()){
             const unsignedTx = await xchain.buildBaseTx(walletutxos, targetInpAmountFormatBN, assetid, [to], from, [change])
             signedTx = await mwallet.signX(unsignedTx)
+            id = await xchain.issueTx(signedTx)
         }
         else{
             throw Error("insufficient funds in wallet")
@@ -113,9 +104,11 @@ const sendutxodata = async(joinid: number, assetid: string, inputamount: number,
         txindex += 1
     }
 
+    myAddressBuf = [signedTx.getUnsignedTx().getTransaction().getOuts()[txindex].getOutput().getAddress(0)]
+    pubaddr = xchain.addressFromBuffer(myAddressBuf[0])
+    
     console.log("constructing my input")
     
-
     //construct input
     const txid: Buffer = bintools.cb58Decode(id)
     const outputidx = Buffer.alloc(4)
@@ -131,16 +124,21 @@ const sendutxodata = async(joinid: number, assetid: string, inputamount: number,
     const secpTransferOutput: SECPTransferOutput = new SECPTransferOutput(targetOutAmountFormatBN, outputaddressBuf)
     const output: TransferableOutput = new TransferableOutput(assetidBuf, secpTransferOutput)
 
-    const returnData = {
+    const ticket = await requestToJoin(joinid, pubaddr, privatekey, networkID)
+
+    const sendData = {
         "joinid": joinid,
-        "messagetype": 3,
+        "messagetype": consts.COLLECT_INPUTS,
         "pubaddr": pubaddr,
+        "ticket": ticket,
         "inputbuf": input.toBuffer(),
         "outputbuf": output.toBuffer(),
     }
 
     console.log("sending data to coinjoin server now")
-    sendRecieve(returnData, networkID, joinid, pubaddr, privatekey, input, output)
+    const recievedData = await sendRecieve(sendData)
+
+    return [recievedData, input, output, pubaddr]
 }
 
 

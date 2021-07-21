@@ -1,9 +1,9 @@
-import { constructHeaderOptions, processMessage, sendRecieve } from "./processmessage"
-import { request } from "http"
+import { sendRecieve } from "./processmessage"
+import * as consts from "./constants"
 
 const getoptiondata = async(): Promise<any> => {
     const returnData = {
-        "messagetype": 0
+        "messagetype": consts.START_PROCESS
     }
     sendRecieve(returnData)
 }

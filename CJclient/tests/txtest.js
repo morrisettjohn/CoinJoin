@@ -36,8 +36,8 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 exports.__esModule = true;
-var sendutxodata_1 = require("../sendutxodata");
 var utils_1 = require("avalanche/dist/utils");
+var cjinstance_1 = require("../cjinstance");
 var pubaddr1S = "X-fuji13a3dm204mh9hfjx3ajpk33cchgszh2qry97ml9";
 var privatekey1S = "PrivateKey-ryjZWerx1vRgQnFrLJ9oxBYUS7TdMRNrBLmSAAP78L4xixvT2";
 var pubaddr2S = "X-fuji1d6fetyekv4ec5enm9ltuxrd6n70ng04rpxq443";
@@ -55,6 +55,7 @@ var privatekey3R = "PrivateKey-2iSH7BA88LF5mozMd2cRmkFdGHQdksMRnmQADhWPfGhNFRPii
 var pubaddr4R = "X-fuji1ga8cr9eu7fq9x6f7zvwq26xmm4vdmdg7zrveav";
 var privatekey4R = "PrivateKey-28895VhkPjCeVwj8eThqMeFrCX4A44LucRbU9pSBucd1x4LnvT";
 var wallet1 = "dismiss spoon penalty gentle unable music buffalo cause bundle rural twist cheese discover this oyster garden globe excite kitchen rival diamond please clog swing";
+var wallet2 = "manage smile coin benefit taxi close view motion pact confirm feature cannon royal alien soft moment throw miracle material axis solid pool reflect vintage";
 var test1S = [pubaddr1S, privatekey1S];
 var test2S = [pubaddr2S, privatekey2S];
 var test3S = [pubaddr3S, privatekey3S];
@@ -64,6 +65,7 @@ var test2R = [pubaddr2R, privatekey2R];
 var test3R = [pubaddr3R, privatekey3R];
 var test4R = [pubaddr4R, privatekey4R];
 var test1W = [undefined, wallet1];
+var test2W = [undefined, wallet2];
 var tests = {
     "1S": test1S,
     "2S": test2S,
@@ -73,7 +75,8 @@ var tests = {
     "2R": test2R,
     "3R": test3R,
     "4R": test4R,
-    "1W": test1W
+    "1W": test1W,
+    "2W": test2W
 };
 var networkID = 5;
 var avaxAssetID = utils_1.Defaults.network[networkID].X.avaxAssetID;
@@ -92,19 +95,14 @@ if (args.length > 5) {
     outputamount = parseInt(args[5]);
 }
 var main = function () { return __awaiter(void 0, void 0, void 0, function () {
-    var txdata;
     return __generator(this, function (_a) {
-        switch (_a.label) {
-            case 0:
-                if (!(args[0] == "help")) return [3 /*break*/, 1];
-                console.log("usage: node txtest.js *joinid* *fromaddr* *toaddr* *networkid* *inputamount?* *outputamount?* ");
-                return [3 /*break*/, 3];
-            case 1: return [4 /*yield*/, sendutxodata_1.sendutxodata(joinid, avaxAssetID, inputamount, outputamount, toaddr[0], fromaddr[0], fromaddr[1], networkid)];
-            case 2:
-                txdata = _a.sent();
-                _a.label = 3;
-            case 3: return [2 /*return*/];
+        if (args[0] == "help") {
+            console.log("usage: node txtest.js *joinid* *fromaddr* *toaddr* *networkid* *inputamount?* *outputamount?* ");
         }
+        else {
+            cjinstance_1.startCJInstance(joinid, avaxAssetID, inputamount, outputamount, toaddr[0], fromaddr[0], fromaddr[1], networkid);
+        }
+        return [2 /*return*/];
     });
 }); };
 main();

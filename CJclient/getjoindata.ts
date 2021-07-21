@@ -1,9 +1,10 @@
-import { constructHeaderOptions, processMessage, sendRecieve } from "./processmessage"
-import { request } from "http"
+import { sendRecieve } from "./processmessage"
+import * as consts from "./constants"
 
 const getjoindata = async(joinid: number): Promise<any> => {
     const returnData = {
-        "messagetype": 2,
+        
+        "messagetype": consts.GET_JOIN_DATA,
         "joinid": joinid
     }
     sendRecieve(returnData)

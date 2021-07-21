@@ -1,20 +1,18 @@
 import json
 import time
+import string
 
-import bech32
-
-from messages import send_errmessage, send_message, send_signedtx, send_wiretx
+from messages import send_errmessage, send_message, send_signedtx, send_wiretx, send_nonce
 from httprequest import *
 from params import *
 from decimal import Decimal, getcontext
 from struct import *
-from cb58ref import cb58decode, cb58encode
-from bech32 import bech32_encode, bech32_decode
-from bech32utils import fromWords, toWords, bech32_pack_address
 from bufferutils import pack_out, unpack_inp, unpack_out
+from random import choice
+from subprocess import *
+
 
 getcontext().prec = 9
-
 
 #This is a class which holds all the data for a coinjoin.  The CoinJoin has two main states that it can be in:  collecting utxo inputs and collecting
 #signatures.  
@@ -22,7 +20,7 @@ getcontext().prec = 9
 class JoinState:
 
     def __init__(self, id = "test", connect_limit:int = DEFAULT_LOWER_USER_BOUND, assetid:str = 1, assetamount = 1, 
-            feeaddress:str = "", feepercent = Decimal(0.10)):
+            feeaddress:str = "", feepercent = Decimal(0.10), debug_mode: bool = False):
 
         self.id = id
         self.connect_limit = connect_limit
@@ -36,11 +34,13 @@ class JoinState:
         self.last_accessed = time.time()
         self.tx = None
         self.pubaddresses = []
+        self.potential_users = []
         self.IP_addresses = []  #XXX
         self.connections = []
         self.signers = []
         self.inputs = []
         self.outputs = []
+        self.debug_mode = debug_mode
 
         if not self.isvalid_join():
             raise Exception("bad parameters")
@@ -86,6 +86,7 @@ class JoinState:
         self.last_accessed = time.time()
         self.tx = None
         self.pubaddresses = []
+        self.potential_users = []
         self.IP_addresses = []
         self.connections = []
         self.signers = []
@@ -100,7 +101,7 @@ class JoinState:
     def isvalid_join(self):
         if type(self.id) != int:
             return False
-        if self.connect_limit < MIN_USER_BOUND or self.connect_limit > MAX_USER_BOUND:
+        if not self.debug_mode and (self.connect_limit < MIN_USER_BOUND or self.connect_limit > MAX_USER_BOUND):
             return False
         if self.assetamount <= 0:
             return False
@@ -174,10 +175,34 @@ class JoinState:
     def craft_signed_transaction_data(self):
         return json.dumps({"signatures": self.signers, "transaction": self.tx})
 
+    def in_potential_users(self, pubaddress):
+        pubaddresses, nonces = map(list, zip(*self.potential_users))
+        if pubaddress in pubaddresses:
+            return True
+        return False
+    
+    def get_nonce(self, pubaddress):
+        pubaddresses, nonces = map(list, zip(*self.potential_users))
+        return nonces[pubaddresses.index(pubaddress)]
+        
+
+    def verify_ticket(pubaddr: string, ticket: string, nonce: string):
+        z = check_output(['node', './verifyticket.js', pubaddr, json.dumps(ticket), nonce]).decode().strip()
+        if z == "true":
+            return True
+        return False
+
     #Function that parses data, and makes sure that it is valid
     def process_request(self, request_data, conn, addr):
         ip = addr[0]
         pubaddr = JoinState.extract_pubaddr(request_data)
+
+        if request_data["messagetype"] == REQUEST_TO_JOIN:
+            nonce = ''.join(choice(string.ascii_letters) for i in range(10))
+            print(nonce)
+            print("this is the nonce")
+            self.potential_users.append([pubaddr, nonce])
+            send_nonce(conn, nonce)
 
         if request_data["messagetype"] == COLLECT_INPUTS:
             input_buf = JoinState.extract_inputbuf(request_data)
@@ -187,42 +212,49 @@ class JoinState:
             output_data = unpack_out(output_buf["data"])
             inputamount = input_data["inputamount"]/BNSCALE
             outputamount = output_data["outputamount"]/BNSCALE
+            print("checking that stuff works")
             if self.state == COLLECT_INPUTS:
                 if inputamount >= self.totalamount and outputamount == self.assetamount:
                     if input_data["assetid"] == output_data["assetid"] == self.assetid:
                         if True: #not ip in self.IP_addresses:       #XXX need to comment out for testing purposes
                             if pubaddr not in self.pubaddresses:
-                                #create input and output data when this has been determined to be valid information
-                                self.update_last_accessed()
-                                self.connections.append(conn)
-                                self.IP_addresses.append(ip)
-                                self.pubaddresses.append(pubaddr)
+                                if self.in_potential_users(pubaddr):
+                                    if JoinState.verify_ticket(pubaddr, request_data["ticket"], self.get_nonce(pubaddr)):
+                                        #create input and output data when this has been determined to be valid information
+                                        self.update_last_accessed()
+                                        self.connections.append(conn)
+                                        self.IP_addresses.append(ip)
+                                        self.pubaddresses.append(pubaddr)
 
-                                self.inputs_append(input_buf, request_address)
-                                self.outputs_append(output_buf, request_address)
+                                        self.inputs_append(input_buf, request_address)
+                                        self.outputs_append(output_buf, request_address)
 
-                                self.collected_fee_amount += Decimal(inputamount) - Decimal(self.assetamount)
-                                print("collected fees: " + str(float((self.collected_fee_amount))))
-                                send_message(conn, "transaction data accepted, please wait for other users to input data")
+                                        self.collected_fee_amount += Decimal(inputamount) - Decimal(self.assetamount)
+                                        print("collected fees: " + str(float((self.collected_fee_amount))))
+                                        send_message(conn, "transaction data accepted, please wait for other users to input data")
 
-                                for item in self.connections:
-                                    send_message(item, "%d out of %d users connected" % (len(self.inputs), self.connect_limit))
-                                
-                                #when sufficient connections are created, go through the process of sending out the transaction
-                                if len(self.inputs) >= self.connect_limit:
-                                    #add the fee to the outputs
-                                    self.add_fee_output()
-                                    wire_tx = self.craft_wire_transaction()
-                                    
-                                    #send out transaction to every user
-                                    for item in self.connections:
-                                        send_message(item, "all transactions complete, please input signature now")
-                                        send_wiretx(item, wire_tx)
-                                    self.initialize_signers()
-                                    self.IP_addresses = [] #delete ip addresses for security
-                                    self.connections = []  #reset connections
-                                    self.state = COLLECT_SIGS
-                                return
+                                        for item in self.connections:
+                                            send_message(item, "%d out of %d users connected" % (len(self.inputs), self.connect_limit))
+                                        
+                                        #when sufficient connections are created, go through the process of sending out the transaction
+                                        if len(self.inputs) >= self.connect_limit:
+                                            #add the fee to the outputs
+                                            self.add_fee_output()
+                                            wire_tx = self.craft_wire_transaction()
+                                            
+                                            #send out transaction to every user
+                                            for item in self.connections:
+                                                send_message(item, "all transactions complete, please input signature now")
+                                                send_wiretx(item, wire_tx)
+                                            self.initialize_signers()
+                                            self.IP_addresses = [] #delete ip addresses for security
+                                            self.connections = []  #reset connections
+                                            self.state = COLLECT_SIGS
+                                        return
+                                    else:
+                                        print("nonce did not verify to pubaddr")
+                                        send_errmessage(conn, "signature not associated with pubkey")
+                                        return
                             else:
                                 print("already connected")
                                 send_errmessage(conn, "Already connected")

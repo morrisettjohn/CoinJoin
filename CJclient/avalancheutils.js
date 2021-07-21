@@ -12,7 +12,7 @@ var generatexchain = function (networkID) {
         Ip = "api.avax-test.network";
         port = 443;
         protocol = "https";
-        avalanche_wallet_sdk_1.Network.setNetwork(avalanche_wallet_sdk_1.NetworkConstants.MainnetConfig);
+        avalanche_wallet_sdk_1.Network.setNetwork(avalanche_wallet_sdk_1.NetworkConstants.TestnetConfig);
     }
     else if (networkID == 1) {
         Ip = "api.avax.network";

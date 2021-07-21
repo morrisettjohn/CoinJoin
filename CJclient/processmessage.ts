@@ -2,7 +2,7 @@ import { issuetx } from "./issuetx"
 import { sendsignature } from "./sendsignature"
 import { request } from "http"
 
-const isValidWTX = function(data: any): boolean {
+const isValidWTXData = function(data: any): boolean {
     if (!("inputs" in data && "outputs" in data)){
         return false
     }
@@ -23,18 +23,19 @@ const isValidWTX = function(data: any): boolean {
 }
 
 const isValidSTX = function(data: any): boolean {
+    return true
+    /*XXX fix later
     if (!("signatures" in data && "transaction" in data)){
         return false
     }
     if (data["signatures"].length < 1 || data["transaction"].length != 1){
         return false
     }
-    return true
+    return true*/
 }
 
 //takes a message from the coinjoin server and processes it, using a 3 character prefix as a messagetype
-const processMessage = function (recievedData: string, networkID?: number, joinid?: any, pubaddr?: any, privatekey?: any,
-    input?: any, output?: any): any{
+const processMessage = function (recievedData: string): any{
     while (recievedData.indexOf("\r\n\r\n") != -1){
         const endIndex: number = recievedData.indexOf("\r\n\r\n")
         const messageType: string = recievedData.slice(0, 3)
@@ -43,7 +44,7 @@ const processMessage = function (recievedData: string, networkID?: number, joini
         //handling message
         if (messageType == "MSG"){
             console.log("SERVER MESSAGE: " + messageData)
-        }
+        }           
         //handling error message
         else if (messageType == "ERR"){
             console.log("ERROR: " + messageData)
@@ -66,12 +67,16 @@ const processMessage = function (recievedData: string, networkID?: number, joini
             console.log("recieved join data\r\n")
             printReadableJoinData(JSON.parse(messageData))
         }
+        else if (messageType == "NCE"){
+            return messageData
+        }
         //handling send_utxo data
         else if (messageType == "WTX"){
             console.log("recieved wiretx")
             const data = JSON.parse(messageData)
-            if (isValidWTX(data)){
-                sendsignature(joinid, data, pubaddr, privatekey, networkID, input, output)
+            
+            if (isValidWTXData(data)){
+                return data
             }
             else {
                 return new Error("Incomplete wtx")
@@ -79,14 +84,21 @@ const processMessage = function (recievedData: string, networkID?: number, joini
         }
         //handling signed_tx data
         else if (messageType == "STX"){
-            console.log("messagedata")
-            console.log(messageData)
-            issuetx(JSON.parse(messageData), networkID)
+            console.log("recieved full tx")
+            const data = JSON.parse(messageData)
+            if (isValidSTX(data)){
+                return data
+            }
+            else {
+                return new Error("incomplete stx")
+            }
+            
         }
         else {
             console.log("not a valid messagetype")
         }
     }
+    return undefined
 }
 
 const constructHeaderOptions = function (content: any): any{
@@ -113,19 +125,23 @@ const printReadableJoinData = function(join: any) {
     console.log(`\tTotal ${state} collected:  ${join["current_input_count"]}/${join["input_limit"]}\r\n`)
 }
 
-const sendRecieve = function (sendData: any, networkID?: any, joinid?: any, pubaddr?: any, privatekey?: any,
-    input?: any, output?: any) {
+const sendRecieve = function (sendData: any): Promise<any> {
     const returnDataString = JSON.stringify(sendData)
     const options = constructHeaderOptions(returnDataString)
 
-    const req = request(options, res => {
-        res.on("data", d => {
-            let recievedData = d.toString()
-            processMessage(recievedData, networkID, joinid, pubaddr, privatekey, input, output)
+    return new Promise((resolve, reject) => {
+        const req = request(options, res => {
+            res.on("data", d => {
+                let recievedData = d.toString()
+                const data = processMessage(recievedData)
+                if (data != undefined){
+                    resolve(data)
+                }
+            })
         })
+        req.write(returnDataString)
+        req.end()
     })
-    req.write(returnDataString)
-    req.end()
     
 }
 
