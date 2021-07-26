@@ -11,6 +11,9 @@ def convert_to_pybuffer(data, start, end):
         start += 1
     return returndata
 
+def convert_to_jsbuffer(data, start, end):
+    pass
+
 def unpack_inp(inputbuf):
     start = 0
     txid = cb58encode(convert_to_pybuffer(inputbuf, start, start + TXID_BUF_LENGTH))
@@ -57,7 +60,8 @@ def pack_out(assetid, assetamount, locktime, threshold, addresses):
     numaddressesbuf = pack(">I", len(addresses))
     addressbuf = []
     for addr in addresses:
-        addressbuf.extend(bech32_pack_address(addr))
+        pass
+        #addressbuf.extend(bech32_pack_address(addr))
     for buf in [assetidbuf, typeidbuf, assetamountbuf, locktimebuf, thresholdbuf, numaddressesbuf, addressbuf]:
         return_buffer.extend(buf)
     return return_buffer

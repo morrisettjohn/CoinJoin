@@ -1,4 +1,5 @@
 import socket
+import json
 
 req_terminator = "\r\n\r\n"
 
@@ -10,23 +11,23 @@ def send_errmessage(conn, message):
     conn.close()
 
 def send_option_data(conn, optiondata):
-    conn.sendall(str.encode("OPT" + optiondata + req_terminator))
+    conn.sendall(str.encode("OPT" + json.dumps(optiondata) + req_terminator))
     conn.close()
 
 def send_compatable_joinlist(conn, matches):
-    conn.sendall(str.encode("JLS" + matches + req_terminator))
+    conn.sendall(str.encode("JLS" + json.dumps(matches) + req_terminator))
     conn.close()
 
 def send_join_data(conn, joindata):
-    conn.sendall(str.encode("JDT" + joindata + req_terminator))
+    conn.sendall(str.encode("JDT" + json.dumps(joindata) + req_terminator))
     conn.close()
 
 def send_wiretx(conn, wiretx):
-    conn.sendall(str.encode("WTX" + wiretx + req_terminator))
+    conn.sendall(str.encode("WTX" + json.dumps(wiretx) + req_terminator))
     conn.close()
 
 def send_signedtx(conn, signedtx):
-    conn.sendall(str.encode("STX" + signedtx + req_terminator))
+    conn.sendall(str.encode("STX" + json.dumps(signedtx) + req_terminator))
     conn.close()
 
 def send_nonce(conn, nonce):

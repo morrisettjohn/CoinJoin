@@ -47,31 +47,17 @@ var consts = require("./constants");
 var requestjoin_1 = require("./requestjoin");
 var bintools = avalanche_1.BinTools.getInstance();
 var sendsignature = function (joinid, data, pubaddr, privatekey, networkID, myInput, myOutput) { return __awaiter(void 0, void 0, void 0, function () {
-    var networkData, keyType, inputs, outputs, i, inputObject, input, i, outputObject, output, baseTx, unsignedTx, txbuff, msg, sigbuf, sig, keyData, utxoset, myUtxos, mwallet, sigString, ticket, sendData, recievedData;
+    var networkData, keyType, txbuff, unsignedTx, inputs, outputs, msg, sigbuf, sig, keyData, utxoset, myUtxos, mwallet, sigString, ticket, sendData, recievedData;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
                 networkData = avalancheutils_1.generatexchain(networkID);
                 keyType = avalancheutils_1.getKeyType(privatekey);
-                inputs = [];
-                outputs = [];
-                console.log("constructing inputs");
-                for (i = 0; i < data["inputs"].length; i++) {
-                    inputObject = data["inputs"][i];
-                    input = new avm_1.TransferableInput();
-                    input.fromBuffer(avalanche_1.Buffer.from(inputObject[0]));
-                    inputs.push(input);
-                }
-                console.log("constructing outputs");
-                for (i = 0; i < data["outputs"].length; i++) {
-                    outputObject = data["outputs"][i];
-                    output = new avm_1.TransferableOutput();
-                    output.fromBuffer(avalanche_1.Buffer.from(outputObject));
-                    outputs.push(output);
-                }
-                baseTx = new avm_1.BaseTx(networkID, networkData.xchainidBuf, outputs, inputs, avalanche_1.Buffer.from("test"));
-                unsignedTx = new avm_1.UnsignedTx(baseTx);
-                txbuff = unsignedTx.toBuffer();
+                txbuff = avalanche_1.Buffer.from(data);
+                unsignedTx = new avm_1.UnsignedTx();
+                unsignedTx.fromBuffer(txbuff);
+                inputs = unsignedTx.getTransaction().getIns();
+                outputs = unsignedTx.getTransaction().getOuts();
                 msg = avalanche_1.Buffer.from(crypto_1.createHash("sha256").update(txbuff).digest());
                 sigbuf = undefined;
                 sig = new common_1.Signature();

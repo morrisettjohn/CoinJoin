@@ -26,38 +26,15 @@ const sendsignature = async(joinid: number, data: any, pubaddr: string, privatek
     const networkData = generatexchain(networkID)
     const keyType = getKeyType(privatekey)
 
-    const inputs: TransferableInput[] = []
-    const outputs: TransferableOutput[] = []
 
-    console.log("constructing inputs")
-    for (let i = 0; i < data["inputs"].length; i++){
-        const inputObject = data["inputs"][i]
-        const input: TransferableInput = new TransferableInput()
-        input.fromBuffer(Buffer.from(inputObject[0]))
-        inputs.push(input)
-    }
-
-    console.log("constructing outputs")
-    for (let i = 0; i < data["outputs"].length; i++){
-        const outputObject = data["outputs"][i]
-        const output: TransferableOutput = new TransferableOutput()
-        output.fromBuffer(Buffer.from(outputObject))
-        outputs.push(output)
-    }
-
-    const baseTx: BaseTx = new BaseTx (
-        networkID,
-        networkData.xchainidBuf,
-        outputs,
-        inputs,
-        Buffer.from("test")
-    )
-
-    const unsignedTx: UnsignedTx = new UnsignedTx(baseTx)
     
-    const txbuff = unsignedTx.toBuffer()
+    const txbuff: Buffer = Buffer.from(data)
+    const unsignedTx: UnsignedTx = new UnsignedTx()
+    unsignedTx.fromBuffer(txbuff)
+    const inputs: TransferableInput[] = unsignedTx.getTransaction().getIns()
+    const outputs: TransferableOutput[] = unsignedTx.getTransaction().getOuts()
+    
     const msg = Buffer.from(createHash("sha256").update(txbuff).digest())
-
 
     let sigbuf: Buffer = undefined
     const sig: Signature = new Signature()

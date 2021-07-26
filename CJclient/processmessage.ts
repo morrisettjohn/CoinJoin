@@ -3,6 +3,7 @@ import { sendsignature } from "./sendsignature"
 import { request } from "http"
 
 const isValidWTXData = function(data: any): boolean {
+    return true
     if (!("inputs" in data && "outputs" in data)){
         return false
     }

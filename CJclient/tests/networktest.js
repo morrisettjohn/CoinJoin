@@ -36,53 +36,25 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 exports.__esModule = true;
-var avm_1 = require("avalanche/dist/apis/avm");
 var avalancheutils_1 = require("../avalancheutils");
 var avalanche_1 = require("avalanche");
-var constants_1 = require("../constants");
-var avm_2 = require("@avalabs/avalanche-wallet-sdk/node_modules/avalanche/dist/apis/avm");
-var avalanche_wallet_sdk_1 = require("@avalabs/avalanche-wallet-sdk");
-var utils_1 = require("avalanche/dist/utils");
 var mnemonicKey = "dismiss spoon penalty gentle unable music buffalo cause bundle rural twist cheese discover this oyster garden globe excite kitchen rival diamond please clog swing";
 var bintools = avalanche_1.BinTools.getInstance();
 var test = function (networkID) { return __awaiter(void 0, void 0, void 0, function () {
-    var networkData, xchain, avaxAssetID, mwallet, outputaddressBuf, id, txid, outputidx, assetidBuf, secpTransferInput, input, secpTransferOutput, output, baseTx, unsignedTx, txbuff, tx, standardTx;
+    var networkData, x, networkData2, y;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
                 networkData = avalancheutils_1.generatexchain(5);
-                xchain = networkData.xchain;
-                avaxAssetID = utils_1.Defaults.network[networkID].X.avaxAssetID;
-                avalanche_wallet_sdk_1.Network.setNetwork(avalanche_wallet_sdk_1.NetworkConstants.TestnetConfig); //if you want to switch pass it through again
-                mwallet = avalanche_wallet_sdk_1.MnemonicWallet.fromMnemonic(mnemonicKey);
-                return [4 /*yield*/, mwallet.resetHdIndices()];
+                return [4 /*yield*/, networkData.xchain.getAVAXAssetID()];
             case 1:
-                _a.sent();
-                return [4 /*yield*/, mwallet.updateUtxosX()];
+                x = _a.sent();
+                console.log(x);
+                networkData2 = avalancheutils_1.generatexchain(1);
+                return [4 /*yield*/, networkData2.xchain.getAVAXAssetID()];
             case 2:
-                _a.sent();
-                outputaddressBuf = [xchain.parseAddress(mwallet.getAddressX())];
-                id = "Lj6TJDDb7NVZM59YLZdpKsZDkF8Jw5Gqxuxgn5AxiCKTGZDMj";
-                txid = bintools.cb58Decode(id);
-                outputidx = avalanche_1.Buffer.alloc(4);
-                outputidx.writeIntBE(0, 0, 4);
-                assetidBuf = bintools.cb58Decode(avaxAssetID);
-                secpTransferInput = new avm_2.SECPTransferInput(new avalanche_1.BN(.689 * constants_1.BNSCALE));
-                secpTransferInput.addSignatureIdx(0, xchain.parseAddress(mwallet.getAddressX()));
-                input = new avm_2.TransferableInput(txid, outputidx, assetidBuf, secpTransferInput);
-                console.log("constructing my output");
-                secpTransferOutput = new avm_2.SECPTransferOutput(new avalanche_1.BN(.688 * constants_1.BNSCALE), outputaddressBuf);
-                output = new avm_2.TransferableOutput(assetidBuf, secpTransferOutput);
-                baseTx = new avm_2.BaseTx(5, networkData.xchainidBuf, [output], [input]);
-                unsignedTx = new avm_2.UnsignedTx(baseTx);
-                txbuff = unsignedTx.toBuffer();
-                mwallet.resetHdIndices();
-                return [4 /*yield*/, mwallet.signX(unsignedTx)];
-            case 3:
-                tx = _a.sent();
-                standardTx = new avm_1.Tx();
-                standardTx.fromString(tx.toString());
-                xchain.issueTx(standardTx);
+                y = _a.sent();
+                console.log(y);
                 return [2 /*return*/];
         }
     });

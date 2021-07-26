@@ -2,6 +2,7 @@
 exports.__esModule = true;
 var http_1 = require("http");
 var isValidWTXData = function (data) {
+    return true;
     if (!("inputs" in data && "outputs" in data)) {
         return false;
     }

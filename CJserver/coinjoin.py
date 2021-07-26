@@ -1,4 +1,5 @@
 import json
+import subprocess
 import time
 import string
 
@@ -20,7 +21,7 @@ getcontext().prec = 9
 class JoinState:
 
     def __init__(self, id = "test", connect_limit:int = DEFAULT_LOWER_USER_BOUND, assetid:str = 1, assetamount = 1, 
-            feeaddress:str = "", feepercent = Decimal(0.10), debug_mode: bool = False):
+            feeaddress:str = "", feepercent = Decimal(0.10), networkID = FUJI, debug_mode: bool = False):
 
         self.id = id
         self.connect_limit = connect_limit
@@ -30,9 +31,11 @@ class JoinState:
         self.totalamount = assetamount + assetamount * feepercent
         self.feeaddress = feeaddress
         self.state = COLLECT_INPUTS
+        self.networkID = networkID
         self.collected_fee_amount = Decimal(0)
         self.last_accessed = time.time()
         self.tx = None
+        
         self.pubaddresses = []
         self.pending_users = []
         self.IP_addresses = []  #XXX
@@ -71,7 +74,7 @@ class JoinState:
         if self.state == COLLECT_INPUTS:
             status["current_input_count"] = self.get_current_input_count()
         elif self.state == COLLECT_SIGS:
-                status["current_input_count"] = self.get_current_signature_count(),
+            status["current_input_count"] = self.get_current_signature_count(),
         else:
             Exception("bad")
         return status
@@ -163,6 +166,10 @@ class JoinState:
     def extract_pubaddr(request_data):
         return request_data["pubaddr"]
 
+    def extract_inputs(self):
+        inputs, pubaddresses = map(list, zip(*self.inputs))
+        return inputs
+
     #returns only the output data, not the ip addresses, from the output list
     def extract_outputs(self):
         outputs, pubaddresses = map(list, zip(*self.outputs))
@@ -170,10 +177,34 @@ class JoinState:
     
     #creates all of the 
     def craft_wire_transaction(self):
-        return json.dumps({"inputs": self.inputs,"outputs": self.extract_outputs()})
+        fee_data = {
+            "assetid": self.assetid, 
+            "amount": int(self.get_fee_after_burn()*BNSCALE), 
+            "address": self.feeaddress
+        }
+
+        wiretx_data = str.encode(json.dumps({
+            "inputs": self.extract_inputs(),
+            "outputs": self.extract_outputs(),
+            "networkID": self.networkID,
+            "feedata": fee_data
+        }))
+        result = subprocess.run(['node', './craftunsignedtx.js'], input = wiretx_data, capture_output=True)
+        try:
+            result.check_returncode()
+        except Exception:
+            raise Exception("bad transaction data")
+        bufferdata = []
+        bufferdata.extend(result.stdout)
+        unsignedTxBuf = {"type": "Buffer", "data": bufferdata}
+        return unsignedTxBuf
 
     def craft_signed_transaction_data(self):
-        return json.dumps({"signatures": self.signers, "transaction": self.tx})
+        return {"signatures": self.signers, "transaction": self.tx}
+
+    def issueTx(self):
+        result = subprocess.run(['node', './issuetx.js'], input = )
+
 
     def in_pending_users(self, pubaddress):
         if self.pending_users == []:
@@ -187,10 +218,9 @@ class JoinState:
         pubaddresses, nonces = map(list, zip(*self.pending_users))
         return nonces[pubaddresses.index(pubaddress)]
         
-    def verify_ticket(pubaddr: string, ticket: string, nonce: string):
-        z = check_output(['node', './verifyticket.js', pubaddr, json.dumps(ticket), nonce]).decode().strip()
-        print(z)
-        if z == "true":
+    def verify_ticket(pubaddr: string, ticket: string, nonce: string, networkID):
+        x = check_output(['node', './verifyticket.js', pubaddr, json.dumps(ticket), nonce, str(networkID)]).decode().strip()
+        if x == "true":
             return True
         return False
 
@@ -200,12 +230,13 @@ class JoinState:
         pubaddr = JoinState.extract_pubaddr(request_data)
 
         if request_data["messagetype"] == REQUEST_TO_JOIN:
-            if self.state == COLLECT_SIGS:
-                if pubaddr not in self.pubaddresses:
-                    send_errmessage(conn, "Verification request denied, not in the coinjoin in the collect sigs stage")
+            if self.state == COLLECT_SIGS and pubaddr not in self.pubaddresses:
+                send_errmessage(conn, "Verification request denied, not in the coinjoin in the collect sigs stage")
+
             if self.in_pending_users(pubaddr):
                 pubaddresses, nonces = map(list, zip(*self.pending_users))
                 self.pending_users.pop(pubaddresses.index(pubaddr))
+
             nonce = ''.join(choice(string.ascii_letters) for i in range(10))
             self.pending_users.append([pubaddr, nonce])
             send_nonce(conn, nonce)
@@ -224,7 +255,7 @@ class JoinState:
                         if True: #not ip in self.IP_addresses:       #XXX need to comment out for testing purposes
                             if pubaddr not in self.pubaddresses:
                                 if self.in_pending_users(pubaddr):
-                                    if JoinState.verify_ticket(pubaddr, request_data["ticket"], self.get_nonce(pubaddr)):
+                                    if JoinState.verify_ticket(pubaddr, request_data["ticket"], self.get_nonce(pubaddr), self.networkID):
                                         #create input and output data when this has been determined to be valid information
                                         self.update_last_accessed()
                                         self.connections.append(conn)
@@ -244,13 +275,12 @@ class JoinState:
                                         #when sufficient connections are created, go through the process of sending out the transaction
                                         if len(self.inputs) >= self.connect_limit:
                                             #add the fee to the outputs
-                                            self.add_fee_output()
-                                            wire_tx = self.craft_wire_transaction()
-                                            
+                                            self.tx = self.craft_wire_transaction()
+
                                             #send out transaction to every user
                                             for item in self.connections:
                                                 send_message(item, "all transactions complete, please input signature now")
-                                                send_wiretx(item, wire_tx)
+                                                send_wiretx(item, self.tx)
                                             self.initialize_signers()
                                             self.IP_addresses = [] #delete ip addresses for security
                                             self.connections = []  #reset connections
@@ -293,12 +323,11 @@ class JoinState:
                 if pubaddr in self.pubaddresses:
                     if pubaddr not in self.signers:
                         if self.in_pending_users(pubaddr):
-                            if JoinState.verify_ticket(pubaddr, request_data["ticket"], self.get_nonce(pubaddr)):
+                            if JoinState.verify_ticket(pubaddr, request_data["ticket"], self.get_nonce(pubaddr), self.networkID):
                                 #When it has been determined that the signature is valid, continue through
                                 self.update_last_accessed()
                                 self.signers_append(request_data["signature"], pubaddr)
                                 self.connections.append(conn)
-                                self.tx = request_data["transaction"]
                                 send_message(conn, "signature registered, waiting for others in the coinjoin")
 
                                 for item in self.connections:
@@ -307,9 +336,11 @@ class JoinState:
                                 if None not in self.signers and len(self.signers) >= self.connect_limit:
                                     print("all signed")
                                     signed_tx = self.craft_signed_transaction_data()
+
                                     for item in self.connections:
                                         send_message(item, "all participants have signed")
                                         send_signedtx(item, signed_tx)
+                                    self.issueTx()
                                     self.reset_join()
                                 return
                             else:

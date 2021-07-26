@@ -93,7 +93,7 @@ def find_joins(assetid, amount, min_users, max_users):
         matches.append(new_join.get_status())
         print(joinlist)
         current_id += 1
-    return json.dumps(matches)
+    return matches
 
 #Determines what the option data for a find_joins request is.  
 def parse_option_data(data):
@@ -174,7 +174,7 @@ def generate_option_data():
     returndata = {}
     for item in ASSET_TYPES:
         returndata[item[0]] = (item[1], item[2])
-    return json.dumps(returndata)
+    return returndata
 
 #Processes data based on what kind of message the data contains
 def process_data(conn, addr):
@@ -192,7 +192,7 @@ def process_data(conn, addr):
             matches = find_joins(specs[0], specs[1], specs[2], specs[3])
             send_compatable_joinlist(conn, matches)
         elif messagetype == GET_JOIN_DATA:
-            join = json.dumps(get_join(data).get_status())
+            join = get_join(data).get_status()
             print("sending info for join of id %s" % join)
             send_join_data(conn, join)
         elif messagetype == REQUEST_TO_JOIN:

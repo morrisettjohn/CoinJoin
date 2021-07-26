@@ -6,8 +6,6 @@ import { sendRecieve } from "./processmessage";
 import * as consts from "./constants"
 import { generatekeychain, generatexchain, getKeyType } from "./avalancheutils";
 import { MnemonicWallet } from "@avalabs/avalanche-wallet-sdk";
-import * as bech32 from "bech32"
-import { Address } from "@avalabs/avalanche-wallet-sdk/node_modules/avalanche/dist/common";
 
 const bintools: BinTools = BinTools.getInstance()
 
