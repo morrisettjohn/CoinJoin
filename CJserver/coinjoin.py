@@ -341,6 +341,7 @@ class JoinState:
         self.stx = None
         self.stx_id = None
         self.sigs = None
+        self.state = COLLECT_SIGS
 
     #Function that parses data, and makes sure that it is valid
     def process_request(self, request_data, conn, addr):

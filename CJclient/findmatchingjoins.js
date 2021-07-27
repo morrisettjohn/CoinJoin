@@ -36,15 +36,16 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 exports.__esModule = true;
-exports.selectjoin = void 0;
 var processmessage_1 = require("./processmessage");
-var selectjoin = function (assetid, assetamount, min_users, max_users) { return __awaiter(void 0, void 0, void 0, function () {
+var consts = require("./constants");
+var findMatchingJoins = function (assetid, assetamount, networkID, min_users, max_users) { return __awaiter(void 0, void 0, void 0, function () {
     var returnData;
     return __generator(this, function (_a) {
         returnData = {
-            "messagetype": 1,
+            "messagetype": consts.SELECT_OPTIONS,
             "assetid": assetid,
-            "assetamount": assetamount
+            "assetamount": assetamount,
+            "networkID": networkID
         };
         if (min_users) {
             returnData["min_users"] = min_users;
@@ -56,4 +57,4 @@ var selectjoin = function (assetid, assetamount, min_users, max_users) { return 
         return [2 /*return*/];
     });
 }); };
-exports.selectjoin = selectjoin;
+exports.findMatchingJoins = findMatchingJoins;

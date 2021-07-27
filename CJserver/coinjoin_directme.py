@@ -11,7 +11,7 @@ import sys
 import json
 import time
 
-current_id = 7
+current_id = 8
 joinlist = {}
 
 def isvalid_request(request_data):
@@ -80,8 +80,11 @@ def create_new_join(asset_type, amount, limit):
 def find_joins(assetid, amount, min_users, max_users):
     global current_id
     matches = []
+
+    print(max_users)
     for item in joinlist:
         item = joinlist[item]
+        
         if item.state == COLLECT_INPUTS and item.assetid == assetid and item.assetamount == amount \
         and item.connect_limit >= min_users and item.connect_limit <= max_users:
             matches.append(item.get_status())
