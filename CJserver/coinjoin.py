@@ -42,7 +42,7 @@ class JoinState:
         self.pending_users = []
         self.IP_addresses = []
         self.connections = []
-        self.signers = []
+        self.sigs = []
         self.inputs = []
         self.outputs = []
         self.debug_mode = debug_mode
@@ -57,7 +57,7 @@ class JoinState:
     #Returns the number of signatures that have joined during the signature stage
     def get_current_signature_count(self):
         count = 0
-        for item in self.signers:
+        for item in self.sigs:
             if item != None:
                 count += 1
         return count
@@ -96,7 +96,7 @@ class JoinState:
         self.pending_users = []
         self.IP_addresses = []
         self.connections = []
-        self.signers = []
+        self.sigs = []
         self.inputs = []
         self.outputs = []
 
@@ -148,15 +148,18 @@ class JoinState:
         self.outputs = sorted(self.outputs, key=lambda x: x[0]["data"])
         
     #Add a new signature to the list.  Signatures should be in the same order as inputs, so they are ordered as such.
-    def signers_append(self, signature, pubaddr):
+    def sigs_append(self, signature, pubaddr):
         inputs, pubaddresses = map(list, zip(*self.inputs))
         index = pubaddresses.index(pubaddr)  #Determines where the ip is in the list
-        self.signers[index] = [signature, pubaddr]  #Based on the index of the ip established before, assigns the none object to be an index
+        self.sigs[index] = [signature, pubaddr]  #Based on the index of the ip established before, assigns the none object to be an index
+        print(self.sigs)
+        print("sigs")
         
     #Initializes the signer data, by creating a list full of None objects, so that signatures can be appended in the correct order
-    def initialize_signers(self):
+    def initialize_sigs(self):
         for i in range(len(self.inputs)):
-            self.signers.append(None)
+            self.sigs.append([None, None])
+        print(self.sigs)
 
     #extracts inputs from request data
     def extract_inputbuf(request_data):
@@ -178,6 +181,14 @@ class JoinState:
     def extract_outputs(self):
         outputs, pubaddresses = map(list, zip(*self.outputs))
         return outputs
+
+    def extract_sigs(self):
+        signatures, pubaddresses = map(list, zip(*self.sigs))
+        return signatures
+
+    def extract_signer_addrs(self):
+        signatures, pubaddresses = map(list, zip (*self.sigs))
+        return pubaddresses
 
     def verify_ticket(self, pubaddr: string, ticket: string, nonce: string):
         ticket_data = str.encode(json.dumps({
@@ -245,7 +256,7 @@ class JoinState:
 
     def craft_stx(self):
         stx_data = str.encode(json.dumps({
-            "signatures": self.signers,
+            "signatures": self.extract_sigs(),
             "utx": self.utx,
         }))
 
@@ -253,6 +264,7 @@ class JoinState:
         try:
             result.check_returncode()
         except Exception:
+            print(result.stdout)
             print(result.stderr)
             raise Exception("bad stx data")
         
@@ -327,6 +339,11 @@ class JoinState:
         for item in self.connections:
             send_errmessage(item, message)
 
+    def set_to_collect_sigs(self):
+        self.stx = None
+        self.stx_id = None
+        self.sigs = None
+
     #Function that parses data, and makes sure that it is valid
     def process_request(self, request_data, conn, addr):
         ip = addr[0]
@@ -350,9 +367,11 @@ class JoinState:
             request_address = JoinState.extract_pubaddr(request_data)
             input_data = JoinState.get_input_data(input_buf)
             output_data = JoinState.get_output_data(output_buf)
+            
             if input_data == None or output_data == None:
                 send_errmessage(conn, "could not read input and/or output data")
                 return
+
             inputamount = int(input_data["amt"])/BNSCALE
             outputamount = int(output_data["amt"])/BNSCALE
             if self.state == COLLECT_INPUTS:
@@ -392,7 +411,7 @@ class JoinState:
                                                 send_message(item, "all transactions complete, please input signature now")
                                                 send_wiretx(item, self.utx)
                                             self.close_all_connections()
-                                            self.initialize_signers()
+                                            self.initialize_sigs()
                                             self.IP_addresses = [] #delete ip addresses for security
                                             self.pending_users = []
                                             self.state = COLLECT_SIGS
@@ -431,30 +450,38 @@ class JoinState:
         elif request_data["messagetype"] == COLLECT_SIGS:
             if self.state == COLLECT_SIGS:
                 if pubaddr in self.pubaddresses:
-                    if pubaddr not in self.signers:
+                    if pubaddr not in self.extract_signer_addrs():
                         if self.verify_sig(pubaddr, request_data["signature"]):
                             #When it has been determined that the signature is valid, continue through
                             self.update_last_accessed()
-                            self.signers_append(request_data["signature"], pubaddr)
+                            self.sigs_append(request_data["signature"], pubaddr)
                             self.connections.append(conn)
                             send_message(conn, "signature registered, waiting for others in the coinjoin")
 
                             for item in self.connections:
                                 send_message(item, "%d out of %d users signed" % (self.get_current_signature_count(), self.connect_limit))
 
-                            if None not in self.signers and len(self.signers) >= self.connect_limit:
+                            if [None, None] not in self.sigs and len(self.sigs) >= self.connect_limit:
                                 print("all signed")
-                                self.stx = self.craft_stx()
+
+                                try:
+                                    self.stx = self.craft_stx()
+                                except Exception:
+                                    print("transaction didn't form properly")
+                                    self.send_errmessage_to_all("transaction didn't form properly, send signature again")
+                                    self.set_to_collect_sigs()
+                                    return
 
                                 timeout = 1000
                                 for item in self.connections:
                                     send_message(item, "all participants have signed, submitting to blockchain")
                                     send_signedtx(item, {"stx": self.stx, "timeout": timeout})
                                     timeout += 100
+
                                 status_data = self.issue_stx()
                                 if status_data["status"] == "Accepted":
+                                    print("transaction accepted")
                                     for item in self.connections:
-                                        print("transaction accepted")
                                         send_message(item, "tx accepted onto blockchain")
                                         send_accepted_txid(item, status_data["id"])
                                 elif status_data["status"] == "Rejected":
@@ -464,8 +491,8 @@ class JoinState:
                                 self.reset_join()
                             return
                         else:
-                            print("verification failed")
-                            send_errmessage(conn, "verification failed")
+                            print("signature does not belong to pubaddr")
+                            send_errmessage(conn, "this signature does not belong to the public key provided")
                     else:
                         print("already signed")
                         send_errmessage(conn, "already signed")
