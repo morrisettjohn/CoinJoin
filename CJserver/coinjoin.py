@@ -190,11 +190,30 @@ class JoinState:
         result = subprocess.run(['node', './js_scripts/verifyticket.js'], input = ticket_data, capture_output=True)
         try:
             result.check_returncode()
-        except Exception:
+        except CalledProcessError:
             print(result.stderr)
+            return False
         ticket_val = bytes.decode(result.stdout)
-
         if ticket_val == "true":
+            return True
+        return False
+
+    def verify_sig(self, pubaddr, signature):
+        sig_data = str.encode(json.dumps({
+            "pubaddr": pubaddr,
+            "sig": signature,
+            "utx": self.utx,
+            "networkID": self.networkID
+        }))
+        
+        result = subprocess.run(['node', './js_scripts/verifysig.js'], input = sig_data, capture_output=True)
+        try:
+            result.check_returncode()
+        except CalledProcessError:
+            print(result.stderr)
+            return False
+        sig_val = bytes.decode(result.stdout)
+        if sig_val == "true":
             return True
         return False
     
@@ -218,6 +237,7 @@ class JoinState:
         try:
             result.check_returncode()
         except Exception:
+            print(result.stderr)
             raise Exception("bad transaction data")
         
         unsignedTxBuf = convert_to_jsbuffer(result.stdout)
@@ -233,6 +253,7 @@ class JoinState:
         try:
             result.check_returncode()
         except Exception:
+            print(result.stderr)
             raise Exception("bad stx data")
         
         signedTxBuf = convert_to_jsbuffer(result.stdout)
@@ -248,10 +269,38 @@ class JoinState:
         try:
             result.check_returncode()
         except Exception:
+            print(result.stderr)
             raise Exception("something went wrong")
         result_data = json.loads(bytes.decode((result.stdout)))
         return result_data
 
+    def get_input_data(input_buf):
+        input_data = str.encode(json.dumps({
+            "inpBuf": input_buf,
+        }))
+
+        result = subprocess.run(['node', './js_scripts/getinputdata.js'], input = input_data, capture_output = True)
+        try:
+            result.check_returncode()
+        except CalledProcessError:
+            print(result.stderr)
+            return None
+        result_data = json.loads(bytes.decode((result.stdout)))
+        return result_data
+
+    def get_output_data(output_buf):
+        output_data = str.encode(json.dumps({
+            "outBuf": output_buf,
+        }))
+
+        result = subprocess.run(['node', './js_scripts/getoutputdata.js'], input = output_data, capture_output = True)
+        try:
+            result.check_returncode()
+        except CalledProcessError:
+            print(result.stderr)
+            return None
+        result_data = json.loads(bytes.decode((result.stdout)))
+        return result_data
 
     def in_pending_users(self, pubaddress):
         if self.pending_users == []:
@@ -269,6 +318,14 @@ class JoinState:
         for item in self.connections:
             item.close()
         self.connections = []
+
+    def send_message_to_all(self, message):
+        for item in self.connections:
+            send_message(item, message)
+
+    def send_errmessage_to_all(self, message):
+        for item in self.connections:
+            send_errmessage(item, message)
 
     #Function that parses data, and makes sure that it is valid
     def process_request(self, request_data, conn, addr):
@@ -291,10 +348,13 @@ class JoinState:
             input_buf = JoinState.extract_inputbuf(request_data)
             output_buf = JoinState.extract_outputbuf(request_data)
             request_address = JoinState.extract_pubaddr(request_data)
-            input_data = unpack_inp(input_buf["data"])
-            output_data = unpack_out(output_buf["data"])
-            inputamount = input_data["inputamount"]/BNSCALE
-            outputamount = output_data["outputamount"]/BNSCALE
+            input_data = JoinState.get_input_data(input_buf)
+            output_data = JoinState.get_output_data(output_buf)
+            if input_data == None or output_data == None:
+                send_errmessage(conn, "could not read input and/or output data")
+                return
+            inputamount = int(input_data["amt"])/BNSCALE
+            outputamount = int(output_data["amt"])/BNSCALE
             if self.state == COLLECT_INPUTS:
                 if inputamount >= self.totalamount and outputamount == self.assetamount:
                     if input_data["assetid"] == output_data["assetid"] == self.assetid:
@@ -321,8 +381,12 @@ class JoinState:
                                         #when sufficient connections are created, go through the process of sending out the transaction
                                         if len(self.inputs) >= self.connect_limit:
                                             #add the fee to the outputs
-                                            self.utx = self.craft_utx()
-
+                                            try: 
+                                                self.utx = self.craft_utx()
+                                            except Exception:
+                                                self.send_errmessage_to_all("bad unsigned transaction data.  Send input again")
+                                                self.reset_join()
+                                                return
                                             #send out transaction to every user
                                             for item in self.connections:
                                                 send_message(item, "all transactions complete, please input signature now")
@@ -368,45 +432,40 @@ class JoinState:
             if self.state == COLLECT_SIGS:
                 if pubaddr in self.pubaddresses:
                     if pubaddr not in self.signers:
-                        if self.in_pending_users(pubaddr):
-                            if self.verify_ticket(pubaddr, request_data["ticket"], self.get_nonce(pubaddr)):
-                                #When it has been determined that the signature is valid, continue through
-                                self.update_last_accessed()
-                                self.signers_append(request_data["signature"], pubaddr)
-                                self.connections.append(conn)
-                                send_message(conn, "signature registered, waiting for others in the coinjoin")
+                        if self.verify_sig(pubaddr, request_data["signature"]):
+                            #When it has been determined that the signature is valid, continue through
+                            self.update_last_accessed()
+                            self.signers_append(request_data["signature"], pubaddr)
+                            self.connections.append(conn)
+                            send_message(conn, "signature registered, waiting for others in the coinjoin")
 
+                            for item in self.connections:
+                                send_message(item, "%d out of %d users signed" % (self.get_current_signature_count(), self.connect_limit))
+
+                            if None not in self.signers and len(self.signers) >= self.connect_limit:
+                                print("all signed")
+                                self.stx = self.craft_stx()
+
+                                timeout = 1000
                                 for item in self.connections:
-                                    send_message(item, "%d out of %d users signed" % (self.get_current_signature_count(), self.connect_limit))
-
-                                if None not in self.signers and len(self.signers) >= self.connect_limit:
-                                    print("all signed")
-                                    self.stx = self.craft_stx()
-
-                                    timeout = 1000
+                                    send_message(item, "all participants have signed, submitting to blockchain")
+                                    send_signedtx(item, {"stx": self.stx, "timeout": timeout})
+                                    timeout += 100
+                                status_data = self.issue_stx()
+                                if status_data["status"] == "Accepted":
                                     for item in self.connections:
-                                        send_message(item, "all participants have signed, submitting to blockchain")
-                                        send_signedtx(item, {"stx": self.stx, "timeout": timeout})
-                                        timeout += 100
-                                    status_data = self.issue_stx()
-                                    if status_data["status"] == "Accepted":
-                                        for item in self.connections:
-                                            print("transaction accepted")
-                                            send_message(item, "tx accepted onto blockchain")
-                                            send_accepted_txid(item, status_data["id"])
-                                    elif status_data["status"] == "Rejected":
-                                        print("tx not accepted onto the blockchain")
+                                        print("transaction accepted")
+                                        send_message(item, "tx accepted onto blockchain")
+                                        send_accepted_txid(item, status_data["id"])
+                                elif status_data["status"] == "Rejected":
+                                    print("tx not accepted onto the blockchain")
 
-                                    self.close_all_connections()
-                                    self.reset_join()
-                                return
-                            else:
-                                print("verification failed")
-                                send_errmessage(conn, "verification failed")
-                        else:
-                            print("did not request verification nonce")
-                            send_errmessage(conn, "please request a verification nonce before signing")
+                                self.close_all_connections()
+                                self.reset_join()
                             return
+                        else:
+                            print("verification failed")
+                            send_errmessage(conn, "verification failed")
                     else:
                         print("already signed")
                         send_errmessage(conn, "already signed")

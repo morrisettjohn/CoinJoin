@@ -73,7 +73,7 @@ var sendutxodata = function (joinid, assetid, inputamount, outputamount, destina
             case 1:
                 utxoset = (_a.sent()).utxos;
                 balance = utxoset.getBalance(myAddressBuf, assetid);
-                if (!(balance.toNumber() >= targetInpAmountWithFee.toNumber())) return [3 /*break*/, 3];
+                if (!balance.gte(targetInpAmountWithFee)) return [3 /*break*/, 3];
                 return [4 /*yield*/, xchain.buildBaseTx(utxoset, targetInpAmountFormatBN, assetid, myAddresses, myAddresses, myAddresses)];
             case 2:
                 unsignedTx = _a.sent();
@@ -96,7 +96,7 @@ var sendutxodata = function (joinid, assetid, inputamount, outputamount, destina
                 to = mwallet.getAddressX();
                 change = mwallet.getChangeAddressX();
                 walletutxos = mwallet.utxosX;
-                if (!(mwallet.getBalanceX()[assetid].unlocked.toNumber() >= targetInpAmountWithFee.toNumber())) return [3 /*break*/, 11];
+                if (!mwallet.getBalanceX()[assetid].unlocked.gte(targetInpAmountWithFee)) return [3 /*break*/, 11];
                 return [4 /*yield*/, xchain.buildBaseTx(walletutxos, targetInpAmountFormatBN, assetid, [to], from, [change])];
             case 8:
                 unsignedTx = _a.sent();
@@ -128,7 +128,7 @@ var sendutxodata = function (joinid, assetid, inputamount, outputamount, destina
                 outs = signedTx.getUnsignedTx().getTransaction().getOuts();
                 txindex = 0;
                 for (i = 0; i < outs.length; i++) {
-                    if (outs[i].getOutput().getAmount().toNumber() == targetInpAmountFormatted) {
+                    if (outs[i].getOutput().getAmount().eq(targetInpAmountFormatBN)) {
                         break;
                     }
                     txindex += 1;

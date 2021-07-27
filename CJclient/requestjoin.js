@@ -72,9 +72,7 @@ var requestNonce = function (joinid, pubaddr, privatekey, networkID) { return __
                 _c.sent();
                 sig = mwallet.getSigFromUTX(nonce, mwallet.getExternalAddressesX().indexOf(pubaddr));
                 _c.label = 4;
-            case 4:
-                console.log("hiyo");
-                return [2 /*return*/, sig];
+            case 4: return [2 /*return*/, sig];
         }
     });
 }); };

@@ -43,7 +43,7 @@ var mnemonicKey = "dismiss spoon penalty gentle unable music buffalo cause bundl
 var bintools = avalanche_1.BinTools.getInstance();
 console.log("wtf");
 var test = function (networkID) { return __awaiter(void 0, void 0, void 0, function () {
-    var networkData, x, y, p;
+    var networkData, x, y, p, z;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -58,7 +58,8 @@ var test = function (networkID) { return __awaiter(void 0, void 0, void 0, funct
                 y = _a.sent();
                 p = new avm_1.Tx();
                 p.fromString(y);
-                console.log(p.toString());
+                z = p.getUnsignedTx().getTransaction().getIns()[0].getInput().getAmount();
+                console.log(z);
                 return [2 /*return*/];
         }
     });

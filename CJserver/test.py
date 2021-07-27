@@ -1,9 +1,18 @@
-from bufferutils import pack_out
+
 from params import *
 from struct import *
 
 
-assetamountbuf = pack(">Q", 1)
+def x():
+    return z()
 
-print(assetamountbuf)
+def z():
+    return g()
 
+def g():
+    return 1/0
+
+try:
+    x()
+except ZeroDivisionError:
+    print("that sucks")

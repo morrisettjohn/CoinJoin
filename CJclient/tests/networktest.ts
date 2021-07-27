@@ -29,7 +29,8 @@ const test = async(networkID: number): Promise<any> => {
     const y = await networkData.xchain.getTx("2tVrsjNURvH7hF42y5cc8shsKSGWFhgK7D8GEsnaYiZVca7Bzu")
     const p = new Tx()
     p.fromString(y)
-    console.log(p.toString())
+    const z = p.getUnsignedTx().getTransaction().getIns()[0].getInput().getAmount()
+    console.log(z)
 }
 
 const args = process.argv.slice(2)

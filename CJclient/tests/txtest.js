@@ -80,6 +80,7 @@ var tests = {
 };
 var networkID = 5;
 var avaxAssetID = utils_1.Defaults.network[networkID].X.avaxAssetID;
+var assetID = avaxAssetID;
 var inputamount = 1.15;
 var outputamount = 1;
 //usage:  node test.js *joinid (number)* *fromaddr* *toaddr* *inputamount?* *outputamount?*
@@ -94,13 +95,16 @@ if (args.length > 4) {
 if (args.length > 5) {
     outputamount = parseInt(args[5]);
 }
+if (args.length > 6) {
+    assetID = args[6];
+}
 var main = function () { return __awaiter(void 0, void 0, void 0, function () {
     return __generator(this, function (_a) {
         if (args[0] == "help") {
-            console.log("usage: node txtest.js *joinid* *fromaddr* *toaddr* *networkid* *inputamount?* *outputamount?* ");
+            console.log("usage: node txtest.js *joinid* *fromaddr* *toaddr* *networkid* *inputamount?* *outputamount?* *assetID?*");
         }
         else {
-            cjinstance_1.startCJInstance(joinid, avaxAssetID, inputamount, outputamount, toaddr[0], fromaddr[0], fromaddr[1], networkid);
+            cjinstance_1.startCJInstance(joinid, assetID, inputamount, outputamount, toaddr[0], fromaddr[0], fromaddr[1], networkid);
         }
         return [2 /*return*/];
     });

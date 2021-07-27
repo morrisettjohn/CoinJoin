@@ -57,8 +57,6 @@ const sendsignature = async(joinid: number, data: any, pubaddr: string, privatek
         sig.fromBuffer(sigString)
     }
 
-    const ticket = await requestNonce(joinid, pubaddr, privatekey, networkID)
-    console.log("transaction signed, sending sig to coinJoin")
 
     const sendData = {
         "joinid": joinid,
@@ -66,7 +64,6 @@ const sendsignature = async(joinid: number, data: any, pubaddr: string, privatek
         "signature": sig.toBuffer(),
         "pubaddr": pubaddr,
         "transaction": txbuff,
-        "ticket": ticket,
     }
 
     

@@ -148,7 +148,7 @@ def isvalid_jsondata(data):
             print("insufficient data for input message")
             return False
     elif data["messagetype"] == COLLECT_SIGS:
-        if not "joinid" in data or not "signature" in data or not "pubaddr" in data or not "transaction" in data or not "ticket" in data:
+        if not "joinid" in data or not "signature" in data or not "pubaddr" in data or not "transaction" in data:
             print("insufficient data for signature message")
             return False
     elif data["messagetype"] == ISSUE_TX:

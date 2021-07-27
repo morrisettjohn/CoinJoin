@@ -56,6 +56,7 @@ const tests = {
 
 const networkID = 5
 const avaxAssetID: string = Defaults.network[networkID].X.avaxAssetID
+let assetID = avaxAssetID
 let inputamount = 1.15
 let outputamount = 1
 
@@ -72,13 +73,16 @@ if (args.length > 4){
 if (args.length > 5){
   outputamount = parseInt(args[5])
 }
+if (args.length > 6){
+  assetID = args[6]
+}
 
 const main = async(): Promise<any> => {
   if (args[0] == "help"){
-    console.log("usage: node txtest.js *joinid* *fromaddr* *toaddr* *networkid* *inputamount?* *outputamount?* ")
+    console.log("usage: node txtest.js *joinid* *fromaddr* *toaddr* *networkid* *inputamount?* *outputamount?* *assetID?*")
   } 
   else {
-    startCJInstance(joinid, avaxAssetID, inputamount, outputamount, toaddr[0], fromaddr[0], fromaddr[1], networkid)
+    startCJInstance(joinid, assetID, inputamount, outputamount, toaddr[0], fromaddr[0], fromaddr[1], networkid)
   }
 }
 main()

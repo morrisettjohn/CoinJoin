@@ -52,7 +52,7 @@ const sendutxodata = async(joinid: number, assetid: string, inputamount: number,
         const utxoset: UTXOSet = (await xchain.getUTXOs(pubaddr)).utxos
         const balance: BN = utxoset.getBalance(myAddressBuf, assetid)
 
-        if (balance.toNumber() >= targetInpAmountWithFee.toNumber()) {
+        if (balance.gte(targetInpAmountWithFee)) {
             const unsignedTx = await xchain.buildBaseTx(utxoset, targetInpAmountFormatBN, assetid, myAddresses, myAddresses, myAddresses)
             signedTx = unsignedTx.sign(keyData.xKeyChain)
 
@@ -71,7 +71,7 @@ const sendutxodata = async(joinid: number, assetid: string, inputamount: number,
         const change = mwallet.getChangeAddressX()
         const walletutxos: any = mwallet.utxosX
         
-        if (mwallet.getBalanceX()[assetid].unlocked.toNumber() >= targetInpAmountWithFee.toNumber()){
+        if (mwallet.getBalanceX()[assetid].unlocked.gte(targetInpAmountWithFee)){
             const unsignedTx = await xchain.buildBaseTx(walletutxos, targetInpAmountFormatBN, assetid, [to], from, [change])
             signedTx = await mwallet.signX(unsignedTx)
             id = await xchain.issueTx(signedTx)
@@ -98,7 +98,7 @@ const sendutxodata = async(joinid: number, assetid: string, inputamount: number,
 
     let txindex = 0
     for (let i = 0; i < outs.length; i++){
-        if (outs[i].getOutput().getAmount().toNumber() == targetInpAmountFormatted){
+        if (outs[i].getOutput().getAmount().eq(targetInpAmountFormatBN)){
             break
         }
         txindex += 1
