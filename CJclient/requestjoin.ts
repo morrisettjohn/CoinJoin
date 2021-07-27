@@ -33,10 +33,6 @@ const requestNonce = async(joinid: number, pubaddr: string, privatekey: string, 
         sig = mwallet.getSigFromUTX(nonce, mwallet.getExternalAddressesX().indexOf(pubaddr))
     }
 
-    
-
-    console.log("hiyo")
-
     return sig
 }
 

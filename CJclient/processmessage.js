@@ -34,13 +34,11 @@ var isValidSTX = function (data) {
 };
 //takes a message from the coinjoin server and processes it, using a 3 character prefix as a messagetype
 var processMessage = function (recievedData) {
-    console.log("one");
     while (recievedData.indexOf("\r\n\r\n") != -1) {
         var endIndex = recievedData.indexOf("\r\n\r\n");
         var messageType = recievedData.slice(0, 3);
         var messageData = recievedData.slice(3, endIndex);
         recievedData = recievedData.slice(endIndex + 4);
-        console.log(messageType);
         //handling message
         if (messageType == "MSG") {
             console.log("SERVER MESSAGE: " + messageData);
