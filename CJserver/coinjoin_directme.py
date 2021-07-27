@@ -1,6 +1,6 @@
 from json.decoder import JSONDecodeError
 from coinjoin import JoinState
-from httprequest import *
+from utils.httprequest import *
 
 from assetinfo import *
 from params import *

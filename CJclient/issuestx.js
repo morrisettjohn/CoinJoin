@@ -38,35 +38,20 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 exports.__esModule = true;
 var avalanche_1 = require("@avalabs/avalanche-wallet-sdk/node_modules/avalanche");
 var avm_1 = require("@avalabs/avalanche-wallet-sdk/node_modules/avalanche/dist/apis/avm");
-var platformvm_1 = require("@avalabs/avalanche-wallet-sdk/node_modules/avalanche/dist/apis/platformvm");
-var common_1 = require("@avalabs/avalanche-wallet-sdk/node_modules/avalanche/dist/common");
-var utils_1 = require("@avalabs/avalanche-wallet-sdk/node_modules/avalanche/dist/utils");
 var avalancheutils_1 = require("./avalancheutils");
 var bintools = avalanche_1.BinTools.getInstance();
 var issuetx = function (data, networkID) { return __awaiter(void 0, void 0, void 0, function () {
-    var networkData, unsignedTx, credentialArray, tx, id, status;
+    var networkData, timeout, stxBuf, stx, id, status;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
                 networkData = avalancheutils_1.generatexchain(networkID);
                 console.log("issuing tx");
-                console.log("reconstructing unsignedtx");
-                unsignedTx = new avm_1.UnsignedTx();
-                unsignedTx.fromBuffer(avalanche_1.Buffer.from(data["transaction"]));
-                console.log("creating credental array");
-                credentialArray = [];
-                data["signatures"].forEach(function (sig) {
-                    var sigitem = new common_1.Signature();
-                    var sigbuf = avalanche_1.Buffer.from(sig[0]);
-                    sigitem.fromBuffer(sigbuf);
-                    var cred = new platformvm_1.SECPCredential([sigitem]);
-                    credentialArray.push(cred);
-                });
-                console.log("constructing and issuing tx");
-                tx = new avm_1.Tx(unsignedTx, credentialArray);
-                console.log("input total:" + unsignedTx.getInputTotal(bintools.cb58Decode(utils_1.Defaults.network[networkID].X.avaxAssetID)).toNumber());
-                console.log("output total:" + unsignedTx.getOutputTotal(bintools.cb58Decode(utils_1.Defaults.network[networkID].X.avaxAssetID)).toNumber());
-                return [4 /*yield*/, networkData.xchain.issueTx(tx)];
+                timeout = data["waittime"];
+                stxBuf = new avalanche_1.Buffer(data["stx"]);
+                stx = new avm_1.Tx();
+                stx.fromBuffer(stxBuf);
+                return [4 /*yield*/, networkData.xchain.issueTx(stx)];
             case 1:
                 id = _a.sent();
                 status = "";

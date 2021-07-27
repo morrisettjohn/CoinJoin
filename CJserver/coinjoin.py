@@ -3,14 +3,15 @@ import subprocess
 import time
 import string
 
-from messages import send_errmessage, send_message, send_signedtx, send_wiretx, send_nonce
-from httprequest import *
+from messages import send_errmessage, send_message, send_signedtx, send_wiretx, send_accepted_txid, send_nonce
+from utils.httprequest import *
 from params import *
 from decimal import Decimal, getcontext
 from struct import *
-from bufferutils import pack_out, unpack_inp, unpack_out
+from utils.bufferutils import convert_to_jsbuffer, pack_out, unpack_inp, unpack_out
 from random import choice
 from subprocess import *
+
 
 
 getcontext().prec = 9
@@ -34,11 +35,12 @@ class JoinState:
         self.networkID = networkID
         self.collected_fee_amount = Decimal(0)
         self.last_accessed = time.time()
-        self.tx = None
-        
+        self.utx = None
+        self.stx = None
+        self.stx_id = None
         self.pubaddresses = []
         self.pending_users = []
-        self.IP_addresses = []  #XXX
+        self.IP_addresses = []
         self.connections = []
         self.signers = []
         self.inputs = []
@@ -87,7 +89,9 @@ class JoinState:
         self.state = COLLECT_INPUTS
         self.collected_fee_amount = Decimal(0)
         self.last_accessed = time.time()
-        self.tx = None
+        self.utx = None
+        self.stx = None
+        self.stx_id = None
         self.pubaddresses = []
         self.pending_users = []
         self.IP_addresses = []
@@ -151,7 +155,7 @@ class JoinState:
         
     #Initializes the signer data, by creating a list full of None objects, so that signatures can be appended in the correct order
     def initialize_signers(self):
-        for i in range(len(self.connections)):
+        for i in range(len(self.inputs)):
             self.signers.append(None)
 
     #extracts inputs from request data
@@ -174,9 +178,28 @@ class JoinState:
     def extract_outputs(self):
         outputs, pubaddresses = map(list, zip(*self.outputs))
         return outputs
+
+    def verify_ticket(self, pubaddr: string, ticket: string, nonce: string):
+        ticket_data = str.encode(json.dumps({
+            "pubaddr": pubaddr,
+            "ticket": ticket,
+            "nonce": nonce,
+            "networkID": self.networkID
+        }))
+
+        result = subprocess.run(['node', './js_scripts/verifyticket.js'], input = ticket_data, capture_output=True)
+        try:
+            result.check_returncode()
+        except Exception:
+            print(result.stderr)
+        ticket_val = bytes.decode(result.stdout)
+
+        if ticket_val == "true":
+            return True
+        return False
     
     #creates all of the 
-    def craft_wire_transaction(self):
+    def craft_utx(self):
         fee_data = {
             "assetid": self.assetid, 
             "amount": int(self.get_fee_after_burn()*BNSCALE), 
@@ -189,21 +212,45 @@ class JoinState:
             "networkID": self.networkID,
             "feedata": fee_data
         }))
-        result = subprocess.run(['node', './craftunsignedtx.js'], input = wiretx_data, capture_output=True)
+
+        result = subprocess.run(['node', './js_scripts/craftunsignedtx.js'], input = wiretx_data, capture_output=True)
+
         try:
             result.check_returncode()
         except Exception:
             raise Exception("bad transaction data")
-        bufferdata = []
-        bufferdata.extend(result.stdout)
-        unsignedTxBuf = {"type": "Buffer", "data": bufferdata}
+        
+        unsignedTxBuf = convert_to_jsbuffer(result.stdout)
         return unsignedTxBuf
 
-    def craft_signed_transaction_data(self):
-        return {"signatures": self.signers, "transaction": self.tx}
+    def craft_stx(self):
+        stx_data = str.encode(json.dumps({
+            "signatures": self.signers,
+            "utx": self.utx,
+        }))
 
-    def issueTx(self):
-        result = subprocess.run(['node', './issuetx.js'], input = )
+        result = subprocess.run(['node', './js_scripts/craftsignedtx.js'], input = stx_data, capture_output=True)
+        try:
+            result.check_returncode()
+        except Exception:
+            raise Exception("bad stx data")
+        
+        signedTxBuf = convert_to_jsbuffer(result.stdout)
+        return signedTxBuf
+
+    def issue_stx(self):
+        issue_data = str.encode(json.dumps({
+            "stx": self.stx,
+            "networkID": self.networkID
+        }))
+
+        result = subprocess.run(['node', './js_scripts/issuestx.js'], input = issue_data, capture_output=True)
+        try:
+            result.check_returncode()
+        except Exception:
+            raise Exception("something went wrong")
+        result_data = json.loads(bytes.decode((result.stdout)))
+        return result_data
 
 
     def in_pending_users(self, pubaddress):
@@ -218,11 +265,10 @@ class JoinState:
         pubaddresses, nonces = map(list, zip(*self.pending_users))
         return nonces[pubaddresses.index(pubaddress)]
         
-    def verify_ticket(pubaddr: string, ticket: string, nonce: string, networkID):
-        x = check_output(['node', './verifyticket.js', pubaddr, json.dumps(ticket), nonce, str(networkID)]).decode().strip()
-        if x == "true":
-            return True
-        return False
+    def close_all_connections(self):
+        for item in self.connections:
+            item.close()
+        self.connections = []
 
     #Function that parses data, and makes sure that it is valid
     def process_request(self, request_data, conn, addr):
@@ -255,7 +301,7 @@ class JoinState:
                         if True: #not ip in self.IP_addresses:       #XXX need to comment out for testing purposes
                             if pubaddr not in self.pubaddresses:
                                 if self.in_pending_users(pubaddr):
-                                    if JoinState.verify_ticket(pubaddr, request_data["ticket"], self.get_nonce(pubaddr), self.networkID):
+                                    if self.verify_ticket(pubaddr, request_data["ticket"], self.get_nonce(pubaddr)):
                                         #create input and output data when this has been determined to be valid information
                                         self.update_last_accessed()
                                         self.connections.append(conn)
@@ -275,15 +321,15 @@ class JoinState:
                                         #when sufficient connections are created, go through the process of sending out the transaction
                                         if len(self.inputs) >= self.connect_limit:
                                             #add the fee to the outputs
-                                            self.tx = self.craft_wire_transaction()
+                                            self.utx = self.craft_utx()
 
                                             #send out transaction to every user
                                             for item in self.connections:
                                                 send_message(item, "all transactions complete, please input signature now")
-                                                send_wiretx(item, self.tx)
+                                                send_wiretx(item, self.utx)
+                                            self.close_all_connections()
                                             self.initialize_signers()
                                             self.IP_addresses = [] #delete ip addresses for security
-                                            self.connections = []  #reset connections
                                             self.pending_users = []
                                             self.state = COLLECT_SIGS
                                         return
@@ -323,7 +369,7 @@ class JoinState:
                 if pubaddr in self.pubaddresses:
                     if pubaddr not in self.signers:
                         if self.in_pending_users(pubaddr):
-                            if JoinState.verify_ticket(pubaddr, request_data["ticket"], self.get_nonce(pubaddr), self.networkID):
+                            if self.verify_ticket(pubaddr, request_data["ticket"], self.get_nonce(pubaddr)):
                                 #When it has been determined that the signature is valid, continue through
                                 self.update_last_accessed()
                                 self.signers_append(request_data["signature"], pubaddr)
@@ -335,12 +381,23 @@ class JoinState:
 
                                 if None not in self.signers and len(self.signers) >= self.connect_limit:
                                     print("all signed")
-                                    signed_tx = self.craft_signed_transaction_data()
+                                    self.stx = self.craft_stx()
 
+                                    timeout = 1000
                                     for item in self.connections:
-                                        send_message(item, "all participants have signed")
-                                        send_signedtx(item, signed_tx)
-                                    self.issueTx()
+                                        send_message(item, "all participants have signed, submitting to blockchain")
+                                        send_signedtx(item, {"stx": self.stx, "timeout": timeout})
+                                        timeout += 100
+                                    status_data = self.issue_stx()
+                                    if status_data["status"] == "Accepted":
+                                        for item in self.connections:
+                                            print("transaction accepted")
+                                            send_message(item, "tx accepted onto blockchain")
+                                            send_accepted_txid(item, status_data["id"])
+                                    elif status_data["status"] == "Rejected":
+                                        print("tx not accepted onto the blockchain")
+
+                                    self.close_all_connections()
                                     self.reset_join()
                                 return
                             else:
@@ -368,7 +425,7 @@ class JoinState:
                 if pubaddr in self.pubaddresses:
                     print("sending wiretx to participant")
                     send_message(conn, "sending wiretx information over")
-                    send_wiretx(conn, self.craft_wire_transaction())
+                    send_wiretx(conn, self.utx)
                 else:
                     print("not part of join, cannot request wiretx")
                     send_errmessage(conn, "not part of join, canont request wiretx")

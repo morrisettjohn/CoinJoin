@@ -38,23 +38,27 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 exports.__esModule = true;
 var avalancheutils_1 = require("../avalancheutils");
 var avalanche_1 = require("avalanche");
+var avm_1 = require("@avalabs/avalanche-wallet-sdk/node_modules/avalanche/dist/apis/avm");
 var mnemonicKey = "dismiss spoon penalty gentle unable music buffalo cause bundle rural twist cheese discover this oyster garden globe excite kitchen rival diamond please clog swing";
 var bintools = avalanche_1.BinTools.getInstance();
+console.log("wtf");
 var test = function (networkID) { return __awaiter(void 0, void 0, void 0, function () {
-    var networkData, x, networkData2, y;
+    var networkData, x, y, p;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
+                console.log("yo");
                 networkData = avalancheutils_1.generatexchain(5);
                 return [4 /*yield*/, networkData.xchain.getAVAXAssetID()];
             case 1:
                 x = _a.sent();
-                console.log(x);
-                networkData2 = avalancheutils_1.generatexchain(1);
-                return [4 /*yield*/, networkData2.xchain.getAVAXAssetID()];
+                console.log('hi');
+                return [4 /*yield*/, networkData.xchain.getTx("2tVrsjNURvH7hF42y5cc8shsKSGWFhgK7D8GEsnaYiZVca7Bzu")];
             case 2:
                 y = _a.sent();
-                console.log(y);
+                p = new avm_1.Tx();
+                p.fromString(y);
+                console.log(p.toString());
                 return [2 /*return*/];
         }
     });

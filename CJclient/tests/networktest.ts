@@ -18,16 +18,18 @@ import { Defaults } from "avalanche/dist/utils"
 
 const mnemonicKey = "dismiss spoon penalty gentle unable music buffalo cause bundle rural twist cheese discover this oyster garden globe excite kitchen rival diamond please clog swing"
 const bintools: BinTools = BinTools.getInstance()
+console.log("wtf")
 
 const test = async(networkID: number): Promise<any> => {
+    console.log("yo")
     const networkData = generatexchain(5)
     
     const x = await networkData.xchain.getAVAXAssetID()
-    console.log(x)
-    const networkData2 = generatexchain(1)
-    const y = await networkData2.xchain.getAVAXAssetID()
-    console.log(y)
-
+    console.log('hi')
+    const y = await networkData.xchain.getTx("2tVrsjNURvH7hF42y5cc8shsKSGWFhgK7D8GEsnaYiZVca7Bzu")
+    const p = new Tx()
+    p.fromString(y)
+    console.log(p.toString())
 }
 
 const args = process.argv.slice(2)

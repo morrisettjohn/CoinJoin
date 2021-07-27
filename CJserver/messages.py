@@ -24,11 +24,12 @@ def send_join_data(conn, joindata):
 
 def send_wiretx(conn, wiretx):
     conn.sendall(str.encode("WTX" + json.dumps(wiretx) + req_terminator))
-    conn.close()
 
 def send_signedtx(conn, signedtx):
     conn.sendall(str.encode("STX" + json.dumps(signedtx) + req_terminator))
-    conn.close()
 
 def send_nonce(conn, nonce):
     conn.sendall(str.encode("NCE" + nonce + req_terminator))
+
+def send_accepted_txid(conn, txid):
+    conn.sendall(str.encode("TXD" + txid + req_terminator))

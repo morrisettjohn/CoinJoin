@@ -47,7 +47,7 @@ var consts = require("./constants");
 var requestjoin_1 = require("./requestjoin");
 var bintools = avalanche_1.BinTools.getInstance();
 var sendsignature = function (joinid, data, pubaddr, privatekey, networkID, myInput, myOutput) { return __awaiter(void 0, void 0, void 0, function () {
-    var networkData, keyType, txbuff, unsignedTx, inputs, outputs, msg, sigbuf, sig, keyData, utxoset, myUtxos, mwallet, sigString, ticket, sendData, recievedData;
+    var networkData, keyType, txbuff, unsignedTx, inputs, outputs, msg, sigbuf, sig, keyData, utxoset, myUtxos, mwallet, sigString, ticket, sendData, signedTx;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -98,8 +98,8 @@ var sendsignature = function (joinid, data, pubaddr, privatekey, networkID, myIn
                 };
                 return [4 /*yield*/, processmessage_1.sendRecieve(sendData)];
             case 7:
-                recievedData = _a.sent();
-                return [2 /*return*/, recievedData];
+                signedTx = _a.sent();
+                return [2 /*return*/, signedTx];
         }
     });
 }); };
@@ -126,7 +126,7 @@ var checkInputs = function (inputs, myInput, myUtxos) {
         throw Error("Your input is not recorded in the transaction, server or coinjoin participants may be malicious");
     }
     if (unwantedUTXOcount > 0) {
-        throw Error(unwantedUTXOcount + " other utxo(s) that you own were recorded in the tx.  Serer or cj participants may be malicious");
+        throw Error(unwantedUTXOcount + " other utxo(s) that you own were recorded in the tx.  Server or cj participants may be malicious");
     }
 };
 var checkOutputs = function (outputs, myOutput) {

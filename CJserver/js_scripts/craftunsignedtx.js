@@ -1,6 +1,6 @@
 var avm_1 = require("@avalabs/avalanche-wallet-sdk/node_modules/avalanche/dist/apis/avm");
 var avalanche_1 = require("@avalabs/avalanche-wallet-sdk/node_modules/avalanche");
-const { generatexchain } = require("../CJclient/avalancheutils");
+const { generatexchain } = require("../../CJclient/avalancheutils");
 
 process.stdin.on("data", data => processData(data))
 

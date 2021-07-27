@@ -1,7 +1,7 @@
 from cb58ref import cb58encode, cb58decode
 from params import *
 from struct import *
-from bech32utils import bech32_pack_address
+from .bech32utils import bech32_pack_address
 
 def convert_to_pybuffer(data, start, end):
     returndata = b""
@@ -11,8 +11,10 @@ def convert_to_pybuffer(data, start, end):
         start += 1
     return returndata
 
-def convert_to_jsbuffer(data, start, end):
-    pass
+def convert_to_jsbuffer(data: bytes):
+    bufferdata = []
+    bufferdata.extend(data)
+    return {"type": "Buffer", "data": bufferdata}
 
 def unpack_inp(inputbuf):
     start = 0
@@ -65,3 +67,5 @@ def pack_out(assetid, assetamount, locktime, threshold, addresses):
     for buf in [assetidbuf, typeidbuf, assetamountbuf, locktimebuf, thresholdbuf, numaddressesbuf, addressbuf]:
         return_buffer.extend(buf)
     return return_buffer
+
+

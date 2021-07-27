@@ -69,8 +69,10 @@ const sendsignature = async(joinid: number, data: any, pubaddr: string, privatek
         "ticket": ticket,
     }
 
-    const recievedData = await sendRecieve(sendData)
-    return recievedData
+    
+
+    const signedTx = await sendRecieve(sendData)
+    return signedTx
 }
 
 const checkInputs = function(inputs: TransferableInput[], myInput: TransferableInput, myUtxos: UTXO[]){
@@ -95,7 +97,7 @@ const checkInputs = function(inputs: TransferableInput[], myInput: TransferableI
         throw Error("Your input is not recorded in the transaction, server or coinjoin participants may be malicious")
     }
     if (unwantedUTXOcount > 0){
-        throw Error(unwantedUTXOcount + " other utxo(s) that you own were recorded in the tx.  Serer or cj participants may be malicious")
+        throw Error(unwantedUTXOcount + " other utxo(s) that you own were recorded in the tx.  Server or cj participants may be malicious")
     }
 }
 

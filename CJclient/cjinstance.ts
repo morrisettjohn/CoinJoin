@@ -1,4 +1,4 @@
-import { issuetx } from "./issuetx"
+import { issuetx } from "./issuestx"
 import { sendsignature } from "./sendsignature"
 import { sendutxodata } from "./sendutxodata"
 

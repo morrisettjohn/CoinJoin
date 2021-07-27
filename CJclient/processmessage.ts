@@ -1,5 +1,3 @@
-import { issuetx } from "./issuetx"
-import { sendsignature } from "./sendsignature"
 import { request } from "http"
 
 const isValidWTXData = function(data: any): boolean {
@@ -37,11 +35,13 @@ const isValidSTX = function(data: any): boolean {
 
 //takes a message from the coinjoin server and processes it, using a 3 character prefix as a messagetype
 const processMessage = function (recievedData: string): any{
+    console.log("one")
     while (recievedData.indexOf("\r\n\r\n") != -1){
         const endIndex: number = recievedData.indexOf("\r\n\r\n")
         const messageType: string = recievedData.slice(0, 3)
         const messageData: string = recievedData.slice(3, endIndex)
         recievedData = recievedData.slice(endIndex + 4)
+        console.log(messageType)
         //handling message
         if (messageType == "MSG"){
             console.log("SERVER MESSAGE: " + messageData)
@@ -69,6 +69,7 @@ const processMessage = function (recievedData: string): any{
             printReadableJoinData(JSON.parse(messageData))
         }
         else if (messageType == "NCE"){
+            console.log("recieved nonce")
             return messageData
         }
         //handling send_utxo data
@@ -94,6 +95,10 @@ const processMessage = function (recievedData: string): any{
                 return new Error("incomplete stx")
             }
             
+        }
+        else if (messageType == "TXD"){
+            console.log("recieved transaction id")
+            return messageData
         }
         else {
             console.log("not a valid messagetype")
@@ -129,7 +134,6 @@ const printReadableJoinData = function(join: any) {
 const sendRecieve = function (sendData: any): Promise<any> {
     const returnDataString = JSON.stringify(sendData)
     const options = constructHeaderOptions(returnDataString)
-
     return new Promise((resolve, reject) => {
         const req = request(options, res => {
             res.on("data", d => {
