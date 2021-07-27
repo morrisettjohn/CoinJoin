@@ -58,7 +58,7 @@ class JoinState:
     def get_current_signature_count(self):
         count = 0
         for item in self.sigs:
-            if item != None:
+            if item != [None, None]:
                 count += 1
         return count
 
@@ -152,8 +152,6 @@ class JoinState:
         inputs, pubaddresses = map(list, zip(*self.inputs))
         index = pubaddresses.index(pubaddr)  #Determines where the ip is in the list
         self.sigs[index] = [signature, pubaddr]  #Based on the index of the ip established before, assigns the none object to be an index
-        print(self.sigs)
-        print("sigs")
         
     #Initializes the signer data, by creating a list full of None objects, so that signatures can be appended in the correct order
     def initialize_sigs(self):
@@ -461,7 +459,7 @@ class JoinState:
                             for item in self.connections:
                                 send_message(item, "%d out of %d users signed" % (self.get_current_signature_count(), self.connect_limit))
 
-                            if [None, None] not in self.sigs and len(self.sigs) >= self.connect_limit:
+                            if self.get_current_signature_count() == self.connect_limit and len(self.sigs) >= self.connect_limit:
                                 print("all signed")
 
                                 try:
