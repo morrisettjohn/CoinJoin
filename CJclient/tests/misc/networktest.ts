@@ -1,10 +1,10 @@
 import { Tx as StandardTx} from "avalanche/dist/apis/avm"
-import { generatekeychain, generatexchain } from "../avalancheutils"
+import { generatekeychain, generatexchain } from "../../avalancheutils"
 import { Buffer, Mnemonic, HDNode, BN, BinTools } from "avalanche"
 import { randomBytes } from "crypto"
 import { Wallet } from "ethers"
 import { createHash } from "crypto"
-import { BNSCALE } from "../constants"
+import { BNSCALE } from "../../constants"
 import { TransferableInput, TransferableOutput, Tx, UTXO, UTXOSet, KeyChain, SECPTransferInput, SECPTransferOutput, BaseTx, UnsignedTx} from "@avalabs/avalanche-wallet-sdk/node_modules/avalanche/dist/apis/avm"
 
 
@@ -29,7 +29,8 @@ const test = async(networkID: number): Promise<any> => {
     const y = await networkData.xchain.getTx("2tVrsjNURvH7hF42y5cc8shsKSGWFhgK7D8GEsnaYiZVca7Bzu")
     const p = new Tx()
     p.fromString(y)
-    const z = p.getUnsignedTx().getTransaction().getIns()[0].getInput().getAmount()
+    const z = p.getUnsignedTx().getTransaction().getOuts()[0].getOutput().getAddress(0)
+    console.log(networkData.xchain.addressFromBuffer(z))
     console.log(z)
 }
 

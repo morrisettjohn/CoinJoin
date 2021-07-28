@@ -88,8 +88,7 @@ var sendsignature = function (joinid, data, pubaddr, privatekey, networkID, myIn
                     "joinid": joinid,
                     "messagetype": consts.COLLECT_SIGS,
                     "signature": sig.toBuffer(),
-                    "pubaddr": pubaddr,
-                    "transaction": txbuff
+                    "pubaddr": pubaddr
                 };
                 return [4 /*yield*/, processmessage_1.sendRecieve(sendData)];
             case 6:

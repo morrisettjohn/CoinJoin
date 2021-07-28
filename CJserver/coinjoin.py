@@ -1,8 +1,10 @@
+from assetinfo import AVAX_FUJI_ID
 import json
 import subprocess
 import time
 import string
 
+from assetinfo import *
 from messages import send_errmessage, send_message, send_signedtx, send_wiretx, send_accepted_txid, send_nonce
 from utils.httprequest import *
 from params import *
@@ -12,19 +14,19 @@ from utils.bufferutils import convert_to_jsbuffer, pack_out, unpack_inp, unpack_
 from random import choice
 from subprocess import *
 
-
-
 getcontext().prec = 9
 
 #This is a class which holds all the data for a coinjoin.  The CoinJoin has two main states that it can be in:  collecting utxo inputs and collecting
 #signatures.  
 
 class JoinState:
+    current_id = 0
 
-    def __init__(self, id = "test", connect_limit:int = DEFAULT_LOWER_USER_BOUND, assetid:str = 1, assetamount = 1, 
-            feeaddress:str = "", feepercent = Decimal(0.10), networkID = FUJI, debug_mode: bool = False):
+    def __init__(self, connect_limit:int = DEFAULT_LOWER_USER_BOUND, assetid:str = AVAX_FUJI_ID, assetamount = 1, 
+            feeaddress:str = "", feepercent = 0.10, networkID = FUJI, debug_mode: bool = False):
 
-        self.id = id
+        
+        self.id = JoinState.current_id
         self.connect_limit = connect_limit
         self.assetid = assetid
         self.assetamount = assetamount
@@ -49,6 +51,8 @@ class JoinState:
 
         if not self.isvalid_join():
             raise Exception("bad parameters")
+
+        JoinState.current_id += 1
 
     #Returns the number of connections that have joined during the input stage
     def get_current_input_count(self):
@@ -85,6 +89,7 @@ class JoinState:
     def get_fee_after_burn(self):
         return float(self.collected_fee_amount - Decimal(STANDARD_BURN_AMOUNT))
 
+    #resets the join back to its base state
     def reset_join(self):
         self.state = COLLECT_INPUTS
         self.collected_fee_amount = Decimal(0)
@@ -128,11 +133,6 @@ class JoinState:
         self.outputs.append(output)
         self.sort_outputs()
 
-    def add_fee_output(self):
-        fee_buffer_data = pack_out(self.assetid, int(self.get_fee_after_burn()*BNSCALE), 0, 1, [self.feeaddress])
-        fee_output = {"type": "Buffer", "data": fee_buffer_data}
-        self.outputs_append(fee_output, self.feeaddress)
-
     def create_input(self, inputbuf, pubaddr):
         return [inputbuf, pubaddr]
 
@@ -157,7 +157,6 @@ class JoinState:
     def initialize_sigs(self):
         for i in range(len(self.inputs)):
             self.sigs.append([None, None])
-        print(self.sigs)
 
     #extracts inputs from request data
     def extract_inputbuf(request_data):
@@ -171,6 +170,7 @@ class JoinState:
     def extract_pubaddr(request_data):
         return request_data["pubaddr"]
 
+    #returns only the inputs, not the public addresses associated with them
     def extract_inputs(self):
         inputs, pubaddresses = map(list, zip(*self.inputs))
         return inputs
@@ -180,14 +180,17 @@ class JoinState:
         outputs, pubaddresses = map(list, zip(*self.outputs))
         return outputs
 
+    #returns only the signatures from the signature list, not the public addresses associated with them
     def extract_sigs(self):
         signatures, pubaddresses = map(list, zip(*self.sigs))
         return signatures
 
+    #returns only the addresses, not the signatures, from the signature slist
     def extract_signer_addrs(self):
         signatures, pubaddresses = map(list, zip (*self.sigs))
         return pubaddresses
 
+    #calls a subprocess that verifies if the provided ticket belongs to the provided public address
     def verify_ticket(self, pubaddr: string, ticket: string, nonce: string):
         ticket_data = str.encode(json.dumps({
             "pubaddr": pubaddr,
@@ -207,6 +210,7 @@ class JoinState:
             return True
         return False
 
+    #calls a subprocess that verifies if the provided signature matches the signature and the unsigned transaction
     def verify_sig(self, pubaddr, signature):
         sig_data = str.encode(json.dumps({
             "pubaddr": pubaddr,
@@ -226,7 +230,7 @@ class JoinState:
             return True
         return False
     
-    #creates all of the 
+    #calls a subprocess that returns the raw buffer data for an unsigned transaction
     def craft_utx(self):
         fee_data = {
             "assetid": self.assetid, 
@@ -252,6 +256,7 @@ class JoinState:
         unsignedTxBuf = convert_to_jsbuffer(result.stdout)
         return unsignedTxBuf
 
+    #calls a subprocess that returns the raw buffer data for a signed transaction
     def craft_stx(self):
         stx_data = str.encode(json.dumps({
             "signatures": self.extract_sigs(),
@@ -269,6 +274,7 @@ class JoinState:
         signedTxBuf = convert_to_jsbuffer(result.stdout)
         return signedTxBuf
 
+    #calls a subprocess that issues the data
     def issue_stx(self):
         issue_data = str.encode(json.dumps({
             "stx": self.stx,
@@ -284,7 +290,8 @@ class JoinState:
         result_data = json.loads(bytes.decode((result.stdout)))
         return result_data
 
-    def get_input_data(input_buf):
+    #calls a subprocess that gets all of the data for a given input object
+    def get_input_data(self, input_buf):
         input_data = str.encode(json.dumps({
             "inpBuf": input_buf,
         }))
@@ -298,9 +305,11 @@ class JoinState:
         result_data = json.loads(bytes.decode((result.stdout)))
         return result_data
 
-    def get_output_data(output_buf):
+    #calls a subprocess that gets all of the data for a given output object
+    def get_output_data(self, output_buf):
         output_data = str.encode(json.dumps({
             "outBuf": output_buf,
+            "networkID": self.networkID
         }))
 
         result = subprocess.run(['node', './js_scripts/getoutputdata.js'], input = output_data, capture_output = True)
@@ -312,6 +321,7 @@ class JoinState:
         result_data = json.loads(bytes.decode((result.stdout)))
         return result_data
 
+    #determines if the given public address has request a nonce from the cj
     def in_pending_users(self, pubaddress):
         if self.pending_users == []:
             return False
@@ -320,35 +330,57 @@ class JoinState:
             return True
         return False
     
+    #given a public address, returns the nonce associated with it
     def get_nonce(self, pubaddress):
         pubaddresses, nonces = map(list, zip(*self.pending_users))
         return nonces[pubaddresses.index(pubaddress)]
         
+    #closes all connections associated with the cj
     def close_all_connections(self):
         for item in self.connections:
             item.close()
         self.connections = []
 
+    #sends a message to all connections
     def send_message_to_all(self, message):
         for item in self.connections:
             send_message(item, message)
 
+    #sends an error messsage to all connections
     def send_errmessage_to_all(self, message):
         for item in self.connections:
             send_errmessage(item, message)
 
+    #sets the cj to a fresh collect sigs state
     def set_to_collect_sigs(self):
         self.stx = None
         self.stx_id = None
         self.sigs = None
         self.state = COLLECT_SIGS
 
+    def is_valid_input(self, input_data):
+        inputamount = int(input_data["amt"])/BNSCALE
+        assetid = input_data["assetid"]
+        if inputamount >= self.totalamount and self.assetid == assetid:
+            return True
+        return False
+
+    def is_valid_output(self, output_data):
+        outputamount = int(output_data["amt"])/BNSCALE
+        assetid = output_data["assetid"]
+        output_addr_len = output_data["outAddrLen"]
+        if outputamount == self.assetamount and self.assetid == assetid and output_addr_len == 1:
+            return True
+        return False
+
     #Function that parses data, and makes sure that it is valid
     def process_request(self, request_data, conn, addr):
         ip = addr[0]
         pubaddr = JoinState.extract_pubaddr(request_data)
+        messagetype = request_data["messagetype"]
 
-        if request_data["messagetype"] == REQUEST_TO_JOIN:
+        #if handling a nonce request
+        if messagetype == REQUEST_TO_JOIN:
             if self.state == COLLECT_SIGS and pubaddr not in self.pubaddresses:
                 send_errmessage(conn, "Verification request denied, not in the coinjoin in the collect sigs stage")
 
@@ -360,21 +392,26 @@ class JoinState:
             self.pending_users.append([pubaddr, nonce])
             send_nonce(conn, nonce)
 
-        elif request_data["messagetype"] == COLLECT_INPUTS:
+        #When handling a potential input
+        elif messagetype == COLLECT_INPUTS:
+
+            #get input and output data
             input_buf = JoinState.extract_inputbuf(request_data)
             output_buf = JoinState.extract_outputbuf(request_data)
             request_address = JoinState.extract_pubaddr(request_data)
-            input_data = JoinState.get_input_data(input_buf)
-            output_data = JoinState.get_output_data(output_buf)
+            input_data = self.get_input_data(input_buf)
+            output_data = self.get_output_data(output_buf)
             
+            #if there was a problem forming either of these, send an error message and return
             if input_data == None or output_data == None:
                 send_errmessage(conn, "could not read input and/or output data")
                 return
 
+            #Determine if the input is valid
             inputamount = int(input_data["amt"])/BNSCALE
             outputamount = int(output_data["amt"])/BNSCALE
             if self.state == COLLECT_INPUTS:
-                if inputamount >= self.totalamount and outputamount == self.assetamount:
+                if self.is_valid_input(input_data) and self.is_valid_output(output_data):
                     if input_data["assetid"] == output_data["assetid"] == self.assetid:
                         if True: #not ip in self.IP_addresses:       #XXX need to comment out for testing purposes
                             if pubaddr not in self.pubaddresses:
@@ -445,8 +482,8 @@ class JoinState:
                 send_errmessage(conn, "Message not applicable, join not in input state")
                 return
 
-        #collect sigs state
-        elif request_data["messagetype"] == COLLECT_SIGS:
+        #handles potential signature
+        elif messagetype == COLLECT_SIGS:
             if self.state == COLLECT_SIGS:
                 if pubaddr in self.pubaddresses:
                     if pubaddr not in self.extract_signer_addrs():
@@ -505,7 +542,8 @@ class JoinState:
                 send_errmessage(conn, "Message not applicable, join not in signature state")
                 return
 
-        elif request_data["messagetype"] == REQUEST_WTX:
+        #handles wiretx request
+        elif messagetype == REQUEST_WTX:
             if self.state == COLLECT_SIGS:
                 if pubaddr in self.pubaddresses:
                     print("sending wiretx to participant")

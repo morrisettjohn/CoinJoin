@@ -26,8 +26,6 @@ const sendsignature = async(joinid: number, data: any, pubaddr: string, privatek
     const networkData = generatexchain(networkID)
     const keyType = getKeyType(privatekey)
 
-
-    
     const txbuff: Buffer = Buffer.from(data)
     const unsignedTx: UnsignedTx = new UnsignedTx()
     unsignedTx.fromBuffer(txbuff)
@@ -57,16 +55,12 @@ const sendsignature = async(joinid: number, data: any, pubaddr: string, privatek
         sig.fromBuffer(sigString)
     }
 
-
     const sendData = {
         "joinid": joinid,
         "messagetype": consts.COLLECT_SIGS,
         "signature": sig.toBuffer(),
         "pubaddr": pubaddr,
-        "transaction": txbuff,
     }
-
-    
 
     const signedTx = await sendRecieve(sendData)
     return signedTx

@@ -104,7 +104,7 @@ var processMessage = function (recievedData) {
 exports.processMessage = processMessage;
 var constructHeaderOptions = function (content) {
     var options = {
-        host: "192.168.129.105",
+        host: "100.64.15.72",
         port: "65432",
         method: "POST",
         headers: {

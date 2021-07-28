@@ -36,7 +36,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 exports.__esModule = true;
-var avalancheutils_1 = require("../avalancheutils");
+var avalancheutils_1 = require("../../avalancheutils");
 var avalanche_1 = require("avalanche");
 var avm_1 = require("@avalabs/avalanche-wallet-sdk/node_modules/avalanche/dist/apis/avm");
 var mnemonicKey = "dismiss spoon penalty gentle unable music buffalo cause bundle rural twist cheese discover this oyster garden globe excite kitchen rival diamond please clog swing";
@@ -58,7 +58,8 @@ var test = function (networkID) { return __awaiter(void 0, void 0, void 0, funct
                 y = _a.sent();
                 p = new avm_1.Tx();
                 p.fromString(y);
-                z = p.getUnsignedTx().getTransaction().getIns()[0].getInput().getAmount();
+                z = p.getUnsignedTx().getTransaction().getOuts()[0].getOutput().getAddress(0);
+                console.log(networkData.xchain.addressFromBuffer(z));
                 console.log(z);
                 return [2 /*return*/];
         }

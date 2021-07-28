@@ -90,14 +90,15 @@ var fromaddr = tests[args[1]];
 var toaddr = tests[args[2]];
 var networkid = parseInt(args[3]);
 if (args.length > 4) {
-    inputamount = parseInt(args[4]);
+    inputamount = parseFloat(args[4]);
 }
 if (args.length > 5) {
-    outputamount = parseInt(args[5]);
+    outputamount = parseFloat(args[5]);
 }
 if (args.length > 6) {
     assetID = args[6];
 }
+console.log(inputamount, outputamount);
 var main = function () { return __awaiter(void 0, void 0, void 0, function () {
     return __generator(this, function (_a) {
         if (args[0] == "help") {

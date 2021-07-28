@@ -29,6 +29,7 @@ const pubaddr4R = "X-fuji1ga8cr9eu7fq9x6f7zvwq26xmm4vdmdg7zrveav"
 const privatekey4R = "PrivateKey-28895VhkPjCeVwj8eThqMeFrCX4A44LucRbU9pSBucd1x4LnvT"
 
 const wallet1 = "dismiss spoon penalty gentle unable music buffalo cause bundle rural twist cheese discover this oyster garden globe excite kitchen rival diamond please clog swing"
+const pubaddr1W = "X-fuji1s9y0ae4fgr4rfuhy9l2jvl90xapvsxdxnzgzlw"
 const wallet2 = "manage smile coin benefit taxi close view motion pact confirm feature cannon royal alien soft moment throw miracle material axis solid pool reflect vintage"
 
 const test1S = [pubaddr1S, privatekey1S]
@@ -39,7 +40,7 @@ const test1R = [pubaddr1R, privatekey1R]
 const test2R = [pubaddr2R, privatekey2R]
 const test3R = [pubaddr3R, privatekey3R]
 const test4R = [pubaddr4R, privatekey4R]
-const test1W = [undefined, wallet1]
+const test1W = [pubaddr1W, wallet1]
 const test2W = [undefined, wallet2]
 const tests = {
   "1S": test1S, 
@@ -68,14 +69,16 @@ const toaddr = tests[args[2]]
 const networkid = parseInt(args[3])
 
 if (args.length > 4){
-  inputamount = parseInt(args[4])
+  inputamount = parseFloat(args[4])
 }
 if (args.length > 5){
-  outputamount = parseInt(args[5])
+  outputamount = parseFloat(args[5])
 }
 if (args.length > 6){
   assetID = args[6]
 }
+
+console.log(inputamount, outputamount)
 
 const main = async(): Promise<any> => {
   if (args[0] == "help"){

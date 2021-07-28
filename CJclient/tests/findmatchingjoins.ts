@@ -15,6 +15,11 @@ if (args.length > 4){
 }
 
 const main = function() {
-    findMatchingJoins(args[0], parseInt(args[1]), parseInt(args[2]), min_users, max_users)
+    if (args[0] == "help"){
+        console.log("usage: node txtest.js *assetid/name* *targetamount* *networkID* *min_users?* *max_users?*")
+    } 
+    else {
+        findMatchingJoins(args[0], parseInt(args[1]), parseInt(args[2]), min_users, max_users)
+    }
 }
 main()

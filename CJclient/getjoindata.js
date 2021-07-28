@@ -36,13 +36,13 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 exports.__esModule = true;
-exports.getjoindata = void 0;
 var processmessage_1 = require("./processmessage");
+var consts = require("./constants");
 var getjoindata = function (joinid) { return __awaiter(void 0, void 0, void 0, function () {
     var returnData;
     return __generator(this, function (_a) {
         returnData = {
-            "messagetype": 2,
+            "messagetype": consts.GET_JOIN_DATA,
             "joinid": joinid
         };
         processmessage_1.sendRecieve(returnData);

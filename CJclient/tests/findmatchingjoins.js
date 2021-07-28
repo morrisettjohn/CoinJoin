@@ -12,6 +12,11 @@ if (args.length > 4) {
     max_users = parseInt(args[4]);
 }
 var main = function () {
-    findmatchingjoins_1.findMatchingJoins(args[0], parseInt(args[1]), parseInt(args[2]), min_users, max_users);
+    if (args[0] == "help") {
+        console.log("usage: node txtest.js *assetid/name* *targetamount* *networkID* *min_users?* *max_users?*");
+    }
+    else {
+        findmatchingjoins_1.findMatchingJoins(args[0], parseInt(args[1]), parseInt(args[2]), min_users, max_users);
+    }
 };
 main();

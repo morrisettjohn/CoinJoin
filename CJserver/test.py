@@ -2,7 +2,5 @@
 from params import *
 from struct import *
 
-x = []
-x.append([None, None])
-x.append([None, None])
-print([None, None] in x)
+x = {0: "hi", 1: "bi"}
+print(x[0])
