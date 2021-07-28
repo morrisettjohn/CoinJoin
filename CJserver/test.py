@@ -1,6 +1,7 @@
+from decimal import Decimal, getcontext
+getcontext().prec = 9
 
-from params import *
-from struct import *
+print(sum([1, 2, 3]))
 
-x = {0: "hi", 1: "bi"}
-print(x[0])
+x = []
+print(x.index("1"))

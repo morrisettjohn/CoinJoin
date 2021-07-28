@@ -35,7 +35,6 @@ class JoinState:
         self.feeaddress = feeaddress
         self.state = COLLECT_INPUTS
         self.networkID = networkID
-        self.collected_fee_amount = Decimal(0)
         self.last_accessed = time.time()
         self.utx = None
         self.stx = None
@@ -47,6 +46,7 @@ class JoinState:
         self.sigs = []
         self.inputs = []
         self.outputs = []
+        self.blacklist = []
         self.debug_mode = debug_mode
 
         if not self.isvalid_join():
@@ -87,12 +87,98 @@ class JoinState:
 
     #returns the value of the fee after burning the minimum avax amount
     def get_fee_after_burn(self):
-        return float(self.collected_fee_amount - Decimal(STANDARD_BURN_AMOUNT))
+        return float(self.get_collected_fee_amt() - Decimal(STANDARD_BURN_AMOUNT))
+
+    def get_all_inputs(self):
+        inputs, pubaddresses, amounts = map(list, zip(*self.inputs))
+        return inputs
+
+    def get_all_input_addrs(self):
+        inputs, pubaddresses, amounts = map(list, zip(*self.inputs))
+        return pubaddresses
+
+    def get_all_input_amounts(self):
+        inputs, pubaddresses, amounts = map(list, zip(*self.inputs))
+        return amounts
+
+    def get_input_index(self, pubaddr):
+        return self.get_all_input_addrs().index(pubaddr)
+
+    def get_input(self, pubaddr):
+        return self.inputs[self.get_input_index(pubaddr)]
+
+    def remove_input(self, pubaddr):
+        return self.inputs.pop(self.get_input_index(pubaddr))
+
+    #returns only the output data, not the ip addresses, from the output list
+    def get_all_outputs(self):
+        outputs, pubaddresses, amounts = map(list, zip(*self.outputs))
+        return outputs
+
+    def get_all_output_addrs(self):
+        outputs, pubaddresses, amounts = map(list, zip(*self.outputs))
+        return pubaddresses
+
+    def get_all_output_amounts(self):
+        outputs, pubaddresses, amounts = map(list, zip(*self.outputs))
+        return amounts
+
+    def get_output_index(self, pubaddr):
+        return self.get_all_output_addrs().index(pubaddr)
+
+    def get_output(self, pubaddr):
+        return self.outputs[self.get_output_index(pubaddr)]
+
+    def remove_output(self, pubaddr):
+        return self.outputs.pop(self.get_output_index(pubaddr))
+
+    #returns only the signatures from the signature list, not the public addresses associated with them
+    def get_all_sigs(self):
+        signatures, pubaddresses = map(list, zip(*self.sigs))
+        return signatures
+
+    #returns only the addresses, not the signatures, from the signature slist
+    def get_all_signer_addrs(self):
+        signatures, pubaddresses = map(list, zip (*self.sigs))
+        return pubaddresses
+
+    def get_sig_index(self, pubaddr):
+        return self.get_all_signer_addrs().index(pubaddr)
+
+    def get_sig(self, pubaddr):
+        return self.sigs[self.get_sig_index(pubaddr)]
+
+    def remove_sig(self, pubaddr):
+        return self.sigs.pop(self.get_sig_index(pubaddr))
+
+    def get_all_pending_user_addr(self):
+        pubaddresses, nonces = map(list, zip (*self.pending_users))
+        return pubaddresses
+
+    def get_all_pending_user_nonces(self):
+        pubaddresses, nonces = map(list, zip (self.pending_users))
+        return nonces
+
+    def get_pending_user_index(self, pubaddr):
+        return self.get_all_pending_user_addr().index(pubaddr)
+
+    def get_pending_user(self, pubaddr):
+        return self.pending_users[self.get_pending_user_index(pubaddr)]
+
+    #given a public address, returns the nonce associated with it
+    def get_pending_user_nonce(self, pubaddr):
+        return self.get_pending_user(pubaddr)[1]
+
+    def remove_from_pending(self, pubaddr):
+        pubaddresses = self.get_all_pending_user_addr()
+        self.pending_users.pop(pubaddresses.index(pubaddr))
+
+    def get_collected_fee_amt(self):
+        return sum(self.get_all_input_amounts()) - sum(self.get_all_output_amounts())
 
     #resets the join back to its base state
     def reset_join(self):
         self.state = COLLECT_INPUTS
-        self.collected_fee_amount = Decimal(0)
         self.last_accessed = time.time()
         self.utx = None
         self.stx = None
@@ -104,6 +190,7 @@ class JoinState:
         self.sigs = []
         self.inputs = []
         self.outputs = []
+        self.blacklist = []
 
     #updates when the join was last accessed
     def update_last_accessed(self):
@@ -122,22 +209,22 @@ class JoinState:
         return True
 
     #Creates a new input, and then sorts the entire list
-    def inputs_append(self, inputbuf, pubaddr):  
-        input = self.create_input(inputbuf, pubaddr)
+    def inputs_append(self, inputbuf, pubaddr, amount):  
+        input = self.create_input(inputbuf, pubaddr, amount)
         self.inputs.append(input)
         self.sort_inputs()
 
     #Creates a new output, then sorts the entire list
-    def outputs_append(self, outputbuf, pubaddr):
-        output = self.create_output(outputbuf, pubaddr)
+    def outputs_append(self, outputbuf, pubaddr, amount):
+        output = self.create_output(outputbuf, pubaddr, amount)
         self.outputs.append(output)
         self.sort_outputs()
 
-    def create_input(self, inputbuf, pubaddr):
-        return [inputbuf, pubaddr]
+    def create_input(self, inputbuf, pubaddr, amount):
+        return [inputbuf, pubaddr, Decimal(amount)]
 
-    def create_output(self, outputbuf, pubaddr):
-        return [outputbuf, pubaddr]
+    def create_output(self, outputbuf, pubaddr, amount):
+        return [outputbuf, pubaddr, Decimal(amount)]
         
     #Convert utxo hash to binary, and then sort based on said hash
     def sort_inputs(self):
@@ -149,8 +236,7 @@ class JoinState:
         
     #Add a new signature to the list.  Signatures should be in the same order as inputs, so they are ordered as such.
     def sigs_append(self, signature, pubaddr):
-        inputs, pubaddresses = map(list, zip(*self.inputs))
-        index = pubaddresses.index(pubaddr)  #Determines where the ip is in the list
+        index = self.get_input_index(pubaddr)  #Determines where the ip is in the list
         self.sigs[index] = [signature, pubaddr]  #Based on the index of the ip established before, assigns the none object to be an index
         
     #Initializes the signer data, by creating a list full of None objects, so that signatures can be appended in the correct order
@@ -170,25 +256,8 @@ class JoinState:
     def extract_pubaddr(request_data):
         return request_data["pubaddr"]
 
-    #returns only the inputs, not the public addresses associated with them
-    def extract_inputs(self):
-        inputs, pubaddresses = map(list, zip(*self.inputs))
-        return inputs
-
-    #returns only the output data, not the ip addresses, from the output list
-    def extract_outputs(self):
-        outputs, pubaddresses = map(list, zip(*self.outputs))
-        return outputs
-
-    #returns only the signatures from the signature list, not the public addresses associated with them
-    def extract_sigs(self):
-        signatures, pubaddresses = map(list, zip(*self.sigs))
-        return signatures
-
-    #returns only the addresses, not the signatures, from the signature slist
-    def extract_signer_addrs(self):
-        signatures, pubaddresses = map(list, zip (*self.sigs))
-        return pubaddresses
+    def remove_pubaddr(self, pubaddr):
+        self.pubaddresses.remove(pubaddr)
 
     #calls a subprocess that verifies if the provided ticket belongs to the provided public address
     def verify_ticket(self, pubaddr: string, ticket: string, nonce: string):
@@ -239,8 +308,8 @@ class JoinState:
         }
 
         wiretx_data = str.encode(json.dumps({
-            "inputs": self.extract_inputs(),
-            "outputs": self.extract_outputs(),
+            "inputs": self.get_all_inputs(),
+            "outputs": self.get_all_outputs(),
             "networkID": self.networkID,
             "feedata": fee_data
         }))
@@ -259,7 +328,7 @@ class JoinState:
     #calls a subprocess that returns the raw buffer data for a signed transaction
     def craft_stx(self):
         stx_data = str.encode(json.dumps({
-            "signatures": self.extract_sigs(),
+            "signatures": self.get_all_sigs(),
             "utx": self.utx,
         }))
 
@@ -322,19 +391,13 @@ class JoinState:
         return result_data
 
     #determines if the given public address has request a nonce from the cj
-    def in_pending_users(self, pubaddress):
+    def in_pending_users(self, pubaddr):
         if self.pending_users == []:
             return False
-        pubaddresses, nonces = map(list, zip(*self.pending_users))
-        if pubaddress in pubaddresses:
-            return True
-        return False
+        if self.get_pending_user_index(pubaddr) == -1:
+            return False
+        return True
     
-    #given a public address, returns the nonce associated with it
-    def get_nonce(self, pubaddress):
-        pubaddresses, nonces = map(list, zip(*self.pending_users))
-        return nonces[pubaddresses.index(pubaddress)]
-        
     #closes all connections associated with the cj
     def close_all_connections(self):
         for item in self.connections:
@@ -373,6 +436,19 @@ class JoinState:
             return True
         return False
 
+    def remove_user(self, pubaddr, blacklist = True):
+        self.utx = None
+        self.stx = None
+        self.stx_id = None
+        self.remove_pubaddr(pubaddr)
+        self.remove_input(pubaddr)
+        self.remove_output(pubaddr)
+        if self.state == COLLECT_SIGS:
+            self.remove_sig(pubaddr)
+        self.state == COLLECT_INPUTS
+        if blacklist:
+            self.blacklist.append(pubaddr)
+
     #Function that parses data, and makes sure that it is valid
     def process_request(self, request_data, conn, addr):
         ip = addr[0]
@@ -380,17 +456,17 @@ class JoinState:
         messagetype = request_data["messagetype"]
 
         #if handling a nonce request
-        if messagetype == REQUEST_TO_JOIN:
+        if messagetype == REQUEST_NONCE:
             if self.state == COLLECT_SIGS and pubaddr not in self.pubaddresses:
                 send_errmessage(conn, "Verification request denied, not in the coinjoin in the collect sigs stage")
 
             if self.in_pending_users(pubaddr):
-                pubaddresses, nonces = map(list, zip(*self.pending_users))
-                self.pending_users.pop(pubaddresses.index(pubaddr))
+                self.remove_from_pending(pubaddr)
 
             nonce = ''.join(choice(string.ascii_letters) for i in range(10))
             self.pending_users.append([pubaddr, nonce])
             send_nonce(conn, nonce)
+            return
 
         #When handling a potential input
         elif messagetype == COLLECT_INPUTS:
@@ -416,18 +492,18 @@ class JoinState:
                         if True: #not ip in self.IP_addresses:       #XXX need to comment out for testing purposes
                             if pubaddr not in self.pubaddresses:
                                 if self.in_pending_users(pubaddr):
-                                    if self.verify_ticket(pubaddr, request_data["ticket"], self.get_nonce(pubaddr)):
+                                    if self.verify_ticket(pubaddr, request_data["ticket"], self.get_pending_user_nonce(pubaddr)):
                                         #create input and output data when this has been determined to be valid information
+                                        self.remove_from_pending(pubaddr)
                                         self.update_last_accessed()
                                         self.connections.append(conn)
                                         self.IP_addresses.append(ip)
                                         self.pubaddresses.append(pubaddr)
 
-                                        self.inputs_append(input_buf, request_address)
-                                        self.outputs_append(output_buf, request_address)
+                                        self.inputs_append(input_buf, request_address, inputamount)
+                                        self.outputs_append(output_buf, request_address, outputamount)
 
-                                        self.collected_fee_amount += Decimal(inputamount) - Decimal(self.assetamount)
-                                        print("collected fees: " + str(float((self.collected_fee_amount))))
+                                        print("collected fees: " + str(float((self.get_collected_fee_amt()))))
                                         send_message(conn, "transaction data accepted, please wait for other users to input data")
 
                                         for item in self.connections:
@@ -486,7 +562,7 @@ class JoinState:
         elif messagetype == COLLECT_SIGS:
             if self.state == COLLECT_SIGS:
                 if pubaddr in self.pubaddresses:
-                    if pubaddr not in self.extract_signer_addrs():
+                    if pubaddr not in self.get_all_signer_addrs():
                         if self.verify_sig(pubaddr, request_data["signature"]):
                             #When it has been determined that the signature is valid, continue through
                             self.update_last_accessed()
@@ -525,6 +601,7 @@ class JoinState:
 
                                 self.close_all_connections()
                                 self.reset_join()
+                                return
                             return
                         else:
                             print("signature does not belong to pubaddr")
@@ -549,6 +626,7 @@ class JoinState:
                     print("sending wiretx to participant")
                     send_message(conn, "sending wiretx information over")
                     send_wiretx(conn, self.utx)
+                    return
                 else:
                     print("not part of join, cannot request wiretx")
                     send_errmessage(conn, "not part of join, canont request wiretx")
@@ -556,6 +634,28 @@ class JoinState:
             else:
                 print("not in collect sigs, cannot send wiretx")
                 send_errmessage(conn, "cannot send wiretx, join not in collectsigs state")
+                return
+
+        elif messagetype == EXIT:
+            if pubaddr in self.pubaddresses:
+                if self.in_pending_users(pubaddr):
+                    if self.verify_ticket(pubaddr, request_data["ticket"], self.get_pending_user_nonce(pubaddr)):
+                        self.remove_from_pending(pubaddr)
+                        print("removing user %s" % pubaddr)
+                        self.remove_user(pubaddr)
+                        send_message(conn, "user %s has been removed from the CJ" % pubaddr)
+                        return
+                    else:
+                        print("cannot validate user, will not remove")
+                        send_errmessage(conn, "validation failed, user will not be removed")
+                        return
+                else:
+                    print("user didn't request a nonce beforehand, cannot validate")
+                    send_errmessage(conn, "did not request a nonce for validation, user will not be removed")
+                    return
+            else:
+                print("user not in CJ")
+                send_errmessage(conn, "User cannot be removed because %s is not in the CJ" % pubaddr)
                 return
 
         else:

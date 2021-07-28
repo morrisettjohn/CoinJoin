@@ -160,7 +160,7 @@ def isvalid_jsondata(data):
         if not "joinid" in data:
             print("no joinid in data for selectjoin message")
             return False
-    elif data["messagetype"] == REQUEST_TO_JOIN:
+    elif data["messagetype"] == REQUEST_NONCE:
         if not "joinid" in data or not "pubaddr" in data:
             print("insufficient information to request nonce")
     elif data["messagetype"] == COLLECT_INPUTS:
@@ -221,7 +221,7 @@ def process_data(conn, addr):
             else:
                 print("tried to request information for join that doesn't exist")
                 send_errmessage(conn, "Join does not exist for id %d" % data["joinid"])
-        elif messagetype == REQUEST_TO_JOIN:
+        elif messagetype == REQUEST_NONCE:
             join = get_join(data)
             print("sending nonce to address")
             join.process_request(data, conn, addr)

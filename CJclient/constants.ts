@@ -7,3 +7,4 @@ export const COLLECT_SIGS = 4
 export const ISSUE_TX = 5
 export const REQUEST_WTX = 6
 export const REQUEST_TO_JOIN = 7
+export const EXIT = 8
