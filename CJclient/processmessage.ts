@@ -1,4 +1,11 @@
 import { request } from "http"
+import * as consts from "./constants"
+
+class Message {
+    constructor (){
+        
+    }
+}
 
 const isValidWTXData = function(data: any): boolean {
     return true
@@ -119,13 +126,14 @@ const constructHeaderOptions = function (content: any): any{
 
 const printReadableJoinData = function(join: any) {
     let state = "Inputs"
-    if (join["state"] == 4){
+    if (join["state"] == consts.COLLECT_SIGS){
         state = "Signatures"
     }
     console.log(`Join ID: ${join["id"]}`)
-    console.log(`\tState: Collect ${state}`)
-    console.log(`\tTotal amount (with fees): ${join["total_amount"]}`)
+    console.log(`\tAsset Name: ${join["asset_name"]}`)
     console.log(`\tBase amount: ${join["base_amount"]}`)
+    console.log(`\tTotal amount (with fees): ${join["total_amount"]}`)
+    console.log(`\tState: Collect ${state}`)
     console.log(`\tTotal ${state} collected:  ${join["current_input_count"]}/${join["input_limit"]}\r\n`)
 }
 

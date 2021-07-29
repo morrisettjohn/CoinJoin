@@ -1,6 +1,7 @@
 "use strict";
 exports.__esModule = true;
 var http_1 = require("http");
+var consts = require("./constants");
 var isValidWTXData = function (data) {
     return true;
     if (!("inputs" in data && "outputs" in data)) {
@@ -116,13 +117,14 @@ var constructHeaderOptions = function (content) {
 exports.constructHeaderOptions = constructHeaderOptions;
 var printReadableJoinData = function (join) {
     var state = "Inputs";
-    if (join["state"] == 4) {
+    if (join["state"] == consts.COLLECT_SIGS) {
         state = "Signatures";
     }
     console.log("Join ID: " + join["id"]);
-    console.log("\tState: Collect " + state);
-    console.log("\tTotal amount (with fees): " + join["total_amount"]);
+    console.log("\tAsset Name: " + join["asset_name"]);
     console.log("\tBase amount: " + join["base_amount"]);
+    console.log("\tTotal amount (with fees): " + join["total_amount"]);
+    console.log("\tState: Collect " + state);
     console.log("\tTotal " + state + " collected:  " + join["current_input_count"] + "/" + join["input_limit"] + "\r\n");
 };
 var sendRecieve = function (sendData) {

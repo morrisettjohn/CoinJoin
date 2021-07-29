@@ -1,4 +1,4 @@
-from assetinfo import AVAX_FUJI_ID
+from assetinfo import AVAX_FUJI_ID, convert_to_asset_id, convert_to_asset_name
 import json
 import subprocess
 import time
@@ -68,8 +68,10 @@ class JoinState:
 
     #function that returns the current status of the join in json form, for easy access
     def get_status(self):
+        asset_name = convert_to_asset_name(self.assetid)
         status = {       
             "id": self.id,
+            "asset_name": asset_name,
             "state": self.state,
             "input_limit": self.connect_limit,
             "base_amount": self.assetamount,
@@ -175,6 +177,9 @@ class JoinState:
 
     def get_collected_fee_amt(self):
         return sum(self.get_all_input_amounts()) - sum(self.get_all_output_amounts())
+
+    def remove_connection(self, conn):
+        return self.connections.pop(self.connections.index(conn))
 
     #resets the join back to its base state
     def reset_join(self):
@@ -360,9 +365,11 @@ class JoinState:
         return result_data
 
     #calls a subprocess that gets all of the data for a given input object
-    def get_input_data(self, input_buf):
+    def get_input_data(self, input_buf, pubaddr):
         input_data = str.encode(json.dumps({
             "inpBuf": input_buf,
+            "pubaddr": pubaddr,
+            "networkID": self.networkID
         }))
 
         result = subprocess.run(['node', './js_scripts/getinputdata.js'], input = input_data, capture_output = True)
@@ -443,11 +450,12 @@ class JoinState:
         self.remove_pubaddr(pubaddr)
         self.remove_input(pubaddr)
         self.remove_output(pubaddr)
-        if self.state == COLLECT_SIGS:
-            self.remove_sig(pubaddr)
+        self.sigs = []
         self.state == COLLECT_INPUTS
         if blacklist:
             self.blacklist.append(pubaddr)
+
+        print(self.utx, self.stx, self.stx_id, self.pubaddresses, self.inputs, self.outputs, self.sigs, self.state)
 
     #Function that parses data, and makes sure that it is valid
     def process_request(self, request_data, conn, addr):
@@ -457,10 +465,8 @@ class JoinState:
 
         #if handling a nonce request
         if messagetype == REQUEST_NONCE:
-            if self.state == COLLECT_SIGS and pubaddr not in self.pubaddresses:
-                send_errmessage(conn, "Verification request denied, not in the coinjoin in the collect sigs stage")
-
             if self.in_pending_users(pubaddr):
+                send_message(conn, "sending new nonce")
                 self.remove_from_pending(pubaddr)
 
             nonce = ''.join(choice(string.ascii_letters) for i in range(10))
@@ -475,7 +481,7 @@ class JoinState:
             input_buf = JoinState.extract_inputbuf(request_data)
             output_buf = JoinState.extract_outputbuf(request_data)
             request_address = JoinState.extract_pubaddr(request_data)
-            input_data = self.get_input_data(input_buf)
+            input_data = self.get_input_data(input_buf, pubaddr)
             output_data = self.get_output_data(output_buf)
             
             #if there was a problem forming either of these, send an error message and return
@@ -507,10 +513,10 @@ class JoinState:
                                         send_message(conn, "transaction data accepted, please wait for other users to input data")
 
                                         for item in self.connections:
-                                            send_message(item, "%d out of %d users connected" % (len(self.inputs), self.connect_limit))
+                                            send_message(item, "%d out of %d users connected" % (self.get_current_input_count(), self.connect_limit))
                                         
                                         #when sufficient connections are created, go through the process of sending out the transaction
-                                        if len(self.inputs) >= self.connect_limit:
+                                        if self.get_current_input_count() >= self.connect_limit:
                                             #add the fee to the outputs
                                             try: 
                                                 self.utx = self.craft_utx()
@@ -598,7 +604,8 @@ class JoinState:
                                         send_accepted_txid(item, status_data["id"])
                                 elif status_data["status"] == "Rejected":
                                     print("tx not accepted onto the blockchain")
-
+                                
+                                
                                 self.close_all_connections()
                                 self.reset_join()
                                 return
@@ -642,8 +649,16 @@ class JoinState:
                     if self.verify_ticket(pubaddr, request_data["ticket"], self.get_pending_user_nonce(pubaddr)):
                         self.remove_from_pending(pubaddr)
                         print("removing user %s" % pubaddr)
+
+                        message = "user has been removed from the CJ"
+                        if self.state == COLLECT_SIGS:
+                            message += ", moving from collect sigs state to collect inputs.  You will have to sign again.\r\n"
+
                         self.remove_user(pubaddr)
-                        send_message(conn, "user %s has been removed from the CJ" % pubaddr)
+                        message += "%s out of %s users connected" % (self.get_current_input_count(), self.connect_limit)
+
+                        self.send_message_to_all(message)
+                        conn.close()
                         return
                     else:
                         print("cannot validate user, will not remove")

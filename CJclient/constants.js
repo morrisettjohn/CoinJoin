@@ -9,3 +9,4 @@ exports.COLLECT_SIGS = 4;
 exports.ISSUE_TX = 5;
 exports.REQUEST_WTX = 6;
 exports.REQUEST_TO_JOIN = 7;
+exports.EXIT = 8;

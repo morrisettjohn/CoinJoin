@@ -44,10 +44,11 @@ var constants_1 = require("./constants");
 var avalanche_wallet_sdk_1 = require("@avalabs/avalanche-wallet-sdk");
 var consts = require("./constants");
 var requestjoin_1 = require("./requestjoin");
+var loginfo_1 = require("./loginfo");
 //setting up the xchain object
 var bintools = avalanche_1.BinTools.getInstance();
 var sendutxodata = function (joinid, assetid, inputamount, outputamount, destinationaddr, pubaddr, privatekey, networkID) { return __awaiter(void 0, void 0, void 0, function () {
-    var networkData, xchain, assetidBuf, fee, targetInpAmountFormatted, targetInpAmountFormatBN, targetInpAmountWithFee, targetOutAmountFormatted, targetOutAmountFormatBN, keyType, id, signedTx, myAddresses, myAddressBuf, keyData, utxoset, balance, unsignedTx, mwallet, from, to, change, walletutxos, unsignedTx, status, outs, txindex, i, txid, outputidx, secpTransferInput, input, outputaddressBuf, secpTransferOutput, output, ticket, sendData, recievedData;
+    var networkData, xchain, assetidBuf, fee, targetInpAmountFormatted, targetInpAmountFormatBN, targetInpAmountWithFee, targetOutAmountFormatted, targetOutAmountFormatBN, keyType, id, signedTx, myAddresses, myAddressBuf, keyData, utxoset, balance, unsignedTx, mwallet, from, to, change, walletutxos, unsignedTx, status, outs, txindex, i, txid, outputidx, secpTransferInput, input, outputaddressBuf, secpTransferOutput, output, ticket, sendData, log_data, recievedData;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -158,6 +159,9 @@ var sendutxodata = function (joinid, assetid, inputamount, outputamount, destina
                     "outputbuf": output.toBuffer()
                 };
                 console.log("sending data to coinjoin server now");
+                log_data = "successfully joined CJ of id " + joinid + " using address " + pubaddr + ".";
+                console.log(log_data);
+                loginfo_1.log_info(log_data);
                 return [4 /*yield*/, processmessage_1.sendRecieve(sendData)];
             case 18:
                 recievedData = _a.sent();

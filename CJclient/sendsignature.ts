@@ -16,7 +16,7 @@ import { createHash } from "crypto"
 import { generatekeychain, generatexchain, getKeyType } from "./avalancheutils"
 import { MnemonicWallet } from "@avalabs/avalanche-wallet-sdk"
 import * as consts from "./constants"
-import { requestNonce } from "./requestjoin"
+import { log_info } from "./loginfo"
 
 
 const bintools: BinTools = BinTools.getInstance()
@@ -63,6 +63,9 @@ const sendsignature = async(joinid: number, data: any, pubaddr: string, privatek
     }
 
     const signedTx = await sendRecieve(sendData)
+    const log_data = `successfully sent signature to CJ of id ${joinid} using address ${pubaddr}.`
+    console.log(log_data)
+    log_info(log_data)
     return signedTx
 }
 

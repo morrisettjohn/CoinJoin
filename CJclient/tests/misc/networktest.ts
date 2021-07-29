@@ -18,20 +18,27 @@ import { Defaults } from "avalanche/dist/utils"
 
 const mnemonicKey = "dismiss spoon penalty gentle unable music buffalo cause bundle rural twist cheese discover this oyster garden globe excite kitchen rival diamond please clog swing"
 const bintools: BinTools = BinTools.getInstance()
-console.log("wtf")
 
 const test = async(networkID: number): Promise<any> => {
-    console.log("yo")
     const networkData = generatexchain(5)
     
     const x = await networkData.xchain.getAVAXAssetID()
-    console.log('hi')
     const y = await networkData.xchain.getTx("2tVrsjNURvH7hF42y5cc8shsKSGWFhgK7D8GEsnaYiZVca7Bzu")
+
+    const date: Date = new Date()
+    console.log(date.toLocaleString())
+
     const p = new Tx()
     p.fromString(y)
-    const z = p.getUnsignedTx().getTransaction().getOuts()[0].getOutput().getAddress(0)
-    console.log(networkData.xchain.addressFromBuffer(z))
-    console.log(z)
+    const z = p.getUnsignedTx().getTransaction().getIns()[0].getTxID()
+    const nurt = p.getUnsignedTx().getTransaction().getIns()[0].getOutputIdx()
+    const nurt2: BN = new BN(nurt)
+    console.log(nurt2.toNumber())
+
+    const b = bintools.cb58Encode(z)
+    console.log(b)
+    const a = await networkData.xchain.getTx(b)
+    console.log(a)
 }
 
 const args = process.argv.slice(2)

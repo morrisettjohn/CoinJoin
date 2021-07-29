@@ -1,0 +1,11 @@
+at 7/29/2021, 11:26:02 AM:  successfully joined CJ of id 6 using address X-fuji13a3dm204mh9hfjx3ajpk33cchgszh2qry97ml9.
+at 7/29/2021, 11:28:42 AM:  successfully joined CJ of id 6 using address X-fuji145c79rkv2k8lexzuvzwjkqhn276kwcu0cjgryv.
+at 7/29/2021, 12:58:34 PM:  successfully joined CJ of id 6 using address X-fuji1ywknekcr6rkekg9g996dsnsdg20wmvwhpsmup6.
+at 7/29/2021, 1:00:36 PM:  successfully joined CJ of id 6 using address X-fuji1ywknekcr6rkekg9g996dsnsdg20wmvwhpsmup6.
+at 7/29/2021, 1:02:05 PM:  successfully joined CJ of id 6 using address X-fuji1ywknekcr6rkekg9g996dsnsdg20wmvwhpsmup6.
+at 7/29/2021, 1:02:52 PM:  successfully joined CJ of id 6 using address X-fuji1ywknekcr6rkekg9g996dsnsdg20wmvwhpsmup6.
+at 7/29/2021, 1:03:01 PM:  successfully joined CJ of id 6 using address X-fuji1d6fetyekv4ec5enm9ltuxrd6n70ng04rpxq443.
+at 7/29/2021, 1:03:07 PM:  successfully joined CJ of id 6 using address X-fuji10a7tx3xl2cyp3g60d68zh80tzen0lwxd548u82.
+at 7/29/2021, 1:03:11 PM:  successfully sent signature to CJ of id 6 using address X-fuji1ywknekcr6rkekg9g996dsnsdg20wmvwhpsmup6.
+at 7/29/2021, 1:03:11 PM:  successfully sent signature to CJ of id 6 using address X-fuji1d6fetyekv4ec5enm9ltuxrd6n70ng04rpxq443.
+at 7/29/2021, 1:03:11 PM:  successfully sent signature to CJ of id 6 using address X-fuji10a7tx3xl2cyp3g60d68zh80tzen0lwxd548u82.

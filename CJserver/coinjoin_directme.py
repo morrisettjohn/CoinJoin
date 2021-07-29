@@ -97,12 +97,6 @@ def find_joins(assetid, amount, networkID, min_users, max_users):
         matches.append(new_join.get_status())
     return matches
 
-#if the asset is an asset name, as opposed to an id, convert to the proper assetid
-def convert_to_asset_id(asset):
-    testint = ASSET_NAMES.index(asset)
-    if testint != -1:
-        asset = ASSET_IDS[testint]
-    return asset
 
 #Determines what the option data for a find_joins request is.  
 def parse_option_data(data):
@@ -179,6 +173,10 @@ def isvalid_jsondata(data):
         if not "joinid" in data or not "pubaddr" in data:
             print("cannot send back wiretx")
             return False
+    elif data["messagetype"] == EXIT:
+        if not "joinid" in data or not "pubaddr" in data or not "ticket" in data:
+            print("insufficient data to exit CJ")
+            return False
     else:
         return False
     print("good data")
@@ -240,6 +238,10 @@ def process_data(conn, addr):
         elif messagetype == REQUEST_WTX:
             join = get_join(data)
             print("sending wiretx to participant")
+            join.process_request(data, conn, addr)
+        elif messagetype == EXIT:
+            join = get_join(data)
+            print("starting exit process")
             join.process_request(data, conn, addr)
         else:
             send_errmessage(conn, "not a valid messagetype")

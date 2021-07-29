@@ -21,3 +21,16 @@ ETHER = (ETHER_NAME, ETHER_ID, ETHER_DENOMS, ETHER_NETWORKID)
 
 ASSET_TYPES = [AVAX_FUJI, AVAX_MAINNET, ETHER]
 ASSET_NAMES, ASSET_IDS, ASSET_DENOMS, dummy = map(list, zip(*ASSET_TYPES))
+
+#if the asset is an asset name, as opposed to an id, convert to the proper assetid
+def convert_to_asset_id(asset):
+    testint = ASSET_NAMES.index(asset)
+    if testint != -1:
+        asset = ASSET_IDS[testint]
+    return asset
+
+def convert_to_asset_name(asset):
+    testint = ASSET_IDS.index(asset)
+    if testint != -1:
+        asset = ASSET_NAMES[testint]
+    return asset
