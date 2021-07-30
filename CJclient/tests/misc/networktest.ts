@@ -39,6 +39,9 @@ const test = async(networkID: number): Promise<any> => {
     console.log(b)
     const a = await networkData.xchain.getTx(b)
     console.log(a)
+    console.log("\na\nt")
+
+    const nump = 
 }
 
 const args = process.argv.slice(2)

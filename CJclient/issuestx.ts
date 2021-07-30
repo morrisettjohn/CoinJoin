@@ -23,21 +23,16 @@ const issuetx = async(data: any, networkID: number): Promise<any> => {
     const networkData = generatexchain(networkID)
     console.log("issuing tx")
 
-    const timeout: number = data["waittime"]
-    const stxBuf: Buffer = new Buffer(data["stx"])
-
+    const stxBuf: Buffer = new Buffer(data)
     const stx: Tx = new Tx()
     stx.fromBuffer(stxBuf)
-
-    
-
     const id: string = await networkData.xchain.issueTx(stx) 
 
     let status: string = ""
     while (status != "Accepted" && status != "Rejected"){
         status = await networkData.xchain.getTxStatus(id)
     }
-    console.log(status)
+    console.log(`Tx has been ${status}`)
 
 }
 

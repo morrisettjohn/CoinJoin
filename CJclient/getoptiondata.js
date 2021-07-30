@@ -36,13 +36,13 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 exports.__esModule = true;
-exports.getoptiondata = void 0;
 var processmessage_1 = require("./processmessage");
+var consts = require("./constants");
 var getoptiondata = function () { return __awaiter(void 0, void 0, void 0, function () {
     var returnData;
     return __generator(this, function (_a) {
         returnData = {
-            "messagetype": 0
+            "messagetype": consts.START_PROCESS
         };
         processmessage_1.sendRecieve(returnData);
         return [2 /*return*/];

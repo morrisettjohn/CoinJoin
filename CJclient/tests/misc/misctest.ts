@@ -4,7 +4,5 @@ import { XChainAlias } from "avalanche/dist/utils"
 import { ResponseObject } from "../../responseobject"
 
 
-const y = new ResponseObject
-const x = new ResponseObject("x", "hi")
-
-console.log(x.messagetype)
+const x = [1, "2"]
+console.log(x)

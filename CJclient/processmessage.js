@@ -2,6 +2,33 @@
 exports.__esModule = true;
 var http_1 = require("http");
 var consts = require("./constants");
+var Message = /** @class */ (function () {
+    function Message(mtype, mdata, mresolve, cachetimeout) {
+        this.mtype = mtype;
+        this.mdata = mdata;
+        this.mresolve = mresolve;
+        if (this.mresolve == "cache") {
+            this.cachetimeout = cachetimeout;
+        }
+        else {
+            this.cachetimeout = undefined;
+        }
+    }
+    Message.prototype.setCacheTimeout = function (mlSecs) {
+        if (this.mresolve = "cache") {
+            this.cachetimeout = mlSecs;
+        }
+        else {
+            throw new Error("can only apply a cachetimeout");
+        }
+    };
+    Message.prototype.getCacheTimeout = function () {
+        return this.cachetimeout;
+    };
+    Message.messagetypes = ["MSG", "ERR", "OPT", "JLS", "JDT", "NCE", "WTX", "STX", "TXD", "UND"];
+    Message.resolvetypes = ["cache", "return", "print"];
+    return Message;
+}());
 var isValidWTXData = function (data) {
     return true;
     if (!("inputs" in data && "outputs" in data)) {
@@ -35,74 +62,95 @@ var isValidSTX = function (data) {
 };
 //takes a message from the coinjoin server and processes it, using a 3 character prefix as a messagetype
 var processMessage = function (recievedData) {
+    var messages = [];
     while (recievedData.indexOf("\r\n\r\n") != -1) {
         var endIndex = recievedData.indexOf("\r\n\r\n");
         var messageType = recievedData.slice(0, 3);
         var messageData = recievedData.slice(3, endIndex);
+        var message = new Message(messageType);
         recievedData = recievedData.slice(endIndex + 4);
         //handling message
         if (messageType == "MSG") {
-            console.log("SERVER MESSAGE: " + messageData);
+            message.mdata = "SERVER MESSAGE: " + messageData;
+            message.mresolve = "print";
         }
         //handling error message
         else if (messageType == "ERR") {
-            console.log("ERROR: " + messageData);
+            message.mdata = "ERROR: " + messageData;
+            message.mresolve = "print";
         }
         //handling get_options data
         else if (messageType == "OPT") {
-            console.log("recieved optiondata");
-            console.log(JSON.parse(messageData));
+            message.mdata = JSON.parse(messageData);
+            message.mresolve = "print";
         }
         //handling get_joinlist data
         else if (messageType == "JLS") {
-            console.log("recieved list of compatible joins\r\n");
+            var data = "";
             var joinlist = JSON.parse(messageData);
             for (var i = 0; i < joinlist.length; i++) {
-                var join = joinlist[i];
-                printReadableJoinData(join);
+                data += joinDataReadable(joinlist[i]);
             }
+            message.mdata = data;
+            message.mresolve = "print";
         }
         else if (messageType == "JDT") {
-            console.log("recieved join data\r\n");
-            printReadableJoinData(JSON.parse(messageData));
+            message.mdata = joinDataReadable(JSON.parse(messageData));
+            message.mresolve = "print";
         }
         else if (messageType == "NCE") {
-            console.log("recieved nonce");
-            return messageData;
+            message.mdata = messageData;
+            message.mresolve = "return";
         }
         //handling send_utxo data
         else if (messageType == "WTX") {
-            console.log("recieved wiretx");
             var data = JSON.parse(messageData);
             if (isValidWTXData(data)) {
-                return data;
+                message.mdata = data;
+                message.mresolve = "return";
             }
             else {
-                return new Error("Incomplete wtx");
+                throw Error("Incomplete wtx");
             }
         }
         //handling signed_tx data
         else if (messageType == "STX") {
-            console.log("recieved full tx");
             var data = JSON.parse(messageData);
             if (isValidSTX(data)) {
-                return data;
+                message.mdata = data["stx"];
+                message.mresolve = "cache";
+                message.setCacheTimeout(data["timeout"]);
             }
             else {
-                return new Error("incomplete stx");
+                throw new Error("incomplete stx");
             }
         }
         else if (messageType == "TXD") {
-            console.log("recieved transaction id");
-            return messageData;
+            message.mdata = messageData;
+            message.mresolve = "return";
         }
         else {
-            console.log("not a valid messagetype");
+            message.mtype = "UND";
+            message.mdata = undefined;
         }
+        messages.push(message);
     }
-    return undefined;
+    return messages;
 };
 exports.processMessage = processMessage;
+var joinDataReadable = function (join) {
+    var state = "Inputs";
+    if (join["state"] == consts.COLLECT_SIGS) {
+        state = "Signatures";
+    }
+    var message = "Join ID: " + join["id"];
+    message += "\n\tAsset Name: " + join["asset_name"];
+    message += "\n\tBase amount: " + join["base_amount"];
+    message += "\n\tTotal amount (with fees): " + join["total_amount"];
+    message += "\n\tState: Collect " + state;
+    message += "\n\tTotal " + state + " collected:  " + join["current_input_count"] + "/" + join["input_limit"] + "\r\n";
+    return message;
+};
 var constructHeaderOptions = function (content) {
     var options = {
         host: "100.64.15.72",
@@ -115,28 +163,35 @@ var constructHeaderOptions = function (content) {
     return options;
 };
 exports.constructHeaderOptions = constructHeaderOptions;
-var printReadableJoinData = function (join) {
-    var state = "Inputs";
-    if (join["state"] == consts.COLLECT_SIGS) {
-        state = "Signatures";
-    }
-    console.log("Join ID: " + join["id"]);
-    console.log("\tAsset Name: " + join["asset_name"]);
-    console.log("\tBase amount: " + join["base_amount"]);
-    console.log("\tTotal amount (with fees): " + join["total_amount"]);
-    console.log("\tState: Collect " + state);
-    console.log("\tTotal " + state + " collected:  " + join["current_input_count"] + "/" + join["input_limit"] + "\r\n");
-};
 var sendRecieve = function (sendData) {
     var returnDataString = JSON.stringify(sendData);
     var options = constructHeaderOptions(returnDataString);
     return new Promise(function (resolve, reject) {
+        var cache = [];
+        var timeout = undefined;
         var req = http_1.request(options, function (res) {
             res.on("data", function (d) {
                 var recievedData = d.toString();
-                var data = processMessage(recievedData);
-                if (data != undefined) {
-                    resolve(data);
+                var messages = processMessage(recievedData);
+                messages.forEach(function (item) {
+                    if (item.mresolve == "print") {
+                        console.log(item.mdata);
+                    }
+                    else if (item.mresolve == "return") {
+                        cache.push(item.mdata);
+                        resolve(cache);
+                    }
+                    else if (item.mresolve == "cache") {
+                        cache.push(item.mdata);
+                        if (item.getCacheTimeout()) {
+                            if (!timeout || timeout > item.getCacheTimeout()) {
+                                timeout = item.getCacheTimeout();
+                            }
+                        }
+                    }
+                });
+                if (timeout) {
+                    setTimeout(function () { resolve(cache); }, timeout);
                 }
             });
         });

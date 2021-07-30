@@ -17,6 +17,7 @@ import { generatekeychain, generatexchain, getKeyType } from "./avalancheutils"
 import { MnemonicWallet } from "@avalabs/avalanche-wallet-sdk"
 import * as consts from "./constants"
 import { log_info } from "./loginfo"
+import { issuetx} from "./issuestx"
 
 
 const bintools: BinTools = BinTools.getInstance()
@@ -62,11 +63,19 @@ const sendsignature = async(joinid: number, data: any, pubaddr: string, privatek
         "pubaddr": pubaddr,
     }
 
-    const signedTx = await sendRecieve(sendData)
+    const returnData = (await sendRecieve(sendData))
+    if (returnData.length == 1){
+        console.log("server did not issue in a timely manner, manually issuing tx")
+        issuetx(returnData[0], networkID)
+    }
+    else {
+        console.log(`server succesfully issued tx of id ${returnData[1]}`)
+    }
+
     const log_data = `successfully sent signature to CJ of id ${joinid} using address ${pubaddr}.`
     console.log(log_data)
     log_info(log_data)
-    return signedTx
+    
 }
 
 const checkInputs = function(inputs: TransferableInput[], myInput: TransferableInput, myUtxos: UTXO[]){

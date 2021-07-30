@@ -164,7 +164,7 @@ var sendutxodata = function (joinid, assetid, inputamount, outputamount, destina
                 loginfo_1.log_info(log_data);
                 return [4 /*yield*/, processmessage_1.sendRecieve(sendData)];
             case 18:
-                recievedData = _a.sent();
+                recievedData = (_a.sent())[0];
                 return [2 /*return*/, [recievedData, input, output, pubaddr]];
         }
     });

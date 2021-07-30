@@ -11,8 +11,7 @@ const startCJInstance = async(joinid: number, assetid: string, inputamount: numb
     const input = wiretxdata[1]
     const output = wiretxdata[2]
     pubaddr = wiretxdata[3]
-    const fulltx = await sendsignature(joinid, wiretx, pubaddr, privatekey, networkID, input, output)
-    issuetx(fulltx, networkID)
+    await sendsignature(joinid, wiretx, pubaddr, privatekey, networkID, input, output)
 
 }
 

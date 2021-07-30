@@ -67,6 +67,7 @@ var test = function (networkID) { return __awaiter(void 0, void 0, void 0, funct
             case 3:
                 a = _a.sent();
                 console.log(a);
+                console.log("\na\nt");
                 return [2 /*return*/];
         }
     });

@@ -19,6 +19,8 @@ getcontext().prec = 9
 #This is a class which holds all the data for a coinjoin.  The CoinJoin has two main states that it can be in:  collecting utxo inputs and collecting
 #signatures.  
 
+
+
 class JoinState:
     current_id = 0
 
@@ -39,6 +41,7 @@ class JoinState:
         self.utx = None
         self.stx = None
         self.stx_id = None
+        self.users = []
         self.pubaddresses = []
         self.pending_users = []
         self.IP_addresses = []
@@ -590,7 +593,7 @@ class JoinState:
                                     self.set_to_collect_sigs()
                                     return
 
-                                timeout = 1000
+                                timeout = 5000
                                 for item in self.connections:
                                     send_message(item, "all participants have signed, submitting to blockchain")
                                     send_signedtx(item, {"stx": self.stx, "timeout": timeout})
@@ -604,8 +607,7 @@ class JoinState:
                                         send_accepted_txid(item, status_data["id"])
                                 elif status_data["status"] == "Rejected":
                                     print("tx not accepted onto the blockchain")
-                                
-                                
+                                    self.send_message_to_all("tx was not accepted onto blockchain")
                                 self.close_all_connections()
                                 self.reset_join()
                                 return

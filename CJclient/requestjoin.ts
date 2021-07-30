@@ -20,7 +20,7 @@ const requestNonce = async(joinid: number, pubaddr: string, privatekey: string, 
         "pubaddr": pubaddr,
     }
 
-    const nonce: Buffer = Buffer.from(await sendRecieve(sendData))
+    const nonce: Buffer = Buffer.from((await sendRecieve(sendData))[0])
 
     let sig: Buffer = undefined
     if (keyType == 0){

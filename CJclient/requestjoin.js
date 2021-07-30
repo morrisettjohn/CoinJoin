@@ -58,7 +58,7 @@ var requestNonce = function (joinid, pubaddr, privatekey, networkID) { return __
                 _b = (_a = avalanche_1.Buffer).from;
                 return [4 /*yield*/, processmessage_1.sendRecieve(sendData)];
             case 1:
-                nonce = _b.apply(_a, [_c.sent()]);
+                nonce = _b.apply(_a, [(_c.sent())[0]]);
                 sig = undefined;
                 if (!(keyType == 0)) return [3 /*break*/, 2];
                 keyData = avalancheutils_1.generatekeychain(networkData.xchain, privatekey);

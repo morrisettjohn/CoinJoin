@@ -18,6 +18,7 @@ import { MnemonicWallet } from "@avalabs/avalanche-wallet-sdk";
 import * as consts from "./constants"
 import { requestNonce } from "./requestjoin";
 import { log_info } from "./loginfo";
+import { constructHeaderOptions } from "./processmessage";
 
 //setting up the xchain object
 const bintools: BinTools = BinTools.getInstance()
@@ -140,8 +141,8 @@ const sendutxodata = async(joinid: number, assetid: string, inputamount: number,
     const log_data = `successfully joined CJ of id ${joinid} using address ${pubaddr}.`
     console.log(log_data)
     log_info(log_data)
-    const recievedData = await sendRecieve(sendData)
-
+    const recievedData = (await sendRecieve(sendData))[0]
+    
     return [recievedData, input, output, pubaddr]
 }
 
