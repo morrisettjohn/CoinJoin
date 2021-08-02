@@ -11,7 +11,6 @@ const bintools: BinTools = BinTools.getInstance()
 
 const requestNonce = async(joinid: number, pubaddr: string, privatekey: string, networkID: number): Promise<any> => {
     const networkData = generatexchain(networkID)
-    const xchain = networkData.xchain
     const keyType = getKeyType(privatekey)
 
     const sendData = {

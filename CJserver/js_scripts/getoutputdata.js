@@ -12,16 +12,25 @@ const processData = function(data){
     const networkData = generatexchain(data["networkID"])
     const output_buf = new avalanche_1.Buffer(data["outBuf"])
     const output = new avm_1.TransferableOutput()
-    output.fromBuffer(output_buf)
+    try {
+        output.fromBuffer(output_buf)
+    }
+    catch (e) {
+        throw new Error("could not form output")
+    }
     
     const amount = output.getOutput().getAmount().toString()
     const assetID = bintools.cb58Encode(output.getAssetID())
     
     const outAddrLen = output.getOutput().getAddresses().length
+    if (outAddrLen != 1){
+        throw new Error("address has multiple out addresses associated with it")
+    }
+
     const outputAddrBuf = output.getOutput().getAddress(0)
     const outputAddr = networkData.xchain.addressFromBuffer(outputAddrBuf)
 
-    const returnData = JSON.stringify({"amt": amount, "assetid": assetID, "outAddrLen": outAddrLen})
+    const returnData = JSON.stringify({"amt": amount, "assetID": assetID, "outputAddr": outputAddr})
 
     process.stdout.write(returnData)
 }

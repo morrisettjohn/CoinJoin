@@ -1,4 +1,4 @@
-import { Tx as StandardTx} from "avalanche/dist/apis/avm"
+import { KeyPair, Tx as StandardTx} from "avalanche/dist/apis/avm"
 import { generatekeychain, generatexchain } from "../../avalancheutils"
 import { Buffer, Mnemonic, HDNode, BN, BinTools } from "avalanche"
 import { randomBytes } from "crypto"
@@ -21,27 +21,13 @@ const bintools: BinTools = BinTools.getInstance()
 
 const test = async(networkID: number): Promise<any> => {
     const networkData = generatexchain(5)
-    
-    const x = await networkData.xchain.getAVAXAssetID()
-    const y = await networkData.xchain.getTx("2tVrsjNURvH7hF42y5cc8shsKSGWFhgK7D8GEsnaYiZVca7Bzu")
+    const keyData = generatekeychain(networkData.xchain, "PrivateKey-ryjZWerx1vRgQnFrLJ9oxBYUS7TdMRNrBLmSAAP78L4xixvT2")
 
-    const date: Date = new Date()
-    console.log(date.toLocaleString())
+    const x = keyData.myKeyPair.sign(new Buffer("hi"))
 
-    const p = new Tx()
-    p.fromString(y)
-    const z = p.getUnsignedTx().getTransaction().getIns()[0].getTxID()
-    const nurt = p.getUnsignedTx().getTransaction().getIns()[0].getOutputIdx()
-    const nurt2: BN = new BN(nurt)
-    console.log(nurt2.toNumber())
-
-    const b = bintools.cb58Encode(z)
-    console.log(b)
-    const a = await networkData.xchain.getTx(b)
-    console.log(a)
-    console.log("\na\nt")
-
-    const nump = 
+    const addr = keyData.myKeyPair.recover(new Buffer("hi"), x)
+    const addr2 = keyData.myKeyPair.addressFromPublicKey(addr)
+    console.log(networkData.xchain.addressFromBuffer(addr2))
 }
 
 const args = process.argv.slice(2)

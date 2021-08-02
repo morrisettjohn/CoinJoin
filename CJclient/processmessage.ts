@@ -163,7 +163,7 @@ const joinDataReadable = function(join: any) {
 
 const constructHeaderOptions = function (content: any): any{
     const options = {
-        host: "100.64.15.72",
+        host: "192.168.129.105",
         port: "65432",
         method: "POST",
         headers: {

@@ -8,17 +8,17 @@ const processData = function(data) {
 
     data = JSON.parse(data)
 
-    const pubaddr = data["pubaddr"]
-    const ticket = avalanche_1.Buffer.from(data["ticket"])
-    const nonce = avalanche_1.Buffer.from(data["nonce"])
+
+    const msg = avalanche_1.Buffer.from(data["msg"])
+    const signed_msg = avalanche_1.Buffer.from(data["signed_msg"])
     const networkID = data["networkID"]
     const networkData = generatexchain(networkID)
 
     const keyPair = new avm_1.KeyPair()
-    const newpub = keyPair.recover(nonce, ticket)
-    const newPubBuf = keyPair.addressFromPublicKey(newpub)
-    const pubaddrBuf = networkData.xchain.parseAddress(pubaddr)
-    
-    process.stdout.write(newPubBuf.equals(pubaddrBuf).toString())
-}
+    const nonceAddrBuf = keyPair.addressFromPublicKey(keyPair.recover(msg, signed_msg))
+    const nonceAddr = networkData.xchain.addressFromBuffer(nonceAddrBuf)
 
+    const returnData = JSON.stringify({"nonceAddr": nonceAddr})
+    
+    process.stdout.write(returnData)
+}

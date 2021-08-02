@@ -10,9 +10,6 @@ const processData = function(data) {
 
     data = JSON.parse(data)
 
-
-
-    const pubaddr = data["pubaddr"]
     const sigbuf = avalanche_1.Buffer.from(data["sig"])
     const sig = new common_1.Signature()
     sig.fromBuffer(sigbuf)
@@ -23,10 +20,11 @@ const processData = function(data) {
     const networkData = generatexchain(networkID)
 
     const keyPair = new avm_1.KeyPair()
-    const newpub = keyPair.recover(utxbuf, sigbuf)
-    const newPubBuf = keyPair.addressFromPublicKey(newpub)
-    const pubaddrBuf = networkData.xchain.parseAddress(pubaddr)
+    const sigPubBuf = keyPair.addressFromPublicKey(keyPair.recover(utxbuf, sigbuf))
+    const sigAddr = networkData.xchain.addressFromBuffer(sigPubBuf)
 
-    process.stdout.write(newPubBuf.equals(pubaddrBuf).toString())
+    const returnData = JSON.stringify({"sigAddr": sigAddr})
+
+    process.stdout.write(returnData)
 }
 

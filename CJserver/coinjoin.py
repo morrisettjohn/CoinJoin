@@ -13,6 +13,8 @@ from struct import *
 from utils.bufferutils import convert_to_jsbuffer, pack_out, unpack_inp, unpack_out
 from random import choice
 from subprocess import *
+from buffer import Input, Nonce, Output, Sig
+from user import User, UserList
 
 getcontext().prec = 9
 
@@ -24,13 +26,13 @@ getcontext().prec = 9
 class JoinState:
     current_id = 0
 
-    def __init__(self, connect_limit:int = DEFAULT_LOWER_USER_BOUND, assetid:str = AVAX_FUJI_ID, assetamount = 1, 
+    def __init__(self, connect_limit:int = DEFAULT_LOWER_USER_BOUND, assetID:str = AVAX_FUJI_ID, assetamount = 1, 
             feeaddress:str = "", feepercent = 0.10, networkID = FUJI, debug_mode: bool = False):
 
         
         self.id = JoinState.current_id
         self.connect_limit = connect_limit
-        self.assetid = assetid
+        self.assetID = assetID
         self.assetamount = assetamount
         self.feepercent = feepercent
         self.totalamount = assetamount + assetamount * feepercent
@@ -41,14 +43,9 @@ class JoinState:
         self.utx = None
         self.stx = None
         self.stx_id = None
-        self.users = []
-        self.pubaddresses = []
-        self.pending_users = []
+        self.users = UserList()
         self.IP_addresses = []
         self.connections = []
-        self.sigs = []
-        self.inputs = []
-        self.outputs = []
         self.blacklist = []
         self.debug_mode = debug_mode
 
@@ -59,19 +56,15 @@ class JoinState:
 
     #Returns the number of connections that have joined during the input stage
     def get_current_input_count(self):
-        return len(self.inputs)
+        return self.users.get_num_inputs()
 
     #Returns the number of signatures that have joined during the signature stage
     def get_current_signature_count(self):
-        count = 0
-        for item in self.sigs:
-            if item != [None, None]:
-                count += 1
-        return count
+        return self.users.get_num_signatures()
 
     #function that returns the current status of the join in json form, for easy access
     def get_status(self):
-        asset_name = convert_to_asset_name(self.assetid)
+        asset_name = convert_to_asset_name(self.assetID)
         status = {       
             "id": self.id,
             "asset_name": asset_name,
@@ -95,91 +88,18 @@ class JoinState:
         return float(self.get_collected_fee_amt() - Decimal(STANDARD_BURN_AMOUNT))
 
     def get_all_inputs(self):
-        inputs, pubaddresses, amounts = map(list, zip(*self.inputs))
-        return inputs
-
-    def get_all_input_addrs(self):
-        inputs, pubaddresses, amounts = map(list, zip(*self.inputs))
-        return pubaddresses
-
-    def get_all_input_amounts(self):
-        inputs, pubaddresses, amounts = map(list, zip(*self.inputs))
-        return amounts
-
-    def get_input_index(self, pubaddr):
-        return self.get_all_input_addrs().index(pubaddr)
-
-    def get_input(self, pubaddr):
-        return self.inputs[self.get_input_index(pubaddr)]
-
-    def remove_input(self, pubaddr):
-        return self.inputs.pop(self.get_input_index(pubaddr))
+        return self.users.get_all_inputs()
 
     #returns only the output data, not the ip addresses, from the output list
     def get_all_outputs(self):
-        outputs, pubaddresses, amounts = map(list, zip(*self.outputs))
-        return outputs
-
-    def get_all_output_addrs(self):
-        outputs, pubaddresses, amounts = map(list, zip(*self.outputs))
-        return pubaddresses
-
-    def get_all_output_amounts(self):
-        outputs, pubaddresses, amounts = map(list, zip(*self.outputs))
-        return amounts
-
-    def get_output_index(self, pubaddr):
-        return self.get_all_output_addrs().index(pubaddr)
-
-    def get_output(self, pubaddr):
-        return self.outputs[self.get_output_index(pubaddr)]
-
-    def remove_output(self, pubaddr):
-        return self.outputs.pop(self.get_output_index(pubaddr))
+        return self.users.get_all_outputs()
 
     #returns only the signatures from the signature list, not the public addresses associated with them
     def get_all_sigs(self):
-        signatures, pubaddresses = map(list, zip(*self.sigs))
-        return signatures
-
-    #returns only the addresses, not the signatures, from the signature slist
-    def get_all_signer_addrs(self):
-        signatures, pubaddresses = map(list, zip (*self.sigs))
-        return pubaddresses
-
-    def get_sig_index(self, pubaddr):
-        return self.get_all_signer_addrs().index(pubaddr)
-
-    def get_sig(self, pubaddr):
-        return self.sigs[self.get_sig_index(pubaddr)]
-
-    def remove_sig(self, pubaddr):
-        return self.sigs.pop(self.get_sig_index(pubaddr))
-
-    def get_all_pending_user_addr(self):
-        pubaddresses, nonces = map(list, zip (*self.pending_users))
-        return pubaddresses
-
-    def get_all_pending_user_nonces(self):
-        pubaddresses, nonces = map(list, zip (self.pending_users))
-        return nonces
-
-    def get_pending_user_index(self, pubaddr):
-        return self.get_all_pending_user_addr().index(pubaddr)
-
-    def get_pending_user(self, pubaddr):
-        return self.pending_users[self.get_pending_user_index(pubaddr)]
-
-    #given a public address, returns the nonce associated with it
-    def get_pending_user_nonce(self, pubaddr):
-        return self.get_pending_user(pubaddr)[1]
-
-    def remove_from_pending(self, pubaddr):
-        pubaddresses = self.get_all_pending_user_addr()
-        self.pending_users.pop(pubaddresses.index(pubaddr))
+        return self.users.get_all_sigs()
 
     def get_collected_fee_amt(self):
-        return sum(self.get_all_input_amounts()) - sum(self.get_all_output_amounts())
+        return self.users.get_total_fee_amount()
 
     def remove_connection(self, conn):
         return self.connections.pop(self.connections.index(conn))
@@ -215,42 +135,8 @@ class JoinState:
         if self.feepercent < 0 or self.feepercent >= 1:
             return False
         return True
-
-    #Creates a new input, and then sorts the entire list
-    def inputs_append(self, inputbuf, pubaddr, amount):  
-        input = self.create_input(inputbuf, pubaddr, amount)
-        self.inputs.append(input)
-        self.sort_inputs()
-
-    #Creates a new output, then sorts the entire list
-    def outputs_append(self, outputbuf, pubaddr, amount):
-        output = self.create_output(outputbuf, pubaddr, amount)
-        self.outputs.append(output)
-        self.sort_outputs()
-
-    def create_input(self, inputbuf, pubaddr, amount):
-        return [inputbuf, pubaddr, Decimal(amount)]
-
-    def create_output(self, outputbuf, pubaddr, amount):
-        return [outputbuf, pubaddr, Decimal(amount)]
         
-    #Convert utxo hash to binary, and then sort based on said hash
-    def sort_inputs(self):
-        self.inputs = sorted(self.inputs, key=lambda x:x[0]["data"])
         
-    #Sort outputs based on destination address
-    def sort_outputs(self):
-        self.outputs = sorted(self.outputs, key=lambda x: x[0]["data"])
-        
-    #Add a new signature to the list.  Signatures should be in the same order as inputs, so they are ordered as such.
-    def sigs_append(self, signature, pubaddr):
-        index = self.get_input_index(pubaddr)  #Determines where the ip is in the list
-        self.sigs[index] = [signature, pubaddr]  #Based on the index of the ip established before, assigns the none object to be an index
-        
-    #Initializes the signer data, by creating a list full of None objects, so that signatures can be appended in the correct order
-    def initialize_sigs(self):
-        for i in range(len(self.inputs)):
-            self.sigs.append([None, None])
 
     #extracts inputs from request data
     def extract_inputbuf(request_data):
@@ -264,141 +150,8 @@ class JoinState:
     def extract_pubaddr(request_data):
         return request_data["pubaddr"]
 
-    def remove_pubaddr(self, pubaddr):
-        self.pubaddresses.remove(pubaddr)
-
-    #calls a subprocess that verifies if the provided ticket belongs to the provided public address
-    def verify_ticket(self, pubaddr: string, ticket: string, nonce: string):
-        ticket_data = str.encode(json.dumps({
-            "pubaddr": pubaddr,
-            "ticket": ticket,
-            "nonce": nonce,
-            "networkID": self.networkID
-        }))
-
-        result = subprocess.run(['node', './js_scripts/verifyticket.js'], input = ticket_data, capture_output=True)
-        try:
-            result.check_returncode()
-        except CalledProcessError:
-            print(result.stderr)
-            return False
-        ticket_val = bytes.decode(result.stdout)
-        if ticket_val == "true":
-            return True
-        return False
-
-    #calls a subprocess that verifies if the provided signature matches the signature and the unsigned transaction
-    def verify_sig(self, pubaddr, signature):
-        sig_data = str.encode(json.dumps({
-            "pubaddr": pubaddr,
-            "sig": signature,
-            "utx": self.utx,
-            "networkID": self.networkID
-        }))
-        
-        result = subprocess.run(['node', './js_scripts/verifysig.js'], input = sig_data, capture_output=True)
-        try:
-            result.check_returncode()
-        except CalledProcessError:
-            print(result.stderr)
-            return False
-        sig_val = bytes.decode(result.stdout)
-        if sig_val == "true":
-            return True
-        return False
-    
-    #calls a subprocess that returns the raw buffer data for an unsigned transaction
-    def craft_utx(self):
-        fee_data = {
-            "assetid": self.assetid, 
-            "amount": int(self.get_fee_after_burn()*BNSCALE), 
-            "address": self.feeaddress
-        }
-
-        wiretx_data = str.encode(json.dumps({
-            "inputs": self.get_all_inputs(),
-            "outputs": self.get_all_outputs(),
-            "networkID": self.networkID,
-            "feedata": fee_data
-        }))
-
-        result = subprocess.run(['node', './js_scripts/craftunsignedtx.js'], input = wiretx_data, capture_output=True)
-
-        try:
-            result.check_returncode()
-        except Exception:
-            print(result.stderr)
-            raise Exception("bad transaction data")
-        
-        unsignedTxBuf = convert_to_jsbuffer(result.stdout)
-        return unsignedTxBuf
-
-    #calls a subprocess that returns the raw buffer data for a signed transaction
-    def craft_stx(self):
-        stx_data = str.encode(json.dumps({
-            "signatures": self.get_all_sigs(),
-            "utx": self.utx,
-        }))
-
-        result = subprocess.run(['node', './js_scripts/craftsignedtx.js'], input = stx_data, capture_output=True)
-        try:
-            result.check_returncode()
-        except Exception:
-            print(result.stdout)
-            print(result.stderr)
-            raise Exception("bad stx data")
-        
-        signedTxBuf = convert_to_jsbuffer(result.stdout)
-        return signedTxBuf
-
-    #calls a subprocess that issues the data
-    def issue_stx(self):
-        issue_data = str.encode(json.dumps({
-            "stx": self.stx,
-            "networkID": self.networkID
-        }))
-
-        result = subprocess.run(['node', './js_scripts/issuestx.js'], input = issue_data, capture_output=True)
-        try:
-            result.check_returncode()
-        except Exception:
-            print(result.stderr)
-            raise Exception("something went wrong")
-        result_data = json.loads(bytes.decode((result.stdout)))
-        return result_data
-
-    #calls a subprocess that gets all of the data for a given input object
-    def get_input_data(self, input_buf, pubaddr):
-        input_data = str.encode(json.dumps({
-            "inpBuf": input_buf,
-            "pubaddr": pubaddr,
-            "networkID": self.networkID
-        }))
-
-        result = subprocess.run(['node', './js_scripts/getinputdata.js'], input = input_data, capture_output = True)
-        try:
-            result.check_returncode()
-        except CalledProcessError:
-            print(result.stderr)
-            return None
-        result_data = json.loads(bytes.decode((result.stdout)))
-        return result_data
-
-    #calls a subprocess that gets all of the data for a given output object
-    def get_output_data(self, output_buf):
-        output_data = str.encode(json.dumps({
-            "outBuf": output_buf,
-            "networkID": self.networkID
-        }))
-
-        result = subprocess.run(['node', './js_scripts/getoutputdata.js'], input = output_data, capture_output = True)
-        try:
-            result.check_returncode()
-        except CalledProcessError:
-            print(result.stderr)
-            return None
-        result_data = json.loads(bytes.decode((result.stdout)))
-        return result_data
+    def extract_ticket(request_data):
+        return request_data["ticket"]
 
     #determines if the given public address has request a nonce from the cj
     def in_pending_users(self, pubaddr):
@@ -431,20 +184,6 @@ class JoinState:
         self.sigs = None
         self.state = COLLECT_SIGS
 
-    def is_valid_input(self, input_data):
-        inputamount = int(input_data["amt"])/BNSCALE
-        assetid = input_data["assetid"]
-        if inputamount >= self.totalamount and self.assetid == assetid:
-            return True
-        return False
-
-    def is_valid_output(self, output_data):
-        outputamount = int(output_data["amt"])/BNSCALE
-        assetid = output_data["assetid"]
-        output_addr_len = output_data["outAddrLen"]
-        if outputamount == self.assetamount and self.assetid == assetid and output_addr_len == 1:
-            return True
-        return False
 
     def remove_user(self, pubaddr, blacklist = True):
         self.utx = None
@@ -466,123 +205,132 @@ class JoinState:
         pubaddr = JoinState.extract_pubaddr(request_data)
         messagetype = request_data["messagetype"]
 
+        user = self.users.get_user(pubaddr)
+
         #if handling a nonce request
         if messagetype == REQUEST_NONCE:
-            if self.in_pending_users(pubaddr):
+            if self.users.user_awaiting_nonce(pubaddr):
                 send_message(conn, "sending new nonce")
-                self.remove_from_pending(pubaddr)
+            nonce_msg = ''.join(choice(string.ascii_letters) for i in range(10))
+            nonce = Nonce(nonce_msg)
 
-            nonce = ''.join(choice(string.ascii_letters) for i in range(10))
-            self.pending_users.append([pubaddr, nonce])
+            if not user:
+                user = User(pubaddr)
+                self.users.append(user)
+            user.nonce = nonce
             send_nonce(conn, nonce)
             return
 
         #When handling a potential input
         elif messagetype == COLLECT_INPUTS:
-
-            #get input and output data
             input_buf = JoinState.extract_inputbuf(request_data)
             output_buf = JoinState.extract_outputbuf(request_data)
-            request_address = JoinState.extract_pubaddr(request_data)
-            input_data = self.get_input_data(input_buf, pubaddr)
-            output_data = self.get_output_data(output_buf)
+            signed_message_buf = JoinState.extract_ticket(request_data)
             
-            #if there was a problem forming either of these, send an error message and return
-            if input_data == None or output_data == None:
-                send_errmessage(conn, "could not read input and/or output data")
+            try:
+                input = Input(input_buf)
+                output = Output(output_buf)
+                user.nonce.parse_nonce(signed_message_buf, self.networkID)
+            except Exception:
+                send_errmessage(conn, "could not read input/output data or nonce")
                 return
 
-            #Determine if the input is valid
-            inputamount = int(input_data["amt"])/BNSCALE
-            outputamount = int(output_data["amt"])/BNSCALE
-            if self.state == COLLECT_INPUTS:
-                if self.is_valid_input(input_data) and self.is_valid_output(output_data):
-                    if input_data["assetid"] == output_data["assetid"] == self.assetid:
-                        if True: #not ip in self.IP_addresses:       #XXX need to comment out for testing purposes
-                            if pubaddr not in self.pubaddresses:
-                                if self.in_pending_users(pubaddr):
-                                    if self.verify_ticket(pubaddr, request_data["ticket"], self.get_pending_user_nonce(pubaddr)):
-                                        #create input and output data when this has been determined to be valid information
-                                        self.remove_from_pending(pubaddr)
-                                        self.update_last_accessed()
-                                        self.connections.append(conn)
-                                        self.IP_addresses.append(ip)
-                                        self.pubaddresses.append(pubaddr)
+            if user:
+                if user.nonce.nonce_addr == user.pubaddr:
+                    if self.state == COLLECT_INPUTS:
+                        if user.pubaddr == input.pubaddr:
+                            if input.assetID == output.assetID == self.assetID:
+                                if True: #not ip in self.IP_addresses:       #XXX need to comment out for testing purposes
+                                    if input.amt >= self.totalamount and output.amt == self.assetamount:
+                                        if not self.users.check_repeat_output_addr(output.output_addr):
+                                            #create input and output data when this has been determined to be valid information
+                                            self.update_last_accessed()
+                                            self.connections.append(conn)
+                                            self.IP_addresses.append(ip)
+                                            user.remove_nonce()
+                                            user.input = input
+                                            user.output = output
+                                            user.in_join = True
 
-                                        self.inputs_append(input_buf, request_address, inputamount)
-                                        self.outputs_append(output_buf, request_address, outputamount)
+                                            print("collected fees: " + str(float((self.get_collected_fee_amt()))))
+                                            send_message(conn, "transaction data accepted, please wait for other users to input data")
 
-                                        print("collected fees: " + str(float((self.get_collected_fee_amt()))))
-                                        send_message(conn, "transaction data accepted, please wait for other users to input data")
-
-                                        for item in self.connections:
-                                            send_message(item, "%d out of %d users connected" % (self.get_current_input_count(), self.connect_limit))
-                                        
-                                        #when sufficient connections are created, go through the process of sending out the transaction
-                                        if self.get_current_input_count() >= self.connect_limit:
-                                            #add the fee to the outputs
-                                            try: 
-                                                self.utx = self.craft_utx()
-                                            except Exception:
-                                                self.send_errmessage_to_all("bad unsigned transaction data.  Send input again")
-                                                self.reset_join()
-                                                return
-                                            #send out transaction to every user
                                             for item in self.connections:
-                                                send_message(item, "all transactions complete, please input signature now")
-                                                send_wiretx(item, self.utx)
-                                            self.close_all_connections()
-                                            self.initialize_sigs()
-                                            self.IP_addresses = [] #delete ip addresses for security
-                                            self.pending_users = []
-                                            self.state = COLLECT_SIGS
-                                        return
+                                                send_message(item, "%d out of %d users connected" % (self.get_current_input_count(), self.connect_limit))
+                                            
+                                            #when sufficient connections are created, go through the process of sending out the transaction
+                                            if self.get_current_input_count() >= self.connect_limit:
+                                                #add the fee to the outputs
+                                                try: 
+                                                    self.utx = self.craft_utx()
+                                                except Exception:
+                                                    self.send_errmessage_to_all("bad unsigned transaction data.  Send input again")
+                                                    self.reset_join()
+                                                    return
+                                                self.users.sort_users()
+                                                #send out transaction to every user
+                                                for item in self.connections:
+                                                    send_message(item, "all transactions complete, please input signature now")
+                                                    send_wiretx(item, self.utx)
+                                                self.close_all_connections()
+                                                self.IP_addresses = [] #delete ip addresses for security
+                                                self.state = COLLECT_SIGS
+                                            return
+                                        else:
+                                            print("nonce did not verify to pubaddr")
+                                            send_errmessage(conn, "signature not associated with pubkey")
+                                            return
                                     else:
-                                        print("nonce did not verify to pubaddr")
-                                        send_errmessage(conn, "signature not associated with pubkey")
+                                        print("Quantity of avax needs to be the same")
+                                        send_errmessage(conn, "Quantity of inputs/outputs needs to match")
                                         return
                                 else:
-                                    print("user did not request permission to enter coinjoin")
-                                    send_errmessage(conn, "did not request nonce to enter server")
+                                    print("matching ip address already in use")
+                                    send_errmessage(conn, "matching ip address already in use")
                                     return
                             else:
-                                print("already connected")
-                                send_errmessage(conn, "Already connected")
+                                print("Mismatched asset-type")
+                                send_errmessage(conn, "Mismatched asset-type")
                                 return
                         else:
-                            print("matching ip address already in use")
-                            send_errmessage(conn, "matching ip address already in use")
+                            print("output does not belong to user")
+                            send_errmessage(conn, "The output selected does not belong to the pubaddr used")
                             return
-
                     else:
-                        print("Mismatched asset-type")
-                        send_errmessage(conn, "Mismatched asset-type")
+                        print("message not applicable, Join in input state")
+                        send_errmessage(conn, "Message not applicable, join not in input state")
+
                         return
                 else:
-                    print("Quantity of avax needs to be the same")
-                    send_errmessage(conn, "Quantity insufficient")
+                    print("nonce did not verify to pubaddr")
+                    send_errmessage(conn, "signature not associated with pubkey")
+
                     return
             else:
-                print("message not applicable, Join in input state")
-                send_errmessage(conn, "Message not applicable, join not in input state")
-                return
+                print("user not found")
+                send_errmessage(conn, "could not find user, make sure to request a nonce to initialize with the CJ")
 
         #handles potential signature
         elif messagetype == COLLECT_SIGS:
+            try:
+                sig = Sig(self.utx, request_data["signature"], self.networkID)
+            except Exception:
+                send_errmessage(conn, "could not parse signature")
+
             if self.state == COLLECT_SIGS:
-                if pubaddr in self.pubaddresses:
-                    if pubaddr not in self.get_all_signer_addrs():
-                        if self.verify_sig(pubaddr, request_data["signature"]):
+                if user and user.in_join == True:
+                    if user.signature == None:
+                        if user.pubaddr == sig.sig_addr:
                             #When it has been determined that the signature is valid, continue through
                             self.update_last_accessed()
-                            self.sigs_append(request_data["signature"], pubaddr)
+                            user.signature = sig
                             self.connections.append(conn)
                             send_message(conn, "signature registered, waiting for others in the coinjoin")
 
                             for item in self.connections:
                                 send_message(item, "%d out of %d users signed" % (self.get_current_signature_count(), self.connect_limit))
 
-                            if self.get_current_signature_count() == self.connect_limit and len(self.sigs) >= self.connect_limit:
+                            if self.get_current_signature_count() == self.connect_limit:
                                 print("all signed")
 
                                 try:
@@ -631,7 +379,7 @@ class JoinState:
         #handles wiretx request
         elif messagetype == REQUEST_WTX:
             if self.state == COLLECT_SIGS:
-                if pubaddr in self.pubaddresses:
+                if user and user.in_join:
                     print("sending wiretx to participant")
                     send_message(conn, "sending wiretx information over")
                     send_wiretx(conn, self.utx)
@@ -646,8 +394,16 @@ class JoinState:
                 return
 
         elif messagetype == EXIT:
-            if pubaddr in self.pubaddresses:
-                if self.in_pending_users(pubaddr):
+
+            signed_message_buf = JoinState.extract_ticket(request_data)
+
+            try:
+                user.nonce.parse_nonce(signed_message_buf, self.networkID)
+            except Exception:
+                
+
+            if user and user.in_join:
+                if user:
                     if self.verify_ticket(pubaddr, request_data["ticket"], self.get_pending_user_nonce(pubaddr)):
                         self.remove_from_pending(pubaddr)
                         print("removing user %s" % pubaddr)

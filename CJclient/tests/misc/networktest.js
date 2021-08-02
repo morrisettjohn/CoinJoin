@@ -38,38 +38,18 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 exports.__esModule = true;
 var avalancheutils_1 = require("../../avalancheutils");
 var avalanche_1 = require("avalanche");
-var avm_1 = require("@avalabs/avalanche-wallet-sdk/node_modules/avalanche/dist/apis/avm");
 var mnemonicKey = "dismiss spoon penalty gentle unable music buffalo cause bundle rural twist cheese discover this oyster garden globe excite kitchen rival diamond please clog swing";
 var bintools = avalanche_1.BinTools.getInstance();
 var test = function (networkID) { return __awaiter(void 0, void 0, void 0, function () {
-    var networkData, x, y, date, p, z, nurt, nurt2, b, a;
+    var networkData, keyData, x, addr, addr2;
     return __generator(this, function (_a) {
-        switch (_a.label) {
-            case 0:
-                networkData = avalancheutils_1.generatexchain(5);
-                return [4 /*yield*/, networkData.xchain.getAVAXAssetID()];
-            case 1:
-                x = _a.sent();
-                return [4 /*yield*/, networkData.xchain.getTx("2tVrsjNURvH7hF42y5cc8shsKSGWFhgK7D8GEsnaYiZVca7Bzu")];
-            case 2:
-                y = _a.sent();
-                date = new Date();
-                console.log(date.toLocaleString());
-                p = new avm_1.Tx();
-                p.fromString(y);
-                z = p.getUnsignedTx().getTransaction().getIns()[0].getTxID();
-                nurt = p.getUnsignedTx().getTransaction().getIns()[0].getOutputIdx();
-                nurt2 = new avalanche_1.BN(nurt);
-                console.log(nurt2.toNumber());
-                b = bintools.cb58Encode(z);
-                console.log(b);
-                return [4 /*yield*/, networkData.xchain.getTx(b)];
-            case 3:
-                a = _a.sent();
-                console.log(a);
-                console.log("\na\nt");
-                return [2 /*return*/];
-        }
+        networkData = avalancheutils_1.generatexchain(5);
+        keyData = avalancheutils_1.generatekeychain(networkData.xchain, "PrivateKey-ryjZWerx1vRgQnFrLJ9oxBYUS7TdMRNrBLmSAAP78L4xixvT2");
+        x = keyData.myKeyPair.sign(new avalanche_1.Buffer("hi"));
+        addr = keyData.myKeyPair.recover(new avalanche_1.Buffer("hi"), x);
+        addr2 = keyData.myKeyPair.addressFromPublicKey(addr);
+        console.log(networkData.xchain.addressFromBuffer(addr2));
+        return [2 /*return*/];
     });
 }); };
 var args = process.argv.slice(2);
