@@ -97,7 +97,6 @@ def find_joins(assetID, amount, networkID, min_users, max_users):
         matches.append(new_join.get_status())
     return matches
 
-
 #Determines what the option data for a find_joins request is.  
 def parse_option_data(data):
     assetID = data["assetID"]

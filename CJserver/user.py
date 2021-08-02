@@ -20,6 +20,9 @@ class User:
             return None
         return self.input.amt
 
+    def remove_sig(self):
+        self.signature = None
+
     def get_input_assetid(self):
         if not self.input:
             return None
@@ -88,8 +91,8 @@ class User:
     
 class UserList:
 
-    def __init__(self, users: list = []):
-        self.userlist = users
+    def __init__(self):
+        self.userlist = []
 
     def sort_users(self):
         self.remove_non_input_users()
@@ -100,6 +103,10 @@ class UserList:
         for user in self.userlist:
             inputs.append(user.input.rawbuffer)
         return inputs
+
+    def remove_all_sigs(self):
+        for user in self.userlist:
+            user.remove_sig()
 
     def get_all_outputs(self):
         outputs = []
@@ -141,7 +148,7 @@ class UserList:
                 return item
         return None
 
-    def has_user(self, user: str or User):
+    def has_user(self, user: str):
         x = self.get_user(user)
         if x:
             return True
@@ -199,4 +206,3 @@ class UserList:
         for item in self.userlist:
             return_string += str(item) + ", "
         return return_string
-

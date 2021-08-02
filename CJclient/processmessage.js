@@ -139,9 +139,9 @@ var processMessage = function (recievedData) {
 };
 exports.processMessage = processMessage;
 var joinDataReadable = function (join) {
-    var state = "Inputs";
+    var state = "inputs";
     if (join["state"] == consts.COLLECT_SIGS) {
-        state = "Signatures";
+        state = "signatures";
     }
     var message = "Join ID: " + join["id"];
     message += "\n\tAsset Name: " + join["asset_name"];

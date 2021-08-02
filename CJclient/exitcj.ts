@@ -1,6 +1,6 @@
 import { sendRecieve } from "./processmessage";
 import * as consts from "./constants"
-import { requestNonce } from "./requestjoin";
+import { requestNonce } from "./requestnonce";
 import { generatekeychain, generatexchain, getKeyType } from "./avalancheutils";
 
 const exitcj = async(joinid: number, networkID: number, pubaddr: string, privatekey: string): Promise<any> => {

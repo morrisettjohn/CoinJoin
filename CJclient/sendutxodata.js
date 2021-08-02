@@ -43,7 +43,7 @@ var avalancheutils_1 = require("./avalancheutils");
 var constants_1 = require("./constants");
 var avalanche_wallet_sdk_1 = require("@avalabs/avalanche-wallet-sdk");
 var consts = require("./constants");
-var requestjoin_1 = require("./requestjoin");
+var requestnonce_1 = require("./requestnonce");
 var loginfo_1 = require("./loginfo");
 //setting up the xchain object
 var bintools = avalanche_1.BinTools.getInstance();
@@ -147,7 +147,7 @@ var sendutxodata = function (joinid, assetid, inputamount, outputamount, destina
                 outputaddressBuf = [xchain.parseAddress(destinationaddr)];
                 secpTransferOutput = new avm_1.SECPTransferOutput(targetOutAmountFormatBN, outputaddressBuf);
                 output = new avm_1.TransferableOutput(assetidBuf, secpTransferOutput);
-                return [4 /*yield*/, requestjoin_1.requestNonce(joinid, pubaddr, privatekey, networkID)];
+                return [4 /*yield*/, requestnonce_1.requestNonce(joinid, pubaddr, privatekey, networkID)];
             case 17:
                 ticket = _a.sent();
                 sendData = {

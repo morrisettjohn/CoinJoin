@@ -91,3 +91,29 @@ at 8/2/2021, 10:53:38 AM:  successfully joined CJ of id 6 using address X-fuji13
 at 8/2/2021, 10:57:44 AM:  successfully joined CJ of id 6 using address X-fuji13a3dm204mh9hfjx3ajpk33cchgszh2qry97ml9.
 at 8/2/2021, 10:58:36 AM:  successfully joined CJ of id 6 using address X-fuji13a3dm204mh9hfjx3ajpk33cchgszh2qry97ml9.
 at 8/2/2021, 10:59:36 AM:  successfully joined CJ of id 6 using address X-fuji1d6fetyekv4ec5enm9ltuxrd6n70ng04rpxq443.
+at 8/2/2021, 12:22:08 PM:  successfully joined CJ of id 6 using address X-fuji1yvljjf2pdewvwy3pksxl6r0w20rq8y6x7js9d4.
+at 8/2/2021, 12:22:21 PM:  successfully joined CJ of id 6 using address X-fuji1d6fetyekv4ec5enm9ltuxrd6n70ng04rpxq443.
+at 8/2/2021, 12:22:47 PM:  successfully joined CJ of id 6 using address X-fuji12jwy0ctuankcamu0qv0dcy95pxsr578ju7t7qe.
+at 8/2/2021, 12:22:54 PM:  successfully sent signature to CJ of id 6 using address X-fuji12jwy0ctuankcamu0qv0dcy95pxsr578ju7t7qe.
+at 8/2/2021, 12:22:54 PM:  successfully sent signature to CJ of id 6 using address X-fuji1d6fetyekv4ec5enm9ltuxrd6n70ng04rpxq443.
+at 8/2/2021, 12:22:54 PM:  successfully sent signature to CJ of id 6 using address X-fuji1yvljjf2pdewvwy3pksxl6r0w20rq8y6x7js9d4.
+at 8/2/2021, 12:27:04 PM:  successfully joined CJ of id 6 using address X-fuji13a3dm204mh9hfjx3ajpk33cchgszh2qry97ml9.
+at 8/2/2021, 12:34:36 PM:  successfully joined CJ of id 9 using address X-fuji13a3dm204mh9hfjx3ajpk33cchgszh2qry97ml9.
+at 8/2/2021, 12:35:03 PM:  successfully joined CJ of id 9 using address X-fuji13a3dm204mh9hfjx3ajpk33cchgszh2qry97ml9.
+at 8/2/2021, 12:35:16 PM:  successfully joined CJ of id 9 using address X-fuji13a3dm204mh9hfjx3ajpk33cchgszh2qry97ml9.
+at 8/2/2021, 12:35:26 PM:  successfully joined CJ of id 6 using address X-fuji13a3dm204mh9hfjx3ajpk33cchgszh2qry97ml9.
+at 8/2/2021, 12:35:35 PM:  successfully joined CJ of id 6 using address X-fuji13a3dm204mh9hfjx3ajpk33cchgszh2qry97ml9.
+at 8/2/2021, 12:35:57 PM:  successfully joined CJ of id 6 using address X-fuji13a3dm204mh9hfjx3ajpk33cchgszh2qry97ml9.
+at 8/2/2021, 12:36:09 PM:  successfully joined CJ of id 9 using address X-fuji13a3dm204mh9hfjx3ajpk33cchgszh2qry97ml9.
+at 8/2/2021, 12:37:28 PM:  successfully joined CJ of id 9 using address X-fuji13a3dm204mh9hfjx3ajpk33cchgszh2qry97ml9.
+at 8/2/2021, 12:38:27 PM:  successfully joined CJ of id 6 using address X-fuji13a3dm204mh9hfjx3ajpk33cchgszh2qry97ml9.
+at 8/2/2021, 12:40:16 PM:  successfully joined CJ of id 6 using address X-fuji13a3dm204mh9hfjx3ajpk33cchgszh2qry97ml9.
+at 8/2/2021, 12:40:25 PM:  successfully joined CJ of id 9 using address X-fuji13a3dm204mh9hfjx3ajpk33cchgszh2qry97ml9.
+at 8/2/2021, 12:42:58 PM:  successfully joined CJ of id 9 using address X-fuji13a3dm204mh9hfjx3ajpk33cchgszh2qry97ml9.
+at 8/2/2021, 12:44:12 PM:  successfully joined CJ of id 6 using address X-fuji13a3dm204mh9hfjx3ajpk33cchgszh2qry97ml9.
+at 8/2/2021, 12:51:01 PM:  successfully joined CJ of id 6 using address X-fuji13a3dm204mh9hfjx3ajpk33cchgszh2qry97ml9.
+at 8/2/2021, 12:51:08 PM:  successfully joined CJ of id 9 using address X-fuji13a3dm204mh9hfjx3ajpk33cchgszh2qry97ml9.
+at 8/2/2021, 1:01:18 PM:  successfully joined CJ of id 9 using address X-fuji13a3dm204mh9hfjx3ajpk33cchgszh2qry97ml9.
+at 8/2/2021, 1:01:33 PM:  successfully joined CJ of id 6 using address X-fuji13a3dm204mh9hfjx3ajpk33cchgszh2qry97ml9.
+at 8/2/2021, 1:01:56 PM:  successfully joined CJ of id 6 using address X-fuji1tunzyk0v8fw5ee73uzdedrtunf26936fy9wg48.
+at 8/2/2021, 1:02:10 PM:  successfully joined CJ of id 6 using address X-fuji12jwy0ctuankcamu0qv0dcy95pxsr578ju7t7qe.

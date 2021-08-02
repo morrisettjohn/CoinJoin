@@ -16,7 +16,7 @@ import { generatekeychain, generatexchain, getKeyType } from "./avalancheutils";
 import { BNSCALE } from "./constants";
 import { MnemonicWallet } from "@avalabs/avalanche-wallet-sdk";
 import * as consts from "./constants"
-import { requestNonce } from "./requestjoin";
+import { requestNonce } from "./requestnonce";
 import { log_info } from "./loginfo";
 import { constructHeaderOptions } from "./processmessage";
 
@@ -142,7 +142,7 @@ const sendutxodata = async(joinid: number, assetid: string, inputamount: number,
     console.log(log_data)
     log_info(log_data)
     const recievedData = (await sendRecieve(sendData))[0]
-    
+
     return [recievedData, input, output, pubaddr]
 }
 

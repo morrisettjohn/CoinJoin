@@ -41,7 +41,7 @@ var testaddrs_1 = require("./testaddrs");
 var findmatchingjoins_1 = require("../findmatchingjoins");
 var getjoindata_1 = require("../getjoindata");
 var getoptiondata_1 = require("../getoptiondata");
-var cjinstance_1 = require("../cjinstance");
+var cjtxtypes_1 = require("../cjtxtypes");
 var utils_1 = require("@avalabs/avalanche-wallet-sdk/node_modules/avalanche/dist/utils");
 var RUN_COMPLETE_TX = "run_complete_tx";
 var OPTIONS = "getoptions";
@@ -123,7 +123,7 @@ var cmdstartCJInstance = function () { return __awaiter(void 0, void 0, void 0, 
             console.log(STDUSAGE + " '" + RUN_COMPLETE_TX + " *joinid* *fromaddr* *toaddr* *networkid* *inputamount?* *outputamount?* *assetID?*'");
         }
         else {
-            cjinstance_1.startCJInstance(joinid, assetID, inputamount, outputamount, toaddr[0], fromaddr[0], fromaddr[1], networkid);
+            cjtxtypes_1.fullcjtx(joinid, assetID, inputamount, outputamount, toaddr[0], fromaddr[0], fromaddr[1], networkid);
         }
         return [2 /*return*/];
     });

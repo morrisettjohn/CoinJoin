@@ -38,7 +38,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 exports.__esModule = true;
 var processmessage_1 = require("./processmessage");
 var consts = require("./constants");
-var requestjoin_1 = require("./requestjoin");
+var requestnonce_1 = require("./requestnonce");
 var avalancheutils_1 = require("./avalancheutils");
 var exitcj = function (joinid, networkID, pubaddr, privatekey) { return __awaiter(void 0, void 0, void 0, function () {
     var keyType, ticket, sendData;
@@ -47,7 +47,7 @@ var exitcj = function (joinid, networkID, pubaddr, privatekey) { return __awaite
             case 0:
                 keyType = avalancheutils_1.getKeyType(privatekey);
                 console.log(networkID);
-                return [4 /*yield*/, requestjoin_1.requestNonce(joinid, pubaddr, privatekey, networkID)];
+                return [4 /*yield*/, requestnonce_1.requestNonce(joinid, pubaddr, privatekey, networkID)];
             case 1:
                 ticket = _a.sent();
                 sendData = {

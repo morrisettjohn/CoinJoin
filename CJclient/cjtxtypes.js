@@ -38,7 +38,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 exports.__esModule = true;
 var sendsignature_1 = require("./sendsignature");
 var sendutxodata_1 = require("./sendutxodata");
-var startCJInstance = function (joinid, assetid, inputamount, outputamount, destinationaddr, pubaddr, privatekey, networkID) { return __awaiter(void 0, void 0, void 0, function () {
+var fullcjtx = function (joinid, assetid, inputamount, outputamount, destinationaddr, pubaddr, privatekey, networkID) { return __awaiter(void 0, void 0, void 0, function () {
     var wiretxdata, wiretx, input, output;
     return __generator(this, function (_a) {
         switch (_a.label) {
@@ -56,4 +56,4 @@ var startCJInstance = function (joinid, assetid, inputamount, outputamount, dest
         }
     });
 }); };
-exports.startCJInstance = startCJInstance;
+exports.fullcjtx = fullcjtx;

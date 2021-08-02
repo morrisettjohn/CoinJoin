@@ -169,6 +169,7 @@ class JoinState:
         self.stx = None
         self.stx_id = None
         self.sigs = None
+        
         self.state = COLLECT_SIGS
 
     def craft_utx(self):
@@ -235,6 +236,7 @@ class JoinState:
         self.stx = None
         self.stx_id = None
         self.users.remove_user(pubaddr)
+        self.users.remove_all_sigs()
         self.state == COLLECT_INPUTS
         if blacklist:
             self.blacklist.append(pubaddr)
@@ -246,6 +248,8 @@ class JoinState:
         messagetype = request_data["messagetype"]
 
         user = self.users.get_user(pubaddr)
+        print(self.users)
+        print("list of users ^")
 
         #if handling a nonce request
         if messagetype == REQUEST_NONCE:

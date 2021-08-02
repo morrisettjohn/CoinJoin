@@ -3,7 +3,7 @@ import { sendsignature } from "./sendsignature"
 import { sendutxodata } from "./sendutxodata"
 
 
-const startCJInstance = async(joinid: number, assetid: string, inputamount: number, 
+const fullcjtx = async(joinid: number, assetid: string, inputamount: number, 
     outputamount: number, destinationaddr: string, pubaddr: string, privatekey: string, networkID: number): Promise<any> => {
 
     const wiretxdata = await sendutxodata(joinid, assetid, inputamount, outputamount, destinationaddr, pubaddr, privatekey, networkID)
@@ -15,4 +15,5 @@ const startCJInstance = async(joinid: number, assetid: string, inputamount: numb
 
 }
 
-export { startCJInstance }
+
+export { fullcjtx }

@@ -3,7 +3,7 @@ import { tests, wtests } from "./testaddrs";
 import { findMatchingJoins } from "../findmatchingjoins";
 import { getjoindata } from "../getjoindata";
 import { getoptiondata } from "../getoptiondata"
-import { startCJInstance } from "../cjinstance";
+import { fullcjtx } from "../cjtxtypes";
 import { Defaults } from "@avalabs/avalanche-wallet-sdk/node_modules/avalanche/dist/utils";
 
 
@@ -94,7 +94,7 @@ const cmdstartCJInstance = async(): Promise<any> => {
       console.log(`${STDUSAGE} '${RUN_COMPLETE_TX} *joinid* *fromaddr* *toaddr* *networkid* *inputamount?* *outputamount?* *assetID?*'`)
     } 
     else {
-      startCJInstance(joinid, assetID, inputamount, outputamount, toaddr[0], fromaddr[0], fromaddr[1], networkid)
+      fullcjtx(joinid, assetID, inputamount, outputamount, toaddr[0], fromaddr[0], fromaddr[1], networkid)
     }
 }
 
