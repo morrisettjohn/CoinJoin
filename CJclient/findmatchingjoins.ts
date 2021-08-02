@@ -1,11 +1,11 @@
 import { sendRecieve } from "./processmessage"
 import * as consts from "./constants"
 
-const findMatchingJoins = async(assetid: string, assetamount: number, networkID: number, min_users?: number, max_users?: number): Promise<any> => {
+const findMatchingJoins = async(assetID: string, assetamount: number, networkID: number, min_users?: number, max_users?: number): Promise<any> => {
     
     const returnData = {
         "messagetype": consts.SELECT_OPTIONS,
-        "assetid": assetid,
+        "assetID": assetID,
         "assetamount": assetamount,
         "networkID": networkID
     }

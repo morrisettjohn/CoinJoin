@@ -43,12 +43,11 @@ var avalancheutils_1 = require("./avalancheutils");
 var avalanche_wallet_sdk_1 = require("@avalabs/avalanche-wallet-sdk");
 var bintools = avalanche_1.BinTools.getInstance();
 var requestNonce = function (joinid, pubaddr, privatekey, networkID) { return __awaiter(void 0, void 0, void 0, function () {
-    var networkData, xchain, keyType, sendData, nonce, _a, _b, sig, keyData, mwallet;
+    var networkData, keyType, sendData, nonce, _a, _b, sig, keyData, mwallet;
     return __generator(this, function (_c) {
         switch (_c.label) {
             case 0:
                 networkData = avalancheutils_1.generatexchain(networkID);
-                xchain = networkData.xchain;
                 keyType = avalancheutils_1.getKeyType(privatekey);
                 sendData = {
                     "joinid": joinid,

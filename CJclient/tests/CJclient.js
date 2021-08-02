@@ -123,7 +123,6 @@ var cmdstartCJInstance = function () { return __awaiter(void 0, void 0, void 0, 
             console.log(STDUSAGE + " '" + RUN_COMPLETE_TX + " *joinid* *fromaddr* *toaddr* *networkid* *inputamount?* *outputamount?* *assetID?*'");
         }
         else {
-            console.log(toaddr, fromaddr);
             cjinstance_1.startCJInstance(joinid, assetID, inputamount, outputamount, toaddr[0], fromaddr[0], fromaddr[1], networkid);
         }
         return [2 /*return*/];

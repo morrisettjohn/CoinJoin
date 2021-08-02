@@ -145,6 +145,7 @@ var joinDataReadable = function (join) {
     }
     var message = "Join ID: " + join["id"];
     message += "\n\tAsset Name: " + join["asset_name"];
+    message += "\n\tNetwork ID: " + join["networkID"];
     message += "\n\tBase amount: " + join["base_amount"];
     message += "\n\tTotal amount (with fees): " + join["total_amount"];
     message += "\n\tState: Collect " + state;
@@ -153,7 +154,7 @@ var joinDataReadable = function (join) {
 };
 var constructHeaderOptions = function (content) {
     var options = {
-        host: "100.64.15.72",
+        host: "192.168.129.105",
         port: "65432",
         method: "POST",
         headers: {

@@ -1,7 +1,5 @@
 from buffer import *
 
-
-
 class User:
 
     def __init__(self, pubaddr: str):
@@ -88,10 +86,9 @@ class User:
     def __str__(self):
         return self.pubaddr
     
-
 class UserList:
 
-    def __init__(self, users: list = None, pending_users: list = None):
+    def __init__(self, users: list = []):
         self.userlist = users
 
     def sort_users(self):
@@ -110,10 +107,18 @@ class UserList:
             outputs.append(user.output.rawbuffer)
         return outputs
 
+    def reset_list(self):
+        self.userlist = []
+
+    def remove_user(self, pubaddr):
+        user = self.get_user(pubaddr)
+        self.userlist.remove(user)
+        return user
+
     def get_all_sigs(self):
         sigs = []
         for user in self.userlist:
-            sigs.append(user.signature.rawbuffer)
+            sigs.append(user.signature.sig)
         return sigs
 
     def remove_non_input_users(self):
@@ -122,9 +127,12 @@ class UserList:
                 self.userlist.remove(item)
 
     def check_repeat_output_addr(self, output_addr):
+        if self.userlist == []:
+            return False
         for user in self.userlist:
-            if user.output.output_addr == output_addr:
-                return True
+            if user.output != None:
+                if user.output.output_addr == output_addr:
+                    return True
         return False
 
     def get_user(self, user: str):
@@ -146,7 +154,7 @@ class UserList:
         return False
 
     def user_awaiting_nonce(self, user_str):
-        if self.has_user():
+        if self.has_user(user_str):
             user = self.get_user(user_str)
             if user.nonce:
                 return True
@@ -190,4 +198,5 @@ class UserList:
         return_string = ""
         for item in self.userlist:
             return_string += str(item) + ", "
+        return return_string
 

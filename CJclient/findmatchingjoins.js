@@ -38,12 +38,12 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 exports.__esModule = true;
 var processmessage_1 = require("./processmessage");
 var consts = require("./constants");
-var findMatchingJoins = function (assetid, assetamount, networkID, min_users, max_users) { return __awaiter(void 0, void 0, void 0, function () {
+var findMatchingJoins = function (assetID, assetamount, networkID, min_users, max_users) { return __awaiter(void 0, void 0, void 0, function () {
     var returnData;
     return __generator(this, function (_a) {
         returnData = {
             "messagetype": consts.SELECT_OPTIONS,
-            "assetid": assetid,
+            "assetID": assetID,
             "assetamount": assetamount,
             "networkID": networkID
         };

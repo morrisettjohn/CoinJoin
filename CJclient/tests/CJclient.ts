@@ -94,7 +94,6 @@ const cmdstartCJInstance = async(): Promise<any> => {
       console.log(`${STDUSAGE} '${RUN_COMPLETE_TX} *joinid* *fromaddr* *toaddr* *networkid* *inputamount?* *outputamount?* *assetID?*'`)
     } 
     else {
-      console.log(toaddr, fromaddr)
       startCJInstance(joinid, assetID, inputamount, outputamount, toaddr[0], fromaddr[0], fromaddr[1], networkid)
     }
 }

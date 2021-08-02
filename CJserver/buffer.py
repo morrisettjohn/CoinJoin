@@ -14,10 +14,10 @@ class Buffer:
     def parseBuffer(self):
         return Exception("abstract method")
 
-class Input(Buffer):
+class Input:
 
     def __init__(self, rawbuffer, networkID):
-        super().__init__(rawbuffer)
+        self.rawbuffer = rawbuffer
         self.parseBuffer(networkID)
 
     def parseBuffer(self, networkID):
@@ -39,10 +39,10 @@ class Input(Buffer):
         self.assetID = result_data["assetID"]
         self.pubaddr = result_data["pubaddr"]
 
-class Output(Buffer):
+class Output:
 
-    def __init__(self, buffer, networkID):
-        super().__init__(buffer)
+    def __init__(self, rawbuffer, networkID):
+        self.rawbuffer = rawbuffer
         self.parseBuffer(networkID)
 
     def parseBuffer(self, networkID):
@@ -90,7 +90,7 @@ class Nonce(Buffer):
 class Sig(Buffer):
     
     def __init__(self, utx, sig, networkID):
-        self.rawbuffer = sig
+        self.sig = sig
         self.parseBuffer(utx, networkID)
 
     def parseBuffer(self, utx, networkID):

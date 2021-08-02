@@ -33,7 +33,7 @@ const processData = function(data){
         outputs.push(output)
     }
 
-    const assetidBuf = bintools.cb58Decode(feeData["assetid"])
+    const assetidBuf = bintools.cb58Decode(feeData["assetID"])
 
     const outputaddressBuf = [networkData.xchain.parseAddress(feeData["address"])]
     const secpTransferOutput = new avm_1.SECPTransferOutput(new avalanche_1.BN(feeData["amount"]), outputaddressBuf)

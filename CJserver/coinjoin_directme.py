@@ -71,7 +71,7 @@ def get_json_data(conn):
 def create_new_join(asset_type, amount, networkID, limit):
     new_join = JoinState(
         connect_limit = limit,
-        assetid = asset_type,
+        assetID = asset_type,
         networkID = networkID,
         assetamount = amount,
         feepercent = standard_fee_percent,
@@ -80,19 +80,19 @@ def create_new_join(asset_type, amount, networkID, limit):
     return new_join
 
 #Returns a list of joins that match the users specificaitons
-def find_joins(assetid, amount, networkID, min_users, max_users):
+def find_joins(assetID, amount, networkID, min_users, max_users):
     matches = []
 
     for item in joinlist:
         item = joinlist[item]
         
-        if item.state == COLLECT_INPUTS and item.assetid == assetid and item.assetamount == amount \
+        if item.state == COLLECT_INPUTS and item.assetID == assetID and item.assetamount == amount \
         and item.connect_limit >= min_users and item.connect_limit <= max_users and item.networkID == networkID:
             matches.append(item.get_status())
     if len(matches) == 0:
         print("no joins found, creating new join")
         #If no join is found, create a new one
-        new_join = create_new_join(assetid, amount, networkID, min_users)
+        new_join = create_new_join(assetID, amount, networkID, min_users)
         joinlist[new_join.id] = new_join
         matches.append(new_join.get_status())
     return matches
@@ -100,8 +100,8 @@ def find_joins(assetid, amount, networkID, min_users, max_users):
 
 #Determines what the option data for a find_joins request is.  
 def parse_option_data(data):
-    assetid = data["assetid"]
-    assetid = convert_to_asset_id(assetid)
+    assetID = data["assetID"]
+    assetID = convert_to_asset_id(assetID)
     networkID = data["networkID"]
     assetamount = data["assetamount"]
     min_users = DEFAULT_LOWER_USER_BOUND
@@ -121,7 +121,7 @@ def parse_option_data(data):
     if min_users > max_users:
         print("lower bound greater than upper bound, setting both to %d" % max_users)
         min_users = max_users
-    return [assetid, assetamount, networkID, min_users, max_users]
+    return [assetID, assetamount, networkID, min_users, max_users]
 
 #Determines if the given jsondata is valid
 def isvalid_jsondata(data):
@@ -136,17 +136,16 @@ def isvalid_jsondata(data):
     if "joinid" in data and data["joinid"] not in joinlist:
         return False
 
-
     elif data["messagetype"] == SELECT_OPTIONS: 
         #checks if the select options data has all of the necessary information required
-        if not "assetamount" in data or not "assetid" in data or not "networkID" in data or not \
-            (data["assetid"] in ASSET_NAMES or data["assetid"] in ASSET_IDS):
+        if not "assetamount" in data or not "assetID" in data or not "networkID" in data or not \
+            (data["assetID"] in ASSET_NAMES or data["assetID"] in ASSET_IDS):
             print("insufficient data for selectoptions message")
             return False
-        assetid = convert_to_asset_id(data["assetid"])
+        assetID = convert_to_asset_id(data["assetID"])
 
         # checks if the select options data is compatible with the parameters for the cj server
-        if data["networkID"] not in [1, 5] or data["assetamount"] not in ASSET_DENOMS[ASSET_IDS.index(assetid)]:
+        if data["networkID"] not in [1, 5] or data["assetamount"] not in ASSET_DENOMS[ASSET_IDS.index(assetID)]:
             print("request data is incompatible with parameters for the cj server")
             return False
 

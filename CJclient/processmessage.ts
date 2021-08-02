@@ -148,12 +148,13 @@ const processMessage = function (recievedData: string): Message[]{
 }
 
 const joinDataReadable = function(join: any) {
-    let state = "Inputs"
+    let state = "inputs"
     if (join["state"] == consts.COLLECT_SIGS){
-        state = "Signatures"
+        state = "signatures"
     }
     let message = `Join ID: ${join["id"]}`
     message += `\n\tAsset Name: ${join["asset_name"]}`
+    message += `\n\tNetwork ID: ${join["networkID"]}`
     message += `\n\tBase amount: ${join["base_amount"]}`
     message += `\n\tTotal amount (with fees): ${join["total_amount"]}`
     message += `\n\tState: Collect ${state}`
