@@ -1,4 +1,4 @@
-from coinjoin import JoinState
+from joinstate import JoinState
 from params import *
 from assetinfo import *
 

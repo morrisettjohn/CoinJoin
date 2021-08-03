@@ -7,37 +7,38 @@ import { fullcjtx } from "../cjtxtypes";
 import { Defaults } from "@avalabs/avalanche-wallet-sdk/node_modules/avalanche/dist/utils";
 
 
-const RUN_COMPLETE_TX = "run_complete_tx"
+const JOIN = "join"
 const OPTIONS = "getoptions"
-const JOINDATA = "joindata"
-const FINDJOINS = "findjoins"
-const EXIT = "exitcj"
-const HELP = "help"
-const STDUSAGE = "usage: node CJclient.js"
+const JOININFO = "joininfo"
+const SEARCH = "search"
+const EXIT = "exit"
+const INFO = "info"
+const commands = [JOIN, OPTIONS, JOININFO, SEARCH, EXIT, INFO]
+
+const STDUSAGE = "usage: node coinjoin"
 const DESC = "description: "
-const commands = [RUN_COMPLETE_TX, OPTIONS, JOINDATA, FINDJOINS, EXIT, HELP]
 
 let args = process.argv.slice(2)
 const command = args[0]
 args = args.slice(1)
 
 const main = function(){
-    if (command == RUN_COMPLETE_TX){
+    if (command == JOIN){
       cmdstartCJInstance()
     }
     else if (command == OPTIONS){
       cmdGetOptionData()
     }
-    else if (command == JOINDATA){
+    else if (command == JOININFO){
       cmdGetJoinData()
     }
-    else if (command == FINDJOINS){
+    else if (command == SEARCH){
       cmdFindMatchingJoin()
     }
     else if (command == EXIT){
       cmdExitCJ()
     }
-    else if (command == HELP){
+    else if (command == INFO){
       cmdHelp()
     }
     else{
@@ -47,7 +48,7 @@ const main = function(){
 }
 
 const cmdHelp = function(){
-  console.log("run 'node CJclient.js *command* help' for more information")
+  console.log("run 'node coinjoin *command* help' for more information")
   commands.forEach(item => {
     console.log(`\t${item}`)
   })
@@ -91,7 +92,7 @@ const cmdstartCJInstance = async(): Promise<any> => {
 
     if (args[0] == "help"){
       console.log(`${DESC} runs a complete transaction from start to finish, I.e. sends a valid input/output to the server and then signs\n`)
-      console.log(`${STDUSAGE} '${RUN_COMPLETE_TX} *joinid* *fromaddr* *toaddr* *networkid* *inputamount?* *outputamount?* *assetID?*'`)
+      console.log(`${STDUSAGE} '${JOIN} *joinid* *fromaddr* *toaddr* *networkid* *inputamount?* *outputamount?* *assetID?*'`)
     } 
     else {
       fullcjtx(joinid, assetID, inputamount, outputamount, toaddr[0], fromaddr[0], fromaddr[1], networkid)
@@ -110,7 +111,7 @@ const cmdGetOptionData = function(){
 const cmdGetJoinData = function() {
   if (args[0] == "help"){
     console.log(`${DESC} gets the data for a specific join that is in the CJ server.\n`)
-    console.log(`${STDUSAGE} ${JOINDATA} *joinid*`)
+    console.log(`${STDUSAGE} ${JOININFO} *joinid*`)
   } else {
     getjoindata(parseInt(args[0]))
   }
@@ -129,7 +130,7 @@ const cmdFindMatchingJoin = function() {
     }
     if (args[0] == "help"){
         console.log(`${DESC} runs the matchmaking service on the CJ server with given paramaters, and returns back applicable joins\n`)
-        console.log(`${STDUSAGE} ${FINDJOINS} *assetid/name* *targetamount* *networkID* *min_users?* *max_users?*`)
+        console.log(`${STDUSAGE} ${SEARCH} *assetid/name* *targetamount* *networkID* *min_users?* *max_users?*`)
     } 
     else {
         findMatchingJoins(args[0], parseInt(args[1]), parseInt(args[2]), min_users, max_users)

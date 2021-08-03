@@ -24,7 +24,7 @@ const requestNonce = async(joinid: number, pubaddr: string, privatekey: string, 
     let sig: Buffer = undefined
     if (keyType == 0){
         const keyData = generatekeychain(networkData.xchain, privatekey)
-        sig = keyData.myKeyPair.sign(nonce)         
+        sig = keyData.myKeyPair.sign(nonce)
     }
     else if (keyType == 1){
         const mwallet = MnemonicWallet.fromMnemonic(privatekey)
@@ -32,7 +32,7 @@ const requestNonce = async(joinid: number, pubaddr: string, privatekey: string, 
         sig = mwallet.getSigFromUTX(nonce, mwallet.getExternalAddressesX().indexOf(pubaddr))
     }
 
-    return sig
+    return sig.slice(0, 128)
 }
 
 export {requestNonce}

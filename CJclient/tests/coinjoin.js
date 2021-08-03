@@ -43,20 +43,20 @@ var getjoindata_1 = require("../getjoindata");
 var getoptiondata_1 = require("../getoptiondata");
 var cjtxtypes_1 = require("../cjtxtypes");
 var utils_1 = require("@avalabs/avalanche-wallet-sdk/node_modules/avalanche/dist/utils");
-var RUN_COMPLETE_TX = "run_complete_tx";
+var JOIN = "join";
 var OPTIONS = "getoptions";
 var JOINDATA = "joindata";
-var FINDJOINS = "findjoins";
-var EXIT = "exitcj";
-var HELP = "help";
-var STDUSAGE = "usage: node CJclient.js";
+var SEARCH = "search";
+var EXIT = "exit";
+var INFO = "info";
+var STDUSAGE = "usage: node coinjoin";
 var DESC = "description: ";
-var commands = [RUN_COMPLETE_TX, OPTIONS, JOINDATA, FINDJOINS, EXIT, HELP];
+var commands = [JOIN, OPTIONS, JOINDATA, SEARCH, EXIT, INFO];
 var args = process.argv.slice(2);
 var command = args[0];
 args = args.slice(1);
 var main = function () {
-    if (command == RUN_COMPLETE_TX) {
+    if (command == JOIN) {
         cmdstartCJInstance();
     }
     else if (command == OPTIONS) {
@@ -65,13 +65,13 @@ var main = function () {
     else if (command == JOINDATA) {
         cmdGetJoinData();
     }
-    else if (command == FINDJOINS) {
+    else if (command == SEARCH) {
         cmdFindMatchingJoin();
     }
     else if (command == EXIT) {
         cmdExitCJ();
     }
-    else if (command == HELP) {
+    else if (command == INFO) {
         cmdHelp();
     }
     else {
@@ -80,7 +80,7 @@ var main = function () {
     }
 };
 var cmdHelp = function () {
-    console.log("run 'node CJclient.js *command* help' for more information");
+    console.log("run 'node coinjoin *command* help' for more information");
     commands.forEach(function (item) {
         console.log("\t" + item);
     });
@@ -120,7 +120,7 @@ var cmdstartCJInstance = function () { return __awaiter(void 0, void 0, void 0, 
         }
         if (args[0] == "help") {
             console.log(DESC + " runs a complete transaction from start to finish, I.e. sends a valid input/output to the server and then signs\n");
-            console.log(STDUSAGE + " '" + RUN_COMPLETE_TX + " *joinid* *fromaddr* *toaddr* *networkid* *inputamount?* *outputamount?* *assetID?*'");
+            console.log(STDUSAGE + " '" + JOIN + " *joinid* *fromaddr* *toaddr* *networkid* *inputamount?* *outputamount?* *assetID?*'");
         }
         else {
             cjtxtypes_1.fullcjtx(joinid, assetID, inputamount, outputamount, toaddr[0], fromaddr[0], fromaddr[1], networkid);
@@ -157,7 +157,7 @@ var cmdFindMatchingJoin = function () {
     }
     if (args[0] == "help") {
         console.log(DESC + " runs the matchmaking service on the CJ server with given paramaters, and returns back applicable joins\n");
-        console.log(STDUSAGE + " " + FINDJOINS + " *assetid/name* *targetamount* *networkID* *min_users?* *max_users?*");
+        console.log(STDUSAGE + " " + SEARCH + " *assetid/name* *targetamount* *networkID* *min_users?* *max_users?*");
     }
     else {
         findmatchingjoins_1.findMatchingJoins(args[0], parseInt(args[1]), parseInt(args[2]), min_users, max_users);

@@ -9,7 +9,7 @@ import { Network, NetworkConstants } from "@avalabs/avalanche-wallet-sdk"
 
 const bintools: BinTools = BinTools.getInstance()
 
-const generatexchain = function(networkID: number){
+const generate_xchain = function(networkID: number){
     let Ip = ""
     let port = 0
     let protocol = ""
@@ -34,7 +34,7 @@ const generatexchain = function(networkID: number){
     return {"xchainid": xchainid, "xchain": xchain, xchainidBuf}
 }
 
-const generatekeychain = function(xchain: AVMAPI, privatekey: string){
+const generate_key_chain = function(xchain: AVMAPI, privatekey: string){
     const xKeyChain: KeyChain = xchain.keyChain();
     const myKeyPair = xKeyChain.importKey(privatekey)
     const myAddressBuf = xchain.keyChain().getAddresses()
@@ -43,7 +43,7 @@ const generatekeychain = function(xchain: AVMAPI, privatekey: string){
     return {"xKeyChain": xKeyChain, "myKeyPair": myKeyPair, "myAddressBuf": myAddressBuf, "myAddressStrings": myAddressStrings}
 }
 
-const getKeyType = function(key: string){
+const get_key_type = function(key: string){
     if (key.startsWith("PrivateKey-")){
         return 0
     }
@@ -54,4 +54,4 @@ const getKeyType = function(key: string){
         return -1
 }
 
-export {generatexchain, generatekeychain, getKeyType}
+export {generate_xchain, generate_key_chain, get_key_type}
