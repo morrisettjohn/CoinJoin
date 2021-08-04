@@ -125,3 +125,9 @@ at 8/2/2021, 1:49:22 PM:  successfully sent signature to CJ of id 6 using addres
 at 8/2/2021, 1:49:22 PM:  successfully sent signature to CJ of id 6 using address X-fuji1tunzyk0v8fw5ee73uzdedrtunf26936fy9wg48.
 at 8/4/2021, 11:17:57 AM:  successfully joined CJ of tx_ID 8 using address X-fuji13a3dm204mh9hfjx3ajpk33cchgszh2qry97ml9.
 at 8/4/2021, 11:18:03 AM:  successfully sent signature to CJ of id 8 using address X-fuji13a3dm204mh9hfjx3ajpk33cchgszh2qry97ml9.
+at 8/4/2021, 11:25:00 AM:  successfully joined CJ of tx_ID 8 using address X-fuji13a3dm204mh9hfjx3ajpk33cchgszh2qry97ml9.
+at 8/4/2021, 11:25:06 AM:  successfully sent signature to CJ of id 8 using address X-fuji13a3dm204mh9hfjx3ajpk33cchgszh2qry97ml9.
+at 8/4/2021, 11:26:13 AM:  successfully joined CJ of tx_ID 8 using address X-fuji13a3dm204mh9hfjx3ajpk33cchgszh2qry97ml9.
+at 8/4/2021, 11:26:15 AM:  successfully sent signature to CJ of id 8 using address X-fuji13a3dm204mh9hfjx3ajpk33cchgszh2qry97ml9.
+at 8/4/2021, 2:22:12 PM:  successfully joined CJ of tx_ID 8 using address X-fuji1w773lh9zx6wep4wxd7vjplh38yjs0t6qtfermv.
+at 8/4/2021, 2:22:17 PM:  successfully sent signature to CJ of id 8 using address X-fuji1w773lh9zx6wep4wxd7vjplh38yjs0t6qtfermv.

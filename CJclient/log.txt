@@ -1,0 +1,4 @@
+at 8/4/2021, 5:20:27 PM:  successfully joined CJ of tx_ID 8 using address X-fuji13a3dm204mh9hfjx3ajpk33cchgszh2qry97ml9.
+at 8/4/2021, 5:20:30 PM:  successfully sent signature to CJ of id 8 using address X-fuji13a3dm204mh9hfjx3ajpk33cchgszh2qry97ml9.
+at 8/4/2021, 5:20:50 PM:  successfully joined CJ of tx_ID 8 using address X-fuji1hlqtmqfzr3feeg246zpewv6f6eshjqkkqh4hja.
+at 8/4/2021, 5:20:55 PM:  successfully sent signature to CJ of id 8 using address X-fuji1hlqtmqfzr3feeg246zpewv6f6eshjqkkqh4hja.
