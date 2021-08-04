@@ -37,23 +37,34 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 exports.__esModule = true;
 var sendsignature_1 = require("./sendsignature");
-var sendutxodata_1 = require("./sendutxodata");
-var fullcjtx = function (joinid, assetid, inputamount, outputamount, destinationaddr, pubaddr, privatekey, networkID) { return __awaiter(void 0, void 0, void 0, function () {
-    var wiretxdata, wiretx, input, output;
+var sendinputdata_1 = require("./sendinputdata");
+var getjoindata_1 = require("./getjoindata");
+var full_cj_tx = function (join_ID, private_key, dest_addr, input_amount) { return __awaiter(void 0, void 0, void 0, function () {
+    var join_params, asset_ID, output_amount, network_ID, wtx_data, wtx, input, output, pub_addr;
     return __generator(this, function (_a) {
         switch (_a.label) {
-            case 0: return [4 /*yield*/, sendutxodata_1.sendutxodata(joinid, assetid, inputamount, outputamount, destinationaddr, pubaddr, privatekey, networkID)];
+            case 0: return [4 /*yield*/, getjoindata_1.get_join_data(join_ID)];
             case 1:
-                wiretxdata = _a.sent();
-                wiretx = wiretxdata[0];
-                input = wiretxdata[1];
-                output = wiretxdata[2];
-                pubaddr = wiretxdata[3];
-                return [4 /*yield*/, sendsignature_1.sendsignature(joinid, wiretx, pubaddr, privatekey, networkID, input, output)];
+                join_params = _a.sent();
+                asset_ID = join_params["asset_ID"];
+                output_amount = join_params["output_amount"];
+                network_ID = join_params["network_ID"];
+                console.log(join_params["input_amount"]);
+                if (!input_amount) {
+                    input_amount = join_params["input_amount"];
+                }
+                return [4 /*yield*/, sendinputdata_1.send_input_data(join_ID, asset_ID, input_amount, output_amount, dest_addr, private_key, network_ID)];
             case 2:
+                wtx_data = _a.sent();
+                wtx = wtx_data[0];
+                input = wtx_data[1];
+                output = wtx_data[2];
+                pub_addr = wtx_data[3];
+                return [4 /*yield*/, sendsignature_1.send_signature(join_ID, wtx, pub_addr, private_key, network_ID, input, output)];
+            case 3:
                 _a.sent();
                 return [2 /*return*/];
         }
     });
 }); };
-exports.fullcjtx = fullcjtx;
+exports.full_cj_tx = full_cj_tx;

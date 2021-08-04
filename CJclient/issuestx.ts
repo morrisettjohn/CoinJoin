@@ -3,34 +3,27 @@ import {
     Buffer,
   } from "@avalabs/avalanche-wallet-sdk/node_modules/avalanche" 
 import { 
-    UnsignedTx,
     Tx
  } from "@avalabs/avalanche-wallet-sdk/node_modules/avalanche/dist/apis/avm"
-import { SECPCredential } from "@avalabs/avalanche-wallet-sdk/node_modules/avalanche/dist/apis/platformvm"
-import { Signature } from "@avalabs/avalanche-wallet-sdk/node_modules/avalanche/dist/common"
 
- import {
-     Defaults
- }from "@avalabs/avalanche-wallet-sdk/node_modules/avalanche/dist/utils"
-import { XChainAlias } from "avalanche/dist/utils"
 
-import { generatexchain } from "./avalancheutils"
+import { generate_xchain } from "./avalancheutils"
 
 
 const bintools: BinTools = BinTools.getInstance()
 
-const issuetx = async(data: any, networkID: number): Promise<any> => {
-    const networkData = generatexchain(networkID)
+const issuetx = async(data: any, network_ID: number): Promise<any> => {
+    const network_data = generate_xchain(network_ID)
     console.log("issuing tx")
 
-    const stxBuf: Buffer = new Buffer(data)
+    const stx_buf: Buffer = new Buffer(data)
     const stx: Tx = new Tx()
-    stx.fromBuffer(stxBuf)
-    const id: string = await networkData.xchain.issueTx(stx) 
+    stx.fromBuffer(stx_buf)
+    const id: string = await network_data.xchain.issueTx(stx) 
 
     let status: string = ""
     while (status != "Accepted" && status != "Rejected"){
-        status = await networkData.xchain.getTxStatus(id)
+        status = await network_data.xchain.getTxStatus(id)
     }
     console.log(`Tx has been ${status}`)
 

@@ -4,39 +4,39 @@ var avalanche_1 = require("@avalabs/avalanche-wallet-sdk/node_modules/avalanche"
 var utils_1 = require("@avalabs/avalanche-wallet-sdk/node_modules/avalanche/dist/utils");
 var avalanche_wallet_sdk_1 = require("@avalabs/avalanche-wallet-sdk");
 var bintools = avalanche_1.BinTools.getInstance();
-var generatexchain = function (networkID) {
+var generate_xchain = function (network_ID) {
     var Ip = "";
     var port = 0;
     var protocol = "";
-    if (networkID == 5) {
+    if (network_ID == 5) {
         Ip = "api.avax-test.network";
         port = 443;
         protocol = "https";
         avalanche_wallet_sdk_1.Network.setNetwork(avalanche_wallet_sdk_1.NetworkConstants.TestnetConfig);
     }
-    else if (networkID == 1) {
+    else if (network_ID == 1) {
         Ip = "api.avax.network";
         port = 443;
         protocol = "https";
         avalanche_wallet_sdk_1.Network.setNetwork(avalanche_wallet_sdk_1.NetworkConstants.MainnetConfig);
     }
-    var xchainid = utils_1.Defaults.network[networkID].X.blockchainID;
-    var xchainidBuf = bintools.cb58Decode(xchainid);
-    var avax = new avalanche_1.Avalanche(Ip, port, protocol, networkID, xchainid);
+    var xchain_ID = utils_1.Defaults.network[network_ID].X.blockchainID;
+    var xchain_ID_buf = bintools.cb58Decode(xchain_ID);
+    var avax = new avalanche_1.Avalanche(Ip, port, protocol, network_ID, xchain_ID);
     avax.setRequestConfig('withCredentials', true);
     var xchain = avax.XChain();
-    return { "xchainid": xchainid, "xchain": xchain, xchainidBuf: xchainidBuf };
+    return { "xchain_ID": xchain_ID, "xchain": xchain, xchain_ID_buf: xchain_ID_buf };
 };
-exports.generatexchain = generatexchain;
-var generatekeychain = function (xchain, privatekey) {
-    var xKeyChain = xchain.keyChain();
-    var myKeyPair = xKeyChain.importKey(privatekey);
-    var myAddressBuf = xchain.keyChain().getAddresses();
-    var myAddressStrings = xchain.keyChain().getAddressStrings();
-    return { "xKeyChain": xKeyChain, "myKeyPair": myKeyPair, "myAddressBuf": myAddressBuf, "myAddressStrings": myAddressStrings };
+exports.generate_xchain = generate_xchain;
+var generate_key_chain = function (xchain, privatekey) {
+    var x_key_chain = xchain.keyChain();
+    var my_key_pair = x_key_chain.importKey(privatekey);
+    var my_addr_buf = xchain.keyChain().getAddresses();
+    var my_addr_strings = xchain.keyChain().getAddressStrings();
+    return { "x_key_chain": x_key_chain, "my_key_pair": my_key_pair, "my_addr_buf": my_addr_buf, "my_addr_strings": my_addr_strings };
 };
-exports.generatekeychain = generatekeychain;
-var getKeyType = function (key) {
+exports.generate_key_chain = generate_key_chain;
+var get_key_type = function (key) {
     if (key.startsWith("PrivateKey-")) {
         return 0;
     }
@@ -46,4 +46,4 @@ var getKeyType = function (key) {
     else
         return -1;
 };
-exports.getKeyType = getKeyType;
+exports.get_key_type = get_key_type;

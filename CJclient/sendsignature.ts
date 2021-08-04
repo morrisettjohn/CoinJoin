@@ -11,9 +11,9 @@ import {
     UTXO,
  } from "@avalabs/avalanche-wallet-sdk/node_modules/avalanche/dist/apis/avm"
 import { Signature } from "@avalabs/avalanche-wallet-sdk/node_modules/avalanche/dist/common"
-import { sendRecieve } from "./processmessage"
+import { send_recieve } from "./processmessage"
 import { createHash } from "crypto"
-import { generatekeychain, generatexchain, getKeyType } from "./avalancheutils"
+import { generate_key_chain, generate_xchain, get_key_type } from "./avalancheutils"
 import { MnemonicWallet } from "@avalabs/avalanche-wallet-sdk"
 import * as consts from "./constants"
 import { log_info } from "./loginfo"
@@ -22,106 +22,106 @@ import { issuetx} from "./issuestx"
 
 const bintools: BinTools = BinTools.getInstance()
 
-const sendsignature = async(joinid: number, data: any, pubaddr: string, privatekey: string, networkID: number,
-    myInput?: TransferableInput, myOutput?: TransferableOutput): Promise<any> => {
-    const networkData = generatexchain(networkID)
-    const keyType = getKeyType(privatekey)
+const send_signature = async(join_ID: number, data: any, pub_addr: string, private_key: string, network_ID: number,
+    my_input?: TransferableInput, my_output?: TransferableOutput): Promise<any> => {
+    const network_data = generate_xchain(network_ID)
+    const key_type = get_key_type(private_key)
 
-    const txbuff: Buffer = Buffer.from(data)
-    const unsignedTx: UnsignedTx = new UnsignedTx()
-    unsignedTx.fromBuffer(txbuff)
-    const inputs: TransferableInput[] = unsignedTx.getTransaction().getIns()
-    const outputs: TransferableOutput[] = unsignedTx.getTransaction().getOuts()
+    const tx_buf: Buffer = Buffer.from(data)
+    const unsigned_tx: UnsignedTx = new UnsignedTx()
+    unsigned_tx.fromBuffer(tx_buf)
+    const inputs: TransferableInput[] = unsigned_tx.getTransaction().getIns()
+    const outputs: TransferableOutput[] = unsigned_tx.getTransaction().getOuts()
     
-    const msg = Buffer.from(createHash("sha256").update(txbuff).digest())
+    const msg = Buffer.from(createHash("sha256").update(tx_buf).digest())
 
-    let sigbuf: Buffer = undefined
+    let sig_buf: Buffer = undefined
     const sig: Signature = new Signature()
-    if (keyType == 0){ //privatekeys
-        const keyData = generatekeychain(networkData.xchain, privatekey)
-        const utxoset: UTXOSet = (await networkData.xchain.getUTXOs(pubaddr)).utxos
-        const myUtxos: UTXO[] = utxoset.getAllUTXOs()
-        runSecurityChecks(inputs, outputs, myInput, myOutput, myUtxos)
-        sigbuf = keyData.myKeyPair.sign(msg)
-        sig.fromBuffer(sigbuf)
+    if (key_type == 0){ //private_keys
+        const key_data = generate_key_chain(network_data.xchain, private_key)
+        const utxo_set: UTXOSet = (await network_data.xchain.getUTXOs(pub_addr)).utxos
+        const my_utxos: UTXO[] = utxo_set.getAllUTXOs()
+        run_security_checks(inputs, outputs, my_input, my_output, my_utxos)
+        sig_buf = key_data.my_key_pair.sign(msg)
+        sig.fromBuffer(sig_buf)
     }
-    else if (keyType == 1){
-        const mwallet = MnemonicWallet.fromMnemonic(privatekey)
-        await mwallet.resetHdIndices()
-        await mwallet.updateUtxosX()
-        runSecurityChecks(inputs, outputs, myInput, myOutput, mwallet.utxosX.getAllUTXOs())
+    else if (key_type == 1){
+        const my_wallet = MnemonicWallet.fromMnemonic(private_key)
+        await my_wallet.resetHdIndices()
+        await my_wallet.updateUtxosX()
+        run_security_checks(inputs, outputs, my_input, my_output, my_wallet.utxosX.getAllUTXOs())
 
-        const sigString = mwallet.getSigFromUTX(msg, mwallet.getAllAddressesX().indexOf(pubaddr))
+        const sig_string = my_wallet.getSigFromUTX(msg, my_wallet.getAllAddressesX().indexOf(pub_addr))
         
-        sig.fromBuffer(sigString)
+        sig.fromBuffer(sig_string)
     }
 
-    const sendData = {
-        "joinid": joinid,
-        "messagetype": consts.COLLECT_SIGS,
-        "signature": sig.toBuffer(),
-        "pubaddr": pubaddr,
+    const send_data = {
+        "join_ID": join_ID,
+        "message_type": consts.COLLECT_SIGS,
+        "sig": sig.toBuffer(),
+        "pub_addr": pub_addr,
     }
 
-    const returnData = (await sendRecieve(sendData))
-    if (returnData.length == 1){
+    const return_data = (await send_recieve(send_data))
+    if (return_data.length == 1){
         console.log("server did not issue in a timely manner, manually issuing tx")
-        issuetx(returnData[0], networkID)
+        issuetx(return_data[0], network_ID)
     }
     else {
-        console.log(`server succesfully issued tx of id ${returnData[1]}`)
+        console.log(`server succesfully issued tx of id ${return_data[1]}`)
     }
 
-    const log_data = `successfully sent signature to CJ of id ${joinid} using address ${pubaddr}.`
+    const log_data = `successfully sent signature to CJ of id ${join_ID} using address ${pub_addr}.`
     console.log(log_data)
     log_info(log_data)
     
 }
 
-const checkInputs = function(inputs: TransferableInput[], myInput: TransferableInput, myUtxos: UTXO[]){
-    let hasInput: boolean = false
-    let unwantedUTXOcount: number = 0
+const check_inputs = function(inputs: TransferableInput[], my_input: TransferableInput, my_utxos: UTXO[]){
+    let has_input: boolean = false
+    let unwanted_utxo_count: number = 0
     for (let i = 0; i < inputs.length; i++){
-        const checkItem: TransferableInput = inputs[i]
-        if (checkItem.getTxID().equals(myInput.getTxID()) && checkItem.getOutputIdx().equals(myInput.getOutputIdx())){
-            hasInput = true
+        const check_item: TransferableInput = inputs[i]
+        if (check_item.getTxID().equals(my_input.getTxID()) && check_item.getOutputIdx().equals(my_input.getOutputIdx())){
+            has_input = true
         }
         else {
-            for (let j = 0; j < myUtxos.length; j++){
-                const testutxo: UTXO = myUtxos[j]
-                if (checkItem.getTxID().equals(testutxo.getTxID()) && checkItem.getOutputIdx().equals(testutxo.getOutputIdx())){
-                    unwantedUTXOcount++
+            for (let j = 0; j < my_utxos.length; j++){
+                const test_utxo: UTXO = my_utxos[j]
+                if (check_item.getTxID().equals(test_utxo.getTxID()) && check_item.getOutputIdx().equals(test_utxo.getOutputIdx())){
+                    unwanted_utxo_count++
                     break
                 }
             }
         }
     }
-    if (!hasInput){
+    if (!has_input){
         throw Error("Your input is not recorded in the transaction, server or coinjoin participants may be malicious")
     }
-    if (unwantedUTXOcount > 0){
-        throw Error(unwantedUTXOcount + " other utxo(s) that you own were recorded in the tx.  Server or cj participants may be malicious")
+    if (unwanted_utxo_count > 0){
+        throw Error(unwanted_utxo_count + " other utxo(s) that you own were recorded in the tx.  Server or cj participants may be malicious")
     }
 }
 
-const checkOutputs = function(outputs: TransferableOutput[], myOutput: TransferableOutput){
-    let hasOutput: boolean = false
+const check_outputs = function(outputs: TransferableOutput[], my_output: TransferableOutput){
+    let has_output: boolean = false
     for (let i = 0; i < outputs.length; i++){
-        const checkItem: TransferableOutput = outputs[i]
-        if (checkItem.toBuffer().equals(myOutput.toBuffer())){
-            hasOutput = true
+        const check_item: TransferableOutput = outputs[i]
+        if (check_item.toBuffer().equals(my_output.toBuffer())){
+            has_output = true
         }
     }
-    if (!hasOutput){
+    if (!has_output){
         throw Error("Your output is not recorded in the transaction, server or coinjoin participants may be malicious")
     }
 }
 
-const runSecurityChecks = function(inputs: TransferableInput[], outputs: TransferableOutput[], 
-    myInput: TransferableInput, myOutput: TransferableOutput, myUtxos: UTXO[]){
-    checkInputs(inputs, myInput, myUtxos)
-    checkOutputs(outputs, myOutput)
+const run_security_checks = function(inputs: TransferableInput[], outputs: TransferableOutput[], 
+    my_input: TransferableInput, my_output: TransferableOutput, my_utxos: UTXO[]){
+    check_inputs(inputs, my_input, my_utxos)
+    check_outputs(outputs, my_output)
     console.log("All checks run, tx is good")
 }
 
-export { sendsignature }
+export { send_signature }

@@ -42,129 +42,126 @@ var findmatchingjoins_1 = require("../findmatchingjoins");
 var getjoindata_1 = require("../getjoindata");
 var getoptiondata_1 = require("../getoptiondata");
 var cjtxtypes_1 = require("../cjtxtypes");
-var utils_1 = require("@avalabs/avalanche-wallet-sdk/node_modules/avalanche/dist/utils");
+var utils_1 = require("../utils");
 var JOIN = "join";
-var OPTIONS = "getoptions";
-var JOINDATA = "joindata";
+var OPTIONS = "get_options";
+var JOININFO = "join_info";
 var SEARCH = "search";
 var EXIT = "exit";
 var INFO = "info";
-var STDUSAGE = "usage: node coinjoin";
+var commands = [JOIN, OPTIONS, JOININFO, SEARCH, EXIT, INFO];
+var STD_USAGE = "usage: node coinjoin";
 var DESC = "description: ";
-var commands = [JOIN, OPTIONS, JOINDATA, SEARCH, EXIT, INFO];
 var args = process.argv.slice(2);
 var command = args[0];
 args = args.slice(1);
 var main = function () {
     if (command == JOIN) {
-        cmdstartCJInstance();
+        cmd_start_cj_instance();
     }
     else if (command == OPTIONS) {
-        cmdGetOptionData();
+        cmd_get_option_data();
     }
-    else if (command == JOINDATA) {
-        cmdGetJoinData();
+    else if (command == JOININFO) {
+        cmd_print_join_data();
     }
     else if (command == SEARCH) {
-        cmdFindMatchingJoin();
+        cmd_find_matching_joins();
     }
     else if (command == EXIT) {
-        cmdExitCJ();
+        cmd_exit_cj();
     }
     else if (command == INFO) {
-        cmdHelp();
+        cmd_help();
     }
     else {
         console.log(command + " is not a valid command, here is a list of valid commands\n");
-        cmdHelp();
+        cmd_help();
     }
 };
-var cmdHelp = function () {
+var cmd_help = function () {
     console.log("run 'node coinjoin *command* help' for more information");
     commands.forEach(function (item) {
         console.log("\t" + item);
     });
 };
-var cmdstartCJInstance = function () { return __awaiter(void 0, void 0, void 0, function () {
-    var networkID, avaxAssetID, assetID, inputamount, outputamount, joinid, fromaddr, toaddr, networkid;
+var cmd_start_cj_instance = function () { return __awaiter(void 0, void 0, void 0, function () {
+    var join_ID, private_key, dest_addr, input_amount;
     return __generator(this, function (_a) {
-        networkID = 5;
-        avaxAssetID = utils_1.Defaults.network[networkID].X.avaxAssetID;
-        assetID = avaxAssetID;
-        inputamount = 1.15;
-        outputamount = 1;
-        joinid = parseInt(args[0]);
-        fromaddr = undefined;
-        toaddr = undefined;
-        if (args[1] in testaddrs_1.tests) {
-            fromaddr = testaddrs_1.tests[args[1]];
-        }
-        else if (args[1] in testaddrs_1.wtests) {
-            fromaddr = testaddrs_1.wtests[args[1]];
-        }
-        if (args[2] in testaddrs_1.tests) {
-            toaddr = testaddrs_1.tests[args[2]];
-        }
-        else if (args[2] in testaddrs_1.wtests) {
-            toaddr = testaddrs_1.tests[args[2]];
-        }
-        networkid = parseInt(args[3]);
-        if (args.length > 4) {
-            inputamount = parseFloat(args[4]);
-        }
-        if (args.length > 5) {
-            outputamount = parseFloat(args[5]);
-        }
-        if (args.length > 6) {
-            assetID = args[6];
-        }
+        join_ID = parseInt(args[0]);
+        private_key = args[1];
+        dest_addr = args[2];
+        input_amount = parseFloat(args[3]);
         if (args[0] == "help") {
             console.log(DESC + " runs a complete transaction from start to finish, I.e. sends a valid input/output to the server and then signs\n");
-            console.log(STDUSAGE + " '" + JOIN + " *joinid* *fromaddr* *toaddr* *networkid* *inputamount?* *outputamount?* *assetID?*'");
+            console.log(STD_USAGE + " '" + JOIN + " (join_ID) (private_key) (dest_addr) [input_amount]'");
         }
         else {
-            cjtxtypes_1.fullcjtx(joinid, assetID, inputamount, outputamount, toaddr[0], fromaddr[0], fromaddr[1], networkid);
+            cjtxtypes_1.full_cj_tx(join_ID, private_key, dest_addr, input_amount);
         }
         return [2 /*return*/];
     });
 }); };
-var cmdGetOptionData = function () {
+var cmd_get_option_data = function () {
     if (args[0] == "help") {
         console.log(DESC + " gets the cj server's options for coinjoins, e.g. assetid/name, denominations, etc\n");
-        console.log(STDUSAGE + " " + OPTIONS);
+        console.log(STD_USAGE + " " + OPTIONS);
     }
     else {
-        getoptiondata_1.getoptiondata();
+        getoptiondata_1.get_option_data();
     }
 };
-var cmdGetJoinData = function () {
-    if (args[0] == "help") {
-        console.log(DESC + " gets the data for a specific join that is in the CJ server.\n");
-        console.log(STDUSAGE + " " + JOINDATA + " *joinid*");
-    }
-    else {
-        getjoindata_1.getjoindata(parseInt(args[0]));
-    }
-};
-var cmdFindMatchingJoin = function () {
-    var min_users = undefined;
-    var max_users = undefined;
-    if (args.length > 3) {
-        min_users = parseInt(args[3]);
-    }
-    if (args.length > 4) {
-        max_users = parseInt(args[4]);
-    }
-    if (args[0] == "help") {
-        console.log(DESC + " runs the matchmaking service on the CJ server with given paramaters, and returns back applicable joins\n");
-        console.log(STDUSAGE + " " + SEARCH + " *assetid/name* *targetamount* *networkID* *min_users?* *max_users?*");
-    }
-    else {
-        findmatchingjoins_1.findMatchingJoins(args[0], parseInt(args[1]), parseInt(args[2]), min_users, max_users);
-    }
-};
-var cmdExitCJ = function () {
-    var joinid = parseInt(args[0]);
+var cmd_print_join_data = function () { return __awaiter(void 0, void 0, void 0, function () {
+    var join_data;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                if (!(args[0] == "help")) return [3 /*break*/, 1];
+                console.log(DESC + " gets the data for a specific join that is in the CJ server.\n");
+                console.log(STD_USAGE + " " + JOININFO + " (join_id)");
+                return [3 /*break*/, 3];
+            case 1: return [4 /*yield*/, getjoindata_1.get_join_data(parseInt(args[0]))];
+            case 2:
+                join_data = (_a.sent());
+                console.log(utils_1.join_data_readable(join_data));
+                _a.label = 3;
+            case 3: return [2 /*return*/];
+        }
+    });
+}); };
+var cmd_find_matching_joins = function () { return __awaiter(void 0, void 0, void 0, function () {
+    var min_users, max_users, join_list, join_data_1;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                min_users = undefined;
+                max_users = undefined;
+                if (args.length > 3) {
+                    min_users = parseInt(args[3]);
+                }
+                if (args.length > 4) {
+                    max_users = parseInt(args[4]);
+                }
+                if (!(args[0] == "help")) return [3 /*break*/, 1];
+                console.log(DESC + " runs the matchmaking service on the CJ server with given paramaters, and returns back applicable joins\n");
+                console.log(STD_USAGE + " " + SEARCH + " (assetid | name) (targetamount) (networkID) [min_users] [max_users]");
+                return [3 /*break*/, 3];
+            case 1: return [4 /*yield*/, findmatchingjoins_1.find_matching_joins(args[0], parseInt(args[1]), parseInt(args[2]), min_users, max_users)];
+            case 2:
+                join_list = (_a.sent());
+                console.log(join_list);
+                join_data_1 = "";
+                join_list.forEach(function (item) {
+                    join_data_1 += utils_1.join_data_readable(item);
+                });
+                console.log(join_data_1);
+                _a.label = 3;
+            case 3: return [2 /*return*/];
+        }
+    });
+}); };
+var cmd_exit_cj = function () {
+    var join_ID = parseInt(args[0]);
     var networkID = parseInt(args[1]);
     var publickey = undefined;
     var privatekey = undefined;
@@ -185,10 +182,10 @@ var cmdExitCJ = function () {
     }
     if (args[0] == "help") {
         console.log(DESC + " exits a particular coinjoin by signing a nonce\n");
-        console.log(STDUSAGE + " " + EXIT + " *joinid* *networkID* *testkeypair / privatekey* *pubkey*");
+        console.log(STD_USAGE + " " + EXIT + " (join_ID) (networkID) (testkeypair / privatekey) (pubkey)");
     }
     else {
-        exitcj_1.exitcj(joinid, networkID, publickey, privatekey);
+        exitcj_1.exit_cj(join_ID, networkID, publickey, privatekey);
     }
 };
 main();

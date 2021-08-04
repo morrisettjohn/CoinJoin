@@ -4,29 +4,29 @@ var platformvm_1 = require("@avalabs/avalanche-wallet-sdk/node_modules/avalanche
 var common_1 = require("@avalabs/avalanche-wallet-sdk/node_modules/avalanche/dist/common")
 
 
-process.stdin.on("data", data => processData(data))
+process.stdin.on("data", data => process_data(data))
 
 const bintools = avalanche_1.BinTools.getInstance()
 
-const processData = function(data){
+const process_data = function(data){
     data = JSON.parse(data)
 
-    const signatures = data["signatures"]
-    const utx = data["utx"]
+    const sigs = data["sigs"]
+    const wtx = data["wtx"]
 
-    const txbuff = new avalanche_1.Buffer(utx)
-    const unsignedTx = new avm_1.UnsignedTx()
-    unsignedTx.fromBuffer(txbuff)
+    const wtx_buf = new avalanche_1.Buffer(wtx)
+    const unsigned_tx = new avm_1.UnsignedTx()
+    unsigned_tx.fromBuffer(wtx_buf)
     
-    let credentialArray = []
-    signatures.forEach((sig) => {
-        const sigitem = new common_1.Signature()
-        const sigbuf = new avalanche_1.Buffer(sig)
-        sigitem.fromBuffer(sigbuf)
-        const cred = new platformvm_1.SECPCredential([sigitem])
-        credentialArray.push(cred)
+    let credential_array = []
+    sigs.forEach((sig) => {
+        const sig_item = new common_1.Signature()
+        const sig_buf = new avalanche_1.Buffer(sig)
+        sig_item.fromBuffer(sig_buf)
+        const cred = new platformvm_1.SECPCredential([sig_item])
+        credential_array.push(cred)
     })
 
-    const stx = new avm_1.Tx(unsignedTx, credentialArray)
+    const stx = new avm_1.Tx(unsigned_tx, credential_array)
     process.stdout.write(stx.toBuffer())
 }

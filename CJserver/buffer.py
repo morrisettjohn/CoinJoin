@@ -6,24 +6,16 @@ from decimal import Decimal, getcontext
 
 getcontext().prec = 9
 
-class Buffer:
-
-    def __init__(self, rawbuffer):
-        self.rawbuffer = rawbuffer
-
-    def parseBuffer(self):
-        return Exception("abstract method")
-
 class Input:
 
-    def __init__(self, rawbuffer, networkID):
-        self.rawbuffer = rawbuffer
-        self.parseBuffer(networkID)
+    def __init__(self, raw_buf, network_ID):
+        self.raw_buf = raw_buf
+        self.parse_buf(network_ID)
 
-    def parseBuffer(self, networkID):
+    def parse_buf(self, network_ID):
         input_data = str.encode(json.dumps({
-            "inpBuf": self.rawbuffer,
-            "networkID": networkID
+            "inp_buf": self.raw_buf,
+            "network_ID": network_ID
         }))
 
         result = subprocess.run(['node', './js_scripts/getinputdata.js'], input = input_data, capture_output = True)
@@ -36,19 +28,19 @@ class Input:
 
         result_data = json.loads(bytes.decode((result.stdout)))
         self.amt = Decimal(result_data["amt"])/BNSCALE
-        self.assetID = result_data["assetID"]
-        self.pubaddr = result_data["pubaddr"]
+        self.asset_ID = result_data["asset_ID"]
+        self.pub_addr = result_data["pub_addr"]
 
 class Output:
 
-    def __init__(self, rawbuffer, networkID):
-        self.rawbuffer = rawbuffer
-        self.parseBuffer(networkID)
+    def __init__(self, raw_buf, network_ID):
+        self.raw_buf = raw_buf
+        self.parse_buf(network_ID)
 
-    def parseBuffer(self, networkID):
+    def parse_buf(self, network_ID):
         output_data = str.encode(json.dumps({
-            "outBuf": self.rawbuffer,
-            "networkID": networkID
+            "out_buf": self.raw_buf,
+            "network_ID": network_ID
         }))
 
         result = subprocess.run(['node', './js_scripts/getoutputdata.js'], input = output_data, capture_output = True)
@@ -60,20 +52,20 @@ class Output:
 
         result_data = json.loads(bytes.decode((result.stdout)))
         self.amt = Decimal(result_data["amt"])/BNSCALE
-        self.assetID = result_data["assetID"]
-        self.output_addr = result_data["outputAddr"]
+        self.asset_ID = result_data["asset_ID"]
+        self.output_addr = result_data["output_addr"]
 
 
-class Nonce(Buffer):
+class Nonce():
 
     def __init__(self, msg):
         self.msg = msg
 
-    def parse_nonce(self, signed_msg = None, networkID: int = 5):
+    def parse_nonce(self, signed_msg = None, network_ID: int = 5):
         ticket_data = str.encode(json.dumps({
             "msg": self.msg,
             "signed_msg": signed_msg,
-            "networkID": networkID
+            "network_ID": network_ID
         }))
 
         result = subprocess.run(['node', './js_scripts/getnoncedata.js'], input = ticket_data, capture_output=True)
@@ -84,20 +76,20 @@ class Nonce(Buffer):
             raise Exception
 
         result_data = json.loads(bytes.decode((result.stdout)))
-        self.nonce_addr = result_data["nonceAddr"]
+        self.nonce_addr = result_data["nonce_addr"]
 
     
-class Sig(Buffer):
+class Sig():
     
-    def __init__(self, utx, sig, networkID):
+    def __init__(self, utx, sig, network_ID):
         self.sig = sig
-        self.parseBuffer(utx, networkID)
+        self.parse_buf(utx, network_ID)
 
-    def parseBuffer(self, utx, networkID):
+    def parse_buf(self, utx, network_ID):
         sig_data = str.encode(json.dumps({
             "utx": utx,
             "sig": self.sig,
-            "networkID": networkID
+            "network_ID": network_ID
         }))
         
         result = subprocess.run(['node', './js_scripts/getsigdata.js'], input = sig_data, capture_output=True)
@@ -108,8 +100,4 @@ class Sig(Buffer):
             raise Exception
 
         result_data = json.loads(bytes.decode((result.stdout)))
-        self.sig_addr = result_data["sigAddr"]
-
-
-
-x = Decimal("1.01")
+        self.sig_addr = result_data["sig_addr"]

@@ -1,13 +1,15 @@
-import { sendRecieve } from "./processmessage"
+import { send_recieve } from "./processmessage"
 import * as consts from "./constants"
+import { join_data_readable } from "./utils"
 
-const getjoindata = async(joinid: number): Promise<any> => {
+const get_join_data = async(join_ID: number): Promise<any> => {
     const returnData = {
         
-        "messagetype": consts.GET_JOIN_DATA,
-        "joinid": joinid
+        "message_type": consts.GET_JOIN_DATA,
+        "join_ID": join_ID
     }
-    sendRecieve(returnData)
+    const join_data = (await send_recieve(returnData))[0]
+    return join_data
 }
 
-export { getjoindata }
+export { get_join_data }

@@ -47,108 +47,108 @@ var consts = require("./constants");
 var loginfo_1 = require("./loginfo");
 var issuestx_1 = require("./issuestx");
 var bintools = avalanche_1.BinTools.getInstance();
-var sendsignature = function (joinid, data, pubaddr, privatekey, networkID, myInput, myOutput) { return __awaiter(void 0, void 0, void 0, function () {
-    var networkData, keyType, txbuff, unsignedTx, inputs, outputs, msg, sigbuf, sig, keyData, utxoset, myUtxos, mwallet, sigString, sendData, returnData, log_data;
+var send_signature = function (join_ID, data, pub_addr, private_key, network_ID, my_input, my_output) { return __awaiter(void 0, void 0, void 0, function () {
+    var network_data, key_type, tx_buf, unsigned_tx, inputs, outputs, msg, sig_buf, sig, key_data, utxo_set, my_utxos, my_wallet, sig_string, send_data, return_data, log_data;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
-                networkData = avalancheutils_1.generatexchain(networkID);
-                keyType = avalancheutils_1.getKeyType(privatekey);
-                txbuff = avalanche_1.Buffer.from(data);
-                unsignedTx = new avm_1.UnsignedTx();
-                unsignedTx.fromBuffer(txbuff);
-                inputs = unsignedTx.getTransaction().getIns();
-                outputs = unsignedTx.getTransaction().getOuts();
-                msg = avalanche_1.Buffer.from(crypto_1.createHash("sha256").update(txbuff).digest());
-                sigbuf = undefined;
+                network_data = avalancheutils_1.generate_xchain(network_ID);
+                key_type = avalancheutils_1.get_key_type(private_key);
+                tx_buf = avalanche_1.Buffer.from(data);
+                unsigned_tx = new avm_1.UnsignedTx();
+                unsigned_tx.fromBuffer(tx_buf);
+                inputs = unsigned_tx.getTransaction().getIns();
+                outputs = unsigned_tx.getTransaction().getOuts();
+                msg = avalanche_1.Buffer.from(crypto_1.createHash("sha256").update(tx_buf).digest());
+                sig_buf = undefined;
                 sig = new common_1.Signature();
-                if (!(keyType == 0)) return [3 /*break*/, 2];
-                keyData = avalancheutils_1.generatekeychain(networkData.xchain, privatekey);
-                return [4 /*yield*/, networkData.xchain.getUTXOs(pubaddr)];
+                if (!(key_type == 0)) return [3 /*break*/, 2];
+                key_data = avalancheutils_1.generate_key_chain(network_data.xchain, private_key);
+                return [4 /*yield*/, network_data.xchain.getUTXOs(pub_addr)];
             case 1:
-                utxoset = (_a.sent()).utxos;
-                myUtxos = utxoset.getAllUTXOs();
-                runSecurityChecks(inputs, outputs, myInput, myOutput, myUtxos);
-                sigbuf = keyData.myKeyPair.sign(msg);
-                sig.fromBuffer(sigbuf);
+                utxo_set = (_a.sent()).utxos;
+                my_utxos = utxo_set.getAllUTXOs();
+                run_security_checks(inputs, outputs, my_input, my_output, my_utxos);
+                sig_buf = key_data.my_key_pair.sign(msg);
+                sig.fromBuffer(sig_buf);
                 return [3 /*break*/, 5];
             case 2:
-                if (!(keyType == 1)) return [3 /*break*/, 5];
-                mwallet = avalanche_wallet_sdk_1.MnemonicWallet.fromMnemonic(privatekey);
-                return [4 /*yield*/, mwallet.resetHdIndices()];
+                if (!(key_type == 1)) return [3 /*break*/, 5];
+                my_wallet = avalanche_wallet_sdk_1.MnemonicWallet.fromMnemonic(private_key);
+                return [4 /*yield*/, my_wallet.resetHdIndices()];
             case 3:
                 _a.sent();
-                return [4 /*yield*/, mwallet.updateUtxosX()];
+                return [4 /*yield*/, my_wallet.updateUtxosX()];
             case 4:
                 _a.sent();
-                runSecurityChecks(inputs, outputs, myInput, myOutput, mwallet.utxosX.getAllUTXOs());
-                sigString = mwallet.getSigFromUTX(msg, mwallet.getAllAddressesX().indexOf(pubaddr));
-                sig.fromBuffer(sigString);
+                run_security_checks(inputs, outputs, my_input, my_output, my_wallet.utxosX.getAllUTXOs());
+                sig_string = my_wallet.getSigFromUTX(msg, my_wallet.getAllAddressesX().indexOf(pub_addr));
+                sig.fromBuffer(sig_string);
                 _a.label = 5;
             case 5:
-                sendData = {
-                    "joinid": joinid,
-                    "messagetype": consts.COLLECT_SIGS,
-                    "signature": sig.toBuffer(),
-                    "pubaddr": pubaddr
+                send_data = {
+                    "join_ID": join_ID,
+                    "message_type": consts.COLLECT_SIGS,
+                    "sig": sig.toBuffer(),
+                    "pub_addr": pub_addr
                 };
-                return [4 /*yield*/, processmessage_1.sendRecieve(sendData)];
+                return [4 /*yield*/, processmessage_1.send_recieve(send_data)];
             case 6:
-                returnData = (_a.sent());
-                if (returnData.length == 1) {
+                return_data = (_a.sent());
+                if (return_data.length == 1) {
                     console.log("server did not issue in a timely manner, manually issuing tx");
-                    issuestx_1.issuetx(returnData[0], networkID);
+                    issuestx_1.issuetx(return_data[0], network_ID);
                 }
                 else {
-                    console.log("server succesfully issued tx of id " + returnData[1]);
+                    console.log("server succesfully issued tx of id " + return_data[1]);
                 }
-                log_data = "successfully sent signature to CJ of id " + joinid + " using address " + pubaddr + ".";
+                log_data = "successfully sent signature to CJ of id " + join_ID + " using address " + pub_addr + ".";
                 console.log(log_data);
                 loginfo_1.log_info(log_data);
                 return [2 /*return*/];
         }
     });
 }); };
-exports.sendsignature = sendsignature;
-var checkInputs = function (inputs, myInput, myUtxos) {
-    var hasInput = false;
-    var unwantedUTXOcount = 0;
+exports.send_signature = send_signature;
+var check_inputs = function (inputs, my_input, my_utxos) {
+    var has_input = false;
+    var unwanted_utxo_count = 0;
     for (var i = 0; i < inputs.length; i++) {
-        var checkItem = inputs[i];
-        if (checkItem.getTxID().equals(myInput.getTxID()) && checkItem.getOutputIdx().equals(myInput.getOutputIdx())) {
-            hasInput = true;
+        var check_item = inputs[i];
+        if (check_item.getTxID().equals(my_input.getTxID()) && check_item.getOutputIdx().equals(my_input.getOutputIdx())) {
+            has_input = true;
         }
         else {
-            for (var j = 0; j < myUtxos.length; j++) {
-                var testutxo = myUtxos[j];
-                if (checkItem.getTxID().equals(testutxo.getTxID()) && checkItem.getOutputIdx().equals(testutxo.getOutputIdx())) {
-                    unwantedUTXOcount++;
+            for (var j = 0; j < my_utxos.length; j++) {
+                var test_utxo = my_utxos[j];
+                if (check_item.getTxID().equals(test_utxo.getTxID()) && check_item.getOutputIdx().equals(test_utxo.getOutputIdx())) {
+                    unwanted_utxo_count++;
                     break;
                 }
             }
         }
     }
-    if (!hasInput) {
+    if (!has_input) {
         throw Error("Your input is not recorded in the transaction, server or coinjoin participants may be malicious");
     }
-    if (unwantedUTXOcount > 0) {
-        throw Error(unwantedUTXOcount + " other utxo(s) that you own were recorded in the tx.  Server or cj participants may be malicious");
+    if (unwanted_utxo_count > 0) {
+        throw Error(unwanted_utxo_count + " other utxo(s) that you own were recorded in the tx.  Server or cj participants may be malicious");
     }
 };
-var checkOutputs = function (outputs, myOutput) {
-    var hasOutput = false;
+var check_outputs = function (outputs, my_output) {
+    var has_output = false;
     for (var i = 0; i < outputs.length; i++) {
-        var checkItem = outputs[i];
-        if (checkItem.toBuffer().equals(myOutput.toBuffer())) {
-            hasOutput = true;
+        var check_item = outputs[i];
+        if (check_item.toBuffer().equals(my_output.toBuffer())) {
+            has_output = true;
         }
     }
-    if (!hasOutput) {
+    if (!has_output) {
         throw Error("Your output is not recorded in the transaction, server or coinjoin participants may be malicious");
     }
 };
-var runSecurityChecks = function (inputs, outputs, myInput, myOutput, myUtxos) {
-    checkInputs(inputs, myInput, myUtxos);
-    checkOutputs(outputs, myOutput);
+var run_security_checks = function (inputs, outputs, my_input, my_output, my_utxos) {
+    check_inputs(inputs, my_input, my_utxos);
+    check_outputs(outputs, my_output);
     console.log("All checks run, tx is good");
 };

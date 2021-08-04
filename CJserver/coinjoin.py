@@ -5,17 +5,17 @@ from utils.httprequest import *
 from assetinfo import *
 from params import *
 from joinstatesamples import samples
-from messages import send_wiretx, send_signedtx, send_message, send_errmessage, send_option_data, send_compatable_joinlist, send_join_data, send_nonce
+from messages import send_err, send_option_data, send_compatable_join_list, send_join_data, send_nonce
 import socket
 import sys
 import json
 import time
 
 
-feeaddress = "X-fuji18gcr997m4cntu2pzp9u5p72pmm53d6376l6cee",
+fee_address = "X-fuji18gcr997m4cntu2pzp9u5p72pmm53d6376l6cee",
 standard_fee_percent = .10
 
-joinlist = {}
+join_list = {}
 
 def isvalid_request(request_data):
     if request_data.command != 'POST':
@@ -68,41 +68,41 @@ def get_json_data(conn):
                 return b''
 
 #Creates a new join if no joins are available
-def create_new_join(asset_type, amount, networkID, limit):
+def create_new_join(asset_type, amount, network_ID, limit):
     new_join = JoinState(
-        connect_limit = limit,
-        assetID = asset_type,
-        networkID = networkID,
-        assetamount = amount,
-        feepercent = standard_fee_percent,
-        feeaddress = feeaddress
+        threshold = limit,
+        asset_ID = asset_type,
+        network_ID = network_ID,
+        out_amount = amount,
+        fee_percent = standard_fee_percent,
+        fee_address = fee_address
     )
     return new_join
 
 #Returns a list of joins that match the users specificaitons
-def find_joins(assetID, amount, networkID, min_users, max_users):
+def find_joins(asset_ID, amount, network_ID, min_users, max_users):
     matches = []
 
-    for item in joinlist:
-        item = joinlist[item]
+    for item in join_list:
+        item = join_list[item]
         
-        if item.state == COLLECT_INPUTS and item.assetID == assetID and item.assetamount == amount \
-        and item.connect_limit >= min_users and item.connect_limit <= max_users and item.networkID == networkID:
+        if item.state == COLLECT_INPUTS and item.asset_ID == asset_ID and item.out_amount == amount \
+        and item.threshold >= min_users and item.threshold <= max_users and item.network_ID == network_ID:
             matches.append(item.get_status())
     if len(matches) == 0:
         print("no joins found, creating new join")
         #If no join is found, create a new one
-        new_join = create_new_join(assetID, amount, networkID, min_users)
-        joinlist[new_join.id] = new_join
+        new_join = create_new_join(asset_ID, amount, network_ID, min_users)
+        join_list[new_join.id] = new_join
         matches.append(new_join.get_status())
     return matches
 
 #Determines what the option data for a find_joins request is.  
 def parse_option_data(data):
-    assetID = data["assetID"]
-    assetID = convert_to_asset_id(assetID)
-    networkID = data["networkID"]
-    assetamount = data["assetamount"]
+    asset_ID = data["asset_ID"]
+    asset_ID = convert_to_asset_id(asset_ID)
+    network_ID = data["network_ID"]
+    asset_amount = data["asset_amount"]
     min_users = DEFAULT_LOWER_USER_BOUND
     max_users = DEFAULT_UPPER_USER_BOUND
     if "min_users" in data:
@@ -120,59 +120,59 @@ def parse_option_data(data):
     if min_users > max_users:
         print("lower bound greater than upper bound, setting both to %d" % max_users)
         min_users = max_users
-    return [assetID, assetamount, networkID, min_users, max_users]
+    return [asset_ID, asset_amount, network_ID, min_users, max_users]
 
 #Determines if the given jsondata is valid
-def isvalid_jsondata(data):
+def is_valid_json_data(data):
     if data == b'':
         print("invalid data")
         return False
-    if not "messagetype" in data:
-        print("no messagetype")
+    if not "message_type" in data:
+        print("no message type")
         return False
-    if data["messagetype"] == START_PROCESS: 
+    if data["message_type"] == START_PROCESS: 
         return True
-    if "joinid" in data and data["joinid"] not in joinlist:
+    if "join_ID" in data and data["join_ID"] not in join_list:
         return False
 
-    elif data["messagetype"] == SELECT_OPTIONS: 
+    elif data["message_type"] == SELECT_OPTIONS: 
         #checks if the select options data has all of the necessary information required
-        if not "assetamount" in data or not "assetID" in data or not "networkID" in data or not \
-            (data["assetID"] in ASSET_NAMES or data["assetID"] in ASSET_IDS):
+        if not "asset_amount" in data or not "asset_ID" in data or not "network_ID" in data or not \
+            (data["asset_ID"] in ASSET_NAMES or data["asset_ID"] in ASSET_IDS):
             print("insufficient data for selectoptions message")
             return False
-        assetID = convert_to_asset_id(data["assetID"])
+        asset_ID = convert_to_asset_id(data["asset_ID"])
 
         # checks if the select options data is compatible with the parameters for the cj server
-        if data["networkID"] not in [1, 5] or data["assetamount"] not in ASSET_DENOMS[ASSET_IDS.index(assetID)]:
+        if data["network_ID"] not in [1, 5] or data["asset_amount"] not in ASSET_DENOMS[ASSET_IDS.index(asset_ID)]:
             print("request data is incompatible with parameters for the cj server")
             return False
 
-    elif data["messagetype"] == GET_JOIN_DATA:  
-        if not "joinid" in data:
-            print("no joinid in data for selectjoin message")
+    elif data["message_type"] == GET_JOIN_DATA:  
+        if not "join_ID" in data:
+            print("no join_ID in data for selectjoin message")
             return False
-    elif data["messagetype"] == REQUEST_NONCE:
-        if not "joinid" in data or not "pubaddr" in data:
+    elif data["message_type"] == REQUEST_NONCE:
+        if not "join_ID" in data or not "pub_addr" in data:
             print("insufficient information to request nonce")
-    elif data["messagetype"] == COLLECT_INPUTS:
-        if not "joinid" in data or not "pubaddr" in data or not "inputbuf" in data or not "outputbuf" in data or not "ticket" in data:
+    elif data["message_type"] == COLLECT_INPUTS:
+        if not "join_ID" in data or not "pub_addr" in data or not "input_buf" in data or not "output_buf" in data or not "ticket" in data:
             print("insufficient data for input message")
             return False
-    elif data["messagetype"] == COLLECT_SIGS:
-        if not "joinid" in data or not "signature" in data or not "pubaddr" in data:
+    elif data["message_type"] == COLLECT_SIGS:
+        if not "join_ID" in data or not "sig" in data or not "pub_addr" in data:
             print("insufficient data for signature message")
             return False
-    elif data["messagetype"] == ISSUE_TX:
-        if not "joinid" in data:
+    elif data["message_type"] == ISSUE_TX:
+        if not "join_ID" in data:
             print("insufficient data for issue_tx message")
             return False
-    elif data["messagetype"] == REQUEST_WTX:
-        if not "joinid" in data or not "pubaddr" in data:
+    elif data["message_type"] == REQUEST_WTX:
+        if not "join_ID" in data or not "pub_addr" in data:
             print("cannot send back wiretx")
             return False
-    elif data["messagetype"] == EXIT:
-        if not "joinid" in data or not "pubaddr" in data or not "ticket" in data:
+    elif data["message_type"] == EXIT:
+        if not "join_ID" in data or not "pub_addr" in data or not "ticket" in data:
             print("insufficient data to exit CJ")
             return False
     else:
@@ -181,74 +181,74 @@ def isvalid_jsondata(data):
     return True
 
 def get_join(data):
-    if data["joinid"] in joinlist:
-        return joinlist[data["joinid"]]
+    if data["join_ID"] in join_list:
+        return join_list[data["join_ID"]]
     return None
 
-def get_messagetype(data):
-    return data["messagetype"]
+def get_message_type(data):
+    return data["message_type"]
 
 def generate_option_data():
-    returndata = {}
+    return_data = {}
     for item in ASSET_TYPES:
-        returndata[item[0]] = (item[1], item[2])
-    return returndata
+        return_data[item[0]] = (item[1], item[2])
+    return return_data
 
 #Processes data based on what kind of message the data contains
 def process_data(conn, addr):
-    global joinlist
+    global join_list
     data = get_json_data(conn)
-    if isvalid_jsondata(data):
-        messagetype = get_messagetype(data)
-        if messagetype == START_PROCESS:
+    if is_valid_json_data(data):
+        message_type = get_message_type(data)
+        if message_type == START_PROCESS:
             print("displaying options to user")
             option_data = generate_option_data()
             send_option_data(conn, option_data)
-        elif messagetype == SELECT_OPTIONS:
+        elif message_type == SELECT_OPTIONS:
             print("sending compatible coinjoins")
             specs = parse_option_data(data)
             matches = find_joins(specs[0], specs[1], specs[2], specs[3], specs[4])
-            send_compatable_joinlist(conn, matches)
-        elif messagetype == GET_JOIN_DATA:
+            send_compatable_join_list(conn, matches)
+        elif message_type == GET_JOIN_DATA:
             join = get_join(data)
             if join != None:
                 print("sending info for join of id %s" % join.get_status())
                 send_join_data(conn, join.get_status())
             else:
                 print("tried to request information for join that doesn't exist")
-                send_errmessage(conn, "Join does not exist for id %d" % data["joinid"])
-        elif messagetype == REQUEST_NONCE:
+                send_err(conn, "Join does not exist for id %d" % data["join_ID"])
+        elif message_type == REQUEST_NONCE:
             join = get_join(data)
             print("sending nonce to address")
             join.process_request(data, conn, addr)
-        elif messagetype == COLLECT_INPUTS: 
+        elif message_type == COLLECT_INPUTS: 
             join = get_join(data)
             print("collecting input for join of id %s" % join)
             join.process_request(data, conn, addr)
-        elif messagetype == COLLECT_SIGS:
+        elif message_type == COLLECT_SIGS:
             join = get_join(data)
             print("collecting signature for join of id %s" % join)
             join.process_request(data, conn, addr)
-        elif messagetype == ISSUE_TX:
+        elif message_type == ISSUE_TX:
             join = get_join(data)
             print("issuing transaction for join of id %s" % join)
             join.process_request(data, conn, addr)
-        elif messagetype == REQUEST_WTX:
+        elif message_type == REQUEST_WTX:
             join = get_join(data)
             print("sending wiretx to participant")
             join.process_request(data, conn, addr)
-        elif messagetype == EXIT:
+        elif message_type == EXIT:
             join = get_join(data)
             print("starting exit process")
             join.process_request(data, conn, addr)
         else:
-            send_errmessage(conn, "not a valid messagetype")
+            send_err(conn, "not a valid message_type")
     else:
         print("invalid data")
-        send_errmessage(conn, "invalid or insufficient data for message")
+        send_err(conn, "invalid or insufficient data for message")
 
 #Starts the whole coinjoin process, starting from beginning to end
-def start_findme_service():
+def start_server():
     HOST = sys.argv[1][:sys.argv[1].find(":")]
     PORT = int(sys.argv[1][sys.argv[1].find(":")+1:])
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -262,5 +262,5 @@ def start_findme_service():
         print("Connected by", addr)
         process_data(conn, addr)
 
-joinlist = samples
-start_findme_service()
+join_list = samples
+start_server()

@@ -1,27 +1,27 @@
 var avm_1 = require("@avalabs/avalanche-wallet-sdk/node_modules/avalanche/dist/apis/avm");
 var avalanche_1 = require("@avalabs/avalanche-wallet-sdk/node_modules/avalanche");
-const { generatexchain } = require("../../CJclient/avalancheutils");
+const { generate_xchain } = require("../../CJclient/avalancheutils");
 
-process.stdin.on("data", data => processData(data))
+process.stdin.on("data", data => process_data(data))
 
-const processData = async(data) => {
+const process_data = async(data) => {
     data = JSON.parse(data)
     
     const stx = data["stx"]
-    const networkID = data["networkID"]
-    const networkData = generatexchain(networkID)
+    const network_ID = data["network_ID"]
+    const network_data = generate_xchain(network_ID)
 
-    const stxBuf = new avalanche_1.Buffer(stx)
-    const signedTx = new avm_1.Tx()
-    signedTx.fromBuffer(stxBuf)
-    const id = await networkData.xchain.issueTx(signedTx)
+    const stx_buf = new avalanche_1.Buffer(stx)
+    const stx = new avm_1.Tx()
+    stx.fromBuffer(stx_buf)
+    const id = await network_data.xchain.issueTx(stx)
     
     let status = ""
     while (status != "Accepted" && status != "Rejected"){
-        status = await networkData.xchain.getTxStatus(id)
+        status = await network_data.xchain.getTxStatus(id)
     }
-    const returnString = JSON.stringify({"id": id, "status": status})
+    const return_data = JSON.stringify({"id": id, "status": status})
 
-    process.stdout.write(returnString)
+    process.stdout.write(return_data)
 }
 

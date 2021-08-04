@@ -40,28 +40,28 @@ var processmessage_1 = require("./processmessage");
 var consts = require("./constants");
 var requestnonce_1 = require("./requestnonce");
 var avalancheutils_1 = require("./avalancheutils");
-var exitcj = function (joinid, networkID, pubaddr, privatekey) { return __awaiter(void 0, void 0, void 0, function () {
-    var keyType, ticket, sendData;
+var exit_cj = function (join_ID, network_ID, pub_addr, private_key) { return __awaiter(void 0, void 0, void 0, function () {
+    var key_type, ticket, send_data;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
-                keyType = avalancheutils_1.getKeyType(privatekey);
-                console.log(networkID);
-                return [4 /*yield*/, requestnonce_1.requestNonce(joinid, pubaddr, privatekey, networkID)];
+                key_type = avalancheutils_1.get_key_type(private_key);
+                console.log(network_ID);
+                return [4 /*yield*/, requestnonce_1.request_nonce(join_ID, pub_addr, private_key, network_ID)];
             case 1:
                 ticket = _a.sent();
-                sendData = {
-                    "joinid": joinid,
-                    "messagetype": consts.EXIT,
-                    "pubaddr": pubaddr,
+                send_data = {
+                    "join_ID": join_ID,
+                    "message_type": consts.EXIT,
+                    "pub_addr": pub_addr,
                     "ticket": ticket
                 };
                 console.log("sending data to coinjoin server now");
-                return [4 /*yield*/, processmessage_1.sendRecieve(sendData)];
+                return [4 /*yield*/, processmessage_1.send_recieve(send_data)];
             case 2:
                 _a.sent();
                 return [2 /*return*/];
         }
     });
 }); };
-exports.exitcj = exitcj;
+exports.exit_cj = exit_cj;

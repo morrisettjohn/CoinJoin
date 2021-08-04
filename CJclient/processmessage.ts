@@ -2,37 +2,37 @@ import { request } from "http"
 import * as consts from "./constants"
 
 class Message {
-    mtype: string
-    mdata: any
-    mresolve: string
-    private cachetimeout: number
-    static messagetypes = ["MSG", "ERR", "OPT", "JLS", "JDT", "NCE", "WTX", "STX", "TXD", "UND"]
-    static resolvetypes = ["cache", "return", "print"]
-    constructor (mtype?: string, mdata?: any, mresolve?: string, cachetimeout?: number){
-        this.mtype = mtype
-        this.mdata = mdata
-        this.mresolve = mresolve
-        if (this.mresolve == "cache"){
-            this.cachetimeout = cachetimeout
+    message_type: string
+    message_data: any
+    message_resolve: string
+    private cache_timeout: number
+    static message_types = ["MSG", "ERR", "OPT", "JLS", "JDT", "NCE", "WTX", "STX", "TXD", "UND"]
+    static resolve_types = ["cache", "return", "print"]
+    constructor (message_type?: string, message_data?: any, message_resolve?: string, cache_timeout?: number){
+        this.message_type = message_type
+        this.message_data = message_data
+        this.message_resolve = message_resolve
+        if (this.message_resolve == "cache"){
+            this.cache_timeout = cache_timeout
         }
         else {
-            this.cachetimeout = undefined
+            this.cache_timeout = undefined
         }
     }
-    setCacheTimeout(mlSecs: number) {
-        if (this.mresolve = "cache"){
-            this.cachetimeout = mlSecs
+    set_cache_timeout(mlsecs: number) {
+        if (this.message_resolve = "cache"){
+            this.cache_timeout = mlsecs
         }
         else {
-            throw new Error("can only apply a cachetimeout")
+            throw new Error("can only apply a cache_timeout")
         }
     }
-    getCacheTimeout(){
-        return this.cachetimeout
+    get_cache_timeout(){
+        return this.cache_timeout
     }
 }
 
-const isValidWTXData = function(data: any): boolean {
+const is_valid_wtx_data = function(data: any): boolean {
     return true
     if (!("inputs" in data && "outputs" in data)){
         return false
@@ -53,7 +53,7 @@ const isValidWTXData = function(data: any): boolean {
     return true
 }
 
-const isValidSTX = function(data: any): boolean {
+const is_valid_stx_data = function(data: any): boolean {
     return true
     /*XXX fix later
     if (!("signatures" in data && "transaction" in data)){
@@ -65,56 +65,51 @@ const isValidSTX = function(data: any): boolean {
     return true*/
 }
 
-//takes a message from the coinjoin server and processes it, using a 3 character prefix as a messagetype
-const processMessage = function (recievedData: string): Message[]{
+//takes a message from the coinjoin server and processes it, using a 3 character prefix as a message_type
+const process_message = function (recieved_data: string): Message[]{
     let messages: Message[] = []
-    while (recievedData.indexOf("\r\n\r\n") != -1){
+    while (recieved_data.indexOf("\r\n\r\n") != -1){
 
-        const endIndex: number = recievedData.indexOf("\r\n\r\n")
-        const messageType: string = recievedData.slice(0, 3)
-        const messageData: string = recievedData.slice(3, endIndex)
-        const message: Message = new Message(messageType)
+        const end_index: number = recieved_data.indexOf("\r\n\r\n")
+        const message_type: string = recieved_data.slice(0, 3)
+        const message_data: string = recieved_data.slice(3, end_index)
+        const message: Message = new Message(message_type)
 
-        recievedData = recievedData.slice(endIndex + 4)
+        recieved_data = recieved_data.slice(end_index + 4)
         //handling message
-        if (messageType == "MSG"){
-            message.mdata = "SERVER MESSAGE: " + messageData
-            message.mresolve = "print"
+        if (message_type == "MSG"){
+            message.message_data = "SERVER MESSAGE: " + message_data
+            message.message_resolve = "print"
         }           
         //handling error message
-        else if (messageType == "ERR"){
-            message.mdata = "ERROR: " + messageData
-            message.mresolve = "print"
+        else if (message_type == "ERR"){
+            message.message_data = "ERROR: " + message_data
+            message.message_resolve = "print"
         }
         //handling get_options data
-        else if (messageType == "OPT"){
-            message.mdata= JSON.parse(messageData)
-            message.mresolve = "print"
+        else if (message_type == "OPT"){
+            message.message_data= JSON.parse(message_data)
+            message.message_resolve = "print"
         }
-        //handling get_joinlist data
-        else if (messageType == "JLS"){
-            let data = ""
-            const joinlist = JSON.parse(messageData)
-            for (let i = 0; i < joinlist.length; i++){
-                data += joinDataReadable(joinlist[i])
-            }
-            message.mdata = data
-            message.mresolve = "print"
+        //handling get_join_list data
+        else if (message_type == "JLS"){
+            message.message_data = JSON.parse(message_data)
+            message.message_resolve = "return"
         }
-        else if (messageType == "JDT"){
-            message.mdata = joinDataReadable(JSON.parse(messageData))
-            message.mresolve = "print"
+        else if (message_type == "JDT"){
+            message.message_data = JSON.parse(message_data)
+            message.message_resolve = "return"
         }
-        else if (messageType == "NCE"){
-            message.mdata = messageData
-            message.mresolve = "return"
+        else if (message_type == "NCE"){
+            message.message_data = message_data
+            message.message_resolve = "return"
         }
         //handling send_utxo data
-        else if (messageType == "WTX"){
-            const data = JSON.parse(messageData)
-            if (isValidWTXData(data)){
-                message.mdata = data
-                message.mresolve = "return"
+        else if (message_type == "WTX"){
+            const data = JSON.parse(message_data)
+            if (is_valid_wtx_data(data)){
+                message.message_data = data
+                message.message_resolve = "return"
             }
             else {
                 throw Error("Incomplete wtx")
@@ -122,49 +117,34 @@ const processMessage = function (recievedData: string): Message[]{
         }
 
         //handling signed_tx data
-        else if (messageType == "STX"){
-            const data = JSON.parse(messageData)
-            if (isValidSTX(data)){
-                message.mdata = data["stx"]
-                message.mresolve = "cache"
-                message.setCacheTimeout(data["timeout"])
+        else if (message_type == "STX"){
+            const data = JSON.parse(message_data)
+            if (is_valid_stx_data(data)){
+                message.message_data = data["stx"]
+                message.message_resolve = "cache"
+                message.set_cache_timeout(data["timeout"])
             }
             else {
                 throw new Error("incomplete stx")
             }
             
         }
-        else if (messageType == "TXD"){
-            message.mdata = messageData
-            message.mresolve = "return"
+        else if (message_type == "TXD"){
+            message.message_data = message_data
+            message.message_resolve = "return"
         }
         else {
-            message.mtype = "UND"
-            message.mdata = undefined
+            message.message_type = "UND"
+            message.message_data = undefined
         }
         messages.push(message)
     }
     return messages
 }
 
-const joinDataReadable = function(join: any) {
-    let state = "inputs"
-    if (join["state"] == consts.COLLECT_SIGS){
-        state = "signatures"
-    }
-    let message = `Join ID: ${join["id"]}`
-    message += `\n\tAsset Name: ${join["asset_name"]}`
-    message += `\n\tNetwork ID: ${join["networkID"]}`
-    message += `\n\tBase amount: ${join["base_amount"]}`
-    message += `\n\tTotal amount (with fees): ${join["total_amount"]}`
-    message += `\n\tState: Collect ${state}`
-    message += `\n\tTotal ${state} collected:  ${join["current_input_count"]}/${join["input_limit"]}\r\n`
-    return message
-}
-
-const constructHeaderOptions = function (content: any): any{
+const construct_header_options = function (content: any): any{
     const options = {
-        host: "192.168.129.105",
+        host: "100.64.15.72",
         port: "65432",
         method: "POST",
         headers: {
@@ -174,29 +154,29 @@ const constructHeaderOptions = function (content: any): any{
     return options
 }
 
-const sendRecieve = function (sendData: any): Promise<any[]> {
-    const returnDataString = JSON.stringify(sendData)
-    const options = constructHeaderOptions(returnDataString)
+const send_recieve = function (sendData: any): Promise<any[]> {
+    const return_data_string = JSON.stringify(sendData)
+    const options = construct_header_options(return_data_string)
     return new Promise((resolve, reject) => {
         const cache = []
         let timeout = undefined
         const req = request(options, res => {
             res.on("data", d => {
-                let recievedData = d.toString()
-                const messages = processMessage(recievedData)
+                let recieved_data = d.toString()
+                const messages = process_message(recieved_data)
                 messages.forEach(item => {
-                    if (item.mresolve == "print"){
-                        console.log(item.mdata)
+                    if (item.message_resolve == "print"){
+                        console.log(item.message_data)
                     }
-                    else if (item.mresolve == "return"){
-                        cache.push(item.mdata)
+                    else if (item.message_resolve == "return"){
+                        cache.push(item.message_data)
                         resolve(cache)
                     }
-                    else if (item.mresolve == "cache"){
-                        cache.push(item.mdata)
-                        if (item.getCacheTimeout()){
-                            if (!timeout || timeout > item.getCacheTimeout()){
-                                timeout = item.getCacheTimeout()
+                    else if (item.message_resolve == "cache"){
+                        cache.push(item.message_data)
+                        if (item.get_cache_timeout()){
+                            if (!timeout || timeout > item.get_cache_timeout()){
+                                timeout = item.get_cache_timeout()
                             }
                         }
                     }
@@ -208,10 +188,10 @@ const sendRecieve = function (sendData: any): Promise<any[]> {
             })
 
         })
-        req.write(returnDataString)
+        req.write(return_data_string)
         req.end()
     })
     
 }
 
-export { processMessage, constructHeaderOptions, sendRecieve }
+export { process_message, construct_header_options, send_recieve }

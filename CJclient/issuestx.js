@@ -40,24 +40,24 @@ var avalanche_1 = require("@avalabs/avalanche-wallet-sdk/node_modules/avalanche"
 var avm_1 = require("@avalabs/avalanche-wallet-sdk/node_modules/avalanche/dist/apis/avm");
 var avalancheutils_1 = require("./avalancheutils");
 var bintools = avalanche_1.BinTools.getInstance();
-var issuetx = function (data, networkID) { return __awaiter(void 0, void 0, void 0, function () {
-    var networkData, stxBuf, stx, id, status;
+var issuetx = function (data, network_ID) { return __awaiter(void 0, void 0, void 0, function () {
+    var network_data, stx_buf, stx, id, status;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
-                networkData = avalancheutils_1.generatexchain(networkID);
+                network_data = avalancheutils_1.generate_xchain(network_ID);
                 console.log("issuing tx");
-                stxBuf = new avalanche_1.Buffer(data);
+                stx_buf = new avalanche_1.Buffer(data);
                 stx = new avm_1.Tx();
-                stx.fromBuffer(stxBuf);
-                return [4 /*yield*/, networkData.xchain.issueTx(stx)];
+                stx.fromBuffer(stx_buf);
+                return [4 /*yield*/, network_data.xchain.issueTx(stx)];
             case 1:
                 id = _a.sent();
                 status = "";
                 _a.label = 2;
             case 2:
                 if (!(status != "Accepted" && status != "Rejected")) return [3 /*break*/, 4];
-                return [4 /*yield*/, networkData.xchain.getTxStatus(id)];
+                return [4 /*yield*/, network_data.xchain.getTxStatus(id)];
             case 3:
                 status = _a.sent();
                 return [3 /*break*/, 2];

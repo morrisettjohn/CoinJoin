@@ -1,16 +1,16 @@
 var avm_1 = require("@avalabs/avalanche-wallet-sdk/node_modules/avalanche/dist/apis/avm");
 var avalanche_1 = require("@avalabs/avalanche-wallet-sdk/node_modules/avalanche");
-const { generatexchain } = require("../../CJclient/avalancheutils");
+const { generate_xchain } = require("../../CJclient/avalancheutils");
 
-process.stdin.on("data", data => processData(data))
+process.stdin.on("data", data => process_data(data))
 
 const bintools = avalanche_1.BinTools.getInstance()
 
-const processData = function(data){
+const process_data = function(data){
     data = JSON.parse(data)
 
-    const networkData = generatexchain(data["networkID"])
-    const output_buf = new avalanche_1.Buffer(data["outBuf"])
+    const network_data = generate_xchain(data["network_ID"])
+    const output_buf = new avalanche_1.Buffer(data["out_buf"])
     const output = new avm_1.TransferableOutput()
     try {
         output.fromBuffer(output_buf)
@@ -20,17 +20,16 @@ const processData = function(data){
     }
     
     const amount = output.getOutput().getAmount().toString()
-    const assetID = bintools.cb58Encode(output.getAssetID())
+    const asset_ID = bintools.cb58Encode(output.getAssetID())
     
-    const outAddrLen = output.getOutput().getAddresses().length
-    if (outAddrLen != 1){
-        throw new Error("address has multiple out addresses associated with it")
+    if (output.getOutput().getAddresses().length > 1){
+        throw new Error("output has multiple out address associated with it")
     }
 
-    const outputAddrBuf = output.getOutput().getAddress(0)
-    const outputAddr = networkData.xchain.addressFromBuffer(outputAddrBuf)
+    const output_addr_buf = output.getOutput().getAddress(0)
+    const output_addr = network_data.xchain.addressFromBuffer(output_addr_buf)
 
-    const returnData = JSON.stringify({"amt": amount, "assetID": assetID, "outputAddr": outputAddr})
+    const return_data = JSON.stringify({"amt": amount, "asset_ID": asset_ID, "output_addr": output_addr})
 
-    process.stdout.write(returnData)
+    process.stdout.write(return_data)
 }

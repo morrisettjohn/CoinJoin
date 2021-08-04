@@ -42,37 +42,37 @@ var consts = require("./constants");
 var avalancheutils_1 = require("./avalancheutils");
 var avalanche_wallet_sdk_1 = require("@avalabs/avalanche-wallet-sdk");
 var bintools = avalanche_1.BinTools.getInstance();
-var requestNonce = function (joinid, pubaddr, privatekey, networkID) { return __awaiter(void 0, void 0, void 0, function () {
-    var networkData, keyType, sendData, nonce, _a, _b, sig, keyData, mwallet;
+var request_nonce = function (join_ID, pub_addr, private_key, network_ID) { return __awaiter(void 0, void 0, void 0, function () {
+    var network_data, key_type, send_data, nonce, _a, _b, sig, key_data, my_wallet;
     return __generator(this, function (_c) {
         switch (_c.label) {
             case 0:
-                networkData = avalancheutils_1.generatexchain(networkID);
-                keyType = avalancheutils_1.getKeyType(privatekey);
-                sendData = {
-                    "joinid": joinid,
-                    "messagetype": consts.REQUEST_TO_JOIN,
-                    "pubaddr": pubaddr
+                network_data = avalancheutils_1.generate_xchain(network_ID);
+                key_type = avalancheutils_1.get_key_type(private_key);
+                send_data = {
+                    "join_ID": join_ID,
+                    "message_type": consts.REQUEST_TO_JOIN,
+                    "pub_addr": pub_addr
                 };
                 _b = (_a = avalanche_1.Buffer).from;
-                return [4 /*yield*/, processmessage_1.sendRecieve(sendData)];
+                return [4 /*yield*/, processmessage_1.send_recieve(send_data)];
             case 1:
                 nonce = _b.apply(_a, [(_c.sent())[0]]);
                 sig = undefined;
-                if (!(keyType == 0)) return [3 /*break*/, 2];
-                keyData = avalancheutils_1.generatekeychain(networkData.xchain, privatekey);
-                sig = keyData.myKeyPair.sign(nonce);
+                if (!(key_type == 0)) return [3 /*break*/, 2];
+                key_data = avalancheutils_1.generate_key_chain(network_data.xchain, private_key);
+                sig = key_data.my_key_pair.sign(nonce);
                 return [3 /*break*/, 4];
             case 2:
-                if (!(keyType == 1)) return [3 /*break*/, 4];
-                mwallet = avalanche_wallet_sdk_1.MnemonicWallet.fromMnemonic(privatekey);
-                return [4 /*yield*/, mwallet.resetHdIndices()];
+                if (!(key_type == 1)) return [3 /*break*/, 4];
+                my_wallet = avalanche_wallet_sdk_1.MnemonicWallet.fromMnemonic(private_key);
+                return [4 /*yield*/, my_wallet.resetHdIndices()];
             case 3:
                 _c.sent();
-                sig = mwallet.getSigFromUTX(nonce, mwallet.getExternalAddressesX().indexOf(pubaddr));
+                sig = my_wallet.getSigFromUTX(nonce, my_wallet.getExternalAddressesX().indexOf(pub_addr));
                 _c.label = 4;
-            case 4: return [2 /*return*/, sig];
+            case 4: return [2 /*return*/, sig.slice(0, 128)];
         }
     });
 }); };
-exports.requestNonce = requestNonce;
+exports.request_nonce = request_nonce;

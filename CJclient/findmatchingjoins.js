@@ -38,23 +38,30 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 exports.__esModule = true;
 var processmessage_1 = require("./processmessage");
 var consts = require("./constants");
-var findMatchingJoins = function (assetID, assetamount, networkID, min_users, max_users) { return __awaiter(void 0, void 0, void 0, function () {
-    var returnData;
+var find_matching_joins = function (asset_ID, asset_amount, network_ID, min_users, max_users) { return __awaiter(void 0, void 0, void 0, function () {
+    var return_data, join_list;
     return __generator(this, function (_a) {
-        returnData = {
-            "messagetype": consts.SELECT_OPTIONS,
-            "assetID": assetID,
-            "assetamount": assetamount,
-            "networkID": networkID
-        };
-        if (min_users) {
-            returnData["min_users"] = min_users;
+        switch (_a.label) {
+            case 0:
+                return_data = {
+                    "message_type": consts.SELECT_OPTIONS,
+                    "asset_ID": asset_ID,
+                    "asset_amount": asset_amount,
+                    "network_ID": network_ID
+                };
+                if (min_users) {
+                    return_data["min_users"] = min_users;
+                }
+                if (max_users) {
+                    return_data["max_users"] = max_users;
+                }
+                return [4 /*yield*/, processmessage_1.send_recieve(return_data)];
+            case 1:
+                join_list = (_a.sent())[0];
+                console.log(join_list);
+                console.log("hi");
+                return [2 /*return*/, join_list];
         }
-        if (max_users) {
-            returnData["max_users"] = max_users;
-        }
-        processmessage_1.sendRecieve(returnData);
-        return [2 /*return*/];
     });
 }); };
-exports.findMatchingJoins = findMatchingJoins;
+exports.find_matching_joins = find_matching_joins;

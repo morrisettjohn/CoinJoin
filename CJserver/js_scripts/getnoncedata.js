@@ -1,24 +1,23 @@
 var avm_1 = require("@avalabs/avalanche-wallet-sdk/node_modules/avalanche/dist/apis/avm");
 var avalanche_1 = require("@avalabs/avalanche-wallet-sdk/node_modules/avalanche");
-const { generatexchain } = require("../../CJclient/avalancheutils");
+const { generate_xchain } = require("../../CJclient/avalancheutils");
 
-process.stdin.on("data", data => processData(data))
+process.stdin.on("data", data => process_data(data))
 
-const processData = function(data) {
+const process_data = function(data) {
 
     data = JSON.parse(data)
 
-
     const msg = avalanche_1.Buffer.from(data["msg"])
     const signed_msg = avalanche_1.Buffer.from(data["signed_msg"])
-    const networkID = data["networkID"]
-    const networkData = generatexchain(networkID)
+    const network_ID = data["network_ID"]
+    const network_data = generate_xchain(network_ID)
 
-    const keyPair = new avm_1.KeyPair()
-    const nonceAddrBuf = keyPair.addressFromPublicKey(keyPair.recover(msg, signed_msg))
-    const nonceAddr = networkData.xchain.addressFromBuffer(nonceAddrBuf)
+    const key_pair = new avm_1.KeyPair()
+    const nonce_addr_buf = key_pair.addressFromPublicKey(key_pair.recover(msg, signed_msg))
+    const nonce_addr = network_data.xchain.addressFromBuffer(nonce_addr_buf)
 
-    const returnData = JSON.stringify({"nonceAddr": nonceAddr})
+    const return_data = JSON.stringify({"nonce_addr": nonce_addr})
     
-    process.stdout.write(returnData)
+    process.stdout.write(return_data)
 }

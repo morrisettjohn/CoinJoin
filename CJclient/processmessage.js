@@ -1,35 +1,34 @@
 "use strict";
 exports.__esModule = true;
 var http_1 = require("http");
-var consts = require("./constants");
 var Message = /** @class */ (function () {
-    function Message(mtype, mdata, mresolve, cachetimeout) {
-        this.mtype = mtype;
-        this.mdata = mdata;
-        this.mresolve = mresolve;
-        if (this.mresolve == "cache") {
-            this.cachetimeout = cachetimeout;
+    function Message(message_type, message_data, message_resolve, cache_timeout) {
+        this.message_type = message_type;
+        this.message_data = message_data;
+        this.message_resolve = message_resolve;
+        if (this.message_resolve == "cache") {
+            this.cache_timeout = cache_timeout;
         }
         else {
-            this.cachetimeout = undefined;
+            this.cache_timeout = undefined;
         }
     }
-    Message.prototype.setCacheTimeout = function (mlSecs) {
-        if (this.mresolve = "cache") {
-            this.cachetimeout = mlSecs;
+    Message.prototype.set_cache_timeout = function (mlsecs) {
+        if (this.message_resolve = "cache") {
+            this.cache_timeout = mlsecs;
         }
         else {
-            throw new Error("can only apply a cachetimeout");
+            throw new Error("can only apply a cache_timeout");
         }
     };
-    Message.prototype.getCacheTimeout = function () {
-        return this.cachetimeout;
+    Message.prototype.get_cache_timeout = function () {
+        return this.cache_timeout;
     };
-    Message.messagetypes = ["MSG", "ERR", "OPT", "JLS", "JDT", "NCE", "WTX", "STX", "TXD", "UND"];
-    Message.resolvetypes = ["cache", "return", "print"];
+    Message.message_types = ["MSG", "ERR", "OPT", "JLS", "JDT", "NCE", "WTX", "STX", "TXD", "UND"];
+    Message.resolve_types = ["cache", "return", "print"];
     return Message;
 }());
-var isValidWTXData = function (data) {
+var is_valid_wtx_data = function (data) {
     return true;
     if (!("inputs" in data && "outputs" in data)) {
         return false;
@@ -49,7 +48,7 @@ var isValidWTXData = function (data) {
     });
     return true;
 };
-var isValidSTX = function (data) {
+var is_valid_stx_data = function (data) {
     return true;
     /*XXX fix later
     if (!("signatures" in data && "transaction" in data)){
@@ -60,101 +59,82 @@ var isValidSTX = function (data) {
     }
     return true*/
 };
-//takes a message from the coinjoin server and processes it, using a 3 character prefix as a messagetype
-var processMessage = function (recievedData) {
+//takes a message from the coinjoin server and processes it, using a 3 character prefix as a message_type
+var process_message = function (recieved_data) {
     var messages = [];
-    while (recievedData.indexOf("\r\n\r\n") != -1) {
-        var endIndex = recievedData.indexOf("\r\n\r\n");
-        var messageType = recievedData.slice(0, 3);
-        var messageData = recievedData.slice(3, endIndex);
-        var message = new Message(messageType);
-        recievedData = recievedData.slice(endIndex + 4);
+    while (recieved_data.indexOf("\r\n\r\n") != -1) {
+        var end_index = recieved_data.indexOf("\r\n\r\n");
+        var message_type = recieved_data.slice(0, 3);
+        var message_data = recieved_data.slice(3, end_index);
+        var message = new Message(message_type);
+        recieved_data = recieved_data.slice(end_index + 4);
         //handling message
-        if (messageType == "MSG") {
-            message.mdata = "SERVER MESSAGE: " + messageData;
-            message.mresolve = "print";
+        if (message_type == "MSG") {
+            message.message_data = "SERVER MESSAGE: " + message_data;
+            message.message_resolve = "print";
         }
         //handling error message
-        else if (messageType == "ERR") {
-            message.mdata = "ERROR: " + messageData;
-            message.mresolve = "print";
+        else if (message_type == "ERR") {
+            message.message_data = "ERROR: " + message_data;
+            message.message_resolve = "print";
         }
         //handling get_options data
-        else if (messageType == "OPT") {
-            message.mdata = JSON.parse(messageData);
-            message.mresolve = "print";
+        else if (message_type == "OPT") {
+            message.message_data = JSON.parse(message_data);
+            message.message_resolve = "print";
         }
-        //handling get_joinlist data
-        else if (messageType == "JLS") {
-            var data = "";
-            var joinlist = JSON.parse(messageData);
-            for (var i = 0; i < joinlist.length; i++) {
-                data += joinDataReadable(joinlist[i]);
-            }
-            message.mdata = data;
-            message.mresolve = "print";
+        //handling get_join_list data
+        else if (message_type == "JLS") {
+            message.message_data = JSON.parse(message_data);
+            message.message_resolve = "return";
         }
-        else if (messageType == "JDT") {
-            message.mdata = joinDataReadable(JSON.parse(messageData));
-            message.mresolve = "print";
+        else if (message_type == "JDT") {
+            message.message_data = JSON.parse(message_data);
+            message.message_resolve = "return";
         }
-        else if (messageType == "NCE") {
-            message.mdata = messageData;
-            message.mresolve = "return";
+        else if (message_type == "NCE") {
+            message.message_data = message_data;
+            message.message_resolve = "return";
         }
         //handling send_utxo data
-        else if (messageType == "WTX") {
-            var data = JSON.parse(messageData);
-            if (isValidWTXData(data)) {
-                message.mdata = data;
-                message.mresolve = "return";
+        else if (message_type == "WTX") {
+            var data = JSON.parse(message_data);
+            if (is_valid_wtx_data(data)) {
+                message.message_data = data;
+                message.message_resolve = "return";
             }
             else {
                 throw Error("Incomplete wtx");
             }
         }
         //handling signed_tx data
-        else if (messageType == "STX") {
-            var data = JSON.parse(messageData);
-            if (isValidSTX(data)) {
-                message.mdata = data["stx"];
-                message.mresolve = "cache";
-                message.setCacheTimeout(data["timeout"]);
+        else if (message_type == "STX") {
+            var data = JSON.parse(message_data);
+            if (is_valid_stx_data(data)) {
+                message.message_data = data["stx"];
+                message.message_resolve = "cache";
+                message.set_cache_timeout(data["timeout"]);
             }
             else {
                 throw new Error("incomplete stx");
             }
         }
-        else if (messageType == "TXD") {
-            message.mdata = messageData;
-            message.mresolve = "return";
+        else if (message_type == "TXD") {
+            message.message_data = message_data;
+            message.message_resolve = "return";
         }
         else {
-            message.mtype = "UND";
-            message.mdata = undefined;
+            message.message_type = "UND";
+            message.message_data = undefined;
         }
         messages.push(message);
     }
     return messages;
 };
-exports.processMessage = processMessage;
-var joinDataReadable = function (join) {
-    var state = "inputs";
-    if (join["state"] == consts.COLLECT_SIGS) {
-        state = "signatures";
-    }
-    var message = "Join ID: " + join["id"];
-    message += "\n\tAsset Name: " + join["asset_name"];
-    message += "\n\tNetwork ID: " + join["networkID"];
-    message += "\n\tBase amount: " + join["base_amount"];
-    message += "\n\tTotal amount (with fees): " + join["total_amount"];
-    message += "\n\tState: Collect " + state;
-    message += "\n\tTotal " + state + " collected:  " + join["current_input_count"] + "/" + join["input_limit"] + "\r\n";
-    return message;
-};
-var constructHeaderOptions = function (content) {
+exports.process_message = process_message;
+var construct_header_options = function (content) {
     var options = {
-        host: "192.168.129.105",
+        host: "100.64.15.72",
         port: "65432",
         method: "POST",
         headers: {
@@ -163,30 +143,30 @@ var constructHeaderOptions = function (content) {
     };
     return options;
 };
-exports.constructHeaderOptions = constructHeaderOptions;
-var sendRecieve = function (sendData) {
-    var returnDataString = JSON.stringify(sendData);
-    var options = constructHeaderOptions(returnDataString);
+exports.construct_header_options = construct_header_options;
+var send_recieve = function (sendData) {
+    var return_data_string = JSON.stringify(sendData);
+    var options = construct_header_options(return_data_string);
     return new Promise(function (resolve, reject) {
         var cache = [];
         var timeout = undefined;
         var req = http_1.request(options, function (res) {
             res.on("data", function (d) {
-                var recievedData = d.toString();
-                var messages = processMessage(recievedData);
+                var recieved_data = d.toString();
+                var messages = process_message(recieved_data);
                 messages.forEach(function (item) {
-                    if (item.mresolve == "print") {
-                        console.log(item.mdata);
+                    if (item.message_resolve == "print") {
+                        console.log(item.message_data);
                     }
-                    else if (item.mresolve == "return") {
-                        cache.push(item.mdata);
+                    else if (item.message_resolve == "return") {
+                        cache.push(item.message_data);
                         resolve(cache);
                     }
-                    else if (item.mresolve == "cache") {
-                        cache.push(item.mdata);
-                        if (item.getCacheTimeout()) {
-                            if (!timeout || timeout > item.getCacheTimeout()) {
-                                timeout = item.getCacheTimeout();
+                    else if (item.message_resolve == "cache") {
+                        cache.push(item.message_data);
+                        if (item.get_cache_timeout()) {
+                            if (!timeout || timeout > item.get_cache_timeout()) {
+                                timeout = item.get_cache_timeout();
                             }
                         }
                     }
@@ -196,8 +176,8 @@ var sendRecieve = function (sendData) {
                 }
             });
         });
-        req.write(returnDataString);
+        req.write(return_data_string);
         req.end();
     });
 };
-exports.sendRecieve = sendRecieve;
+exports.send_recieve = send_recieve;

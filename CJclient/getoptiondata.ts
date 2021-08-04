@@ -1,11 +1,11 @@
-import { sendRecieve } from "./processmessage"
+import { send_recieve } from "./processmessage"
 import * as consts from "./constants"
 
-const getoptiondata = async(): Promise<any> => {
-    const returnData = {
-        "messagetype": consts.START_PROCESS
+const get_option_data = async(): Promise<any> => {
+    const return_data = {
+        "message_type": consts.START_PROCESS
     }
-    sendRecieve(returnData)
+    send_recieve(return_data)
 }
 
-export { getoptiondata }
+export { get_option_data }

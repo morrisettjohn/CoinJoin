@@ -1,21 +1,23 @@
-import { exitcj } from "../exitcj"
+import { exit_cj } from "../exitcj"
 import { tests, wtests } from "./testaddrs";
-import { findMatchingJoins } from "../findmatchingjoins";
-import { getjoindata } from "../getjoindata";
-import { getoptiondata } from "../getoptiondata"
-import { fullcjtx } from "../cjtxtypes";
+import { find_matching_joins } from "../findmatchingjoins";
+import { get_join_data } from "../getjoindata";
+import { get_option_data } from "../getoptiondata"
+import { full_cj_tx } from "../cjtxtypes";
+import { join_data_readable } from "../utils";
 import { Defaults } from "@avalabs/avalanche-wallet-sdk/node_modules/avalanche/dist/utils";
 
 
+
 const JOIN = "join"
-const OPTIONS = "getoptions"
-const JOININFO = "joininfo"
+const OPTIONS = "get_options"
+const JOININFO = "join_info"
 const SEARCH = "search"
 const EXIT = "exit"
 const INFO = "info"
 const commands = [JOIN, OPTIONS, JOININFO, SEARCH, EXIT, INFO]
 
-const STDUSAGE = "usage: node coinjoin"
+const STD_USAGE = "usage: node coinjoin"
 const DESC = "description: "
 
 let args = process.argv.slice(2)
@@ -24,100 +26,71 @@ args = args.slice(1)
 
 const main = function(){
     if (command == JOIN){
-      cmdstartCJInstance()
+      cmd_start_cj_instance()
     }
     else if (command == OPTIONS){
-      cmdGetOptionData()
+      cmd_get_option_data()
     }
     else if (command == JOININFO){
-      cmdGetJoinData()
+      cmd_print_join_data()
     }
     else if (command == SEARCH){
-      cmdFindMatchingJoin()
+      cmd_find_matching_joins()
     }
     else if (command == EXIT){
-      cmdExitCJ()
+      cmd_exit_cj()
     }
     else if (command == INFO){
-      cmdHelp()
+      cmd_help()
     }
     else{
       console.log(`${command} is not a valid command, here is a list of valid commands\n`)
-      cmdHelp()
+      cmd_help()
     }
 }
 
-const cmdHelp = function(){
+const cmd_help = function(){
   console.log("run 'node coinjoin *command* help' for more information")
   commands.forEach(item => {
     console.log(`\t${item}`)
   })
 }
 
-const cmdstartCJInstance = async(): Promise<any> => {
-    const networkID = 5
-    const avaxAssetID: string = Defaults.network[networkID].X.avaxAssetID
-    let assetID = avaxAssetID
-    let inputamount = 1.15
-    let outputamount = 1
-    const joinid = parseInt(args[0])
-    let fromaddr = undefined
-    let toaddr = undefined
-    
-    if (args[1] in tests){
-      fromaddr = tests[args[1]]
-    }
-    else if (args[1] in wtests){
-      fromaddr = wtests[args[1]]
-    }
-    
-    if (args[2] in tests){
-      toaddr = tests[args[2]]
-    }
-    else if (args[2] in wtests){
-      toaddr = tests[args[2]]
-    }
-    
-    const networkid = parseInt(args[3])
-    
-    if (args.length > 4){
-      inputamount = parseFloat(args[4])
-    }
-    if (args.length > 5){
-      outputamount = parseFloat(args[5])
-    }
-    if (args.length > 6){
-      assetID = args[6]
-    }
+const cmd_start_cj_instance = async(): Promise<any> => {
+    const join_ID = parseInt(args[0])
+    const private_key = args[1]
+    const dest_addr = args[2]
+    const input_amount = parseFloat(args[3])
 
     if (args[0] == "help"){
       console.log(`${DESC} runs a complete transaction from start to finish, I.e. sends a valid input/output to the server and then signs\n`)
-      console.log(`${STDUSAGE} '${JOIN} *joinid* *fromaddr* *toaddr* *networkid* *inputamount?* *outputamount?* *assetID?*'`)
+      console.log(`${STD_USAGE} '${JOIN} (join_ID) (private_key) (dest_addr) [input_amount]'`)
     } 
     else {
-      fullcjtx(joinid, assetID, inputamount, outputamount, toaddr[0], fromaddr[0], fromaddr[1], networkid)
+      full_cj_tx(join_ID, private_key, dest_addr, input_amount)
     }
 }
 
-const cmdGetOptionData = function(){
+const cmd_get_option_data = function(){
   if (args[0] == "help"){
     console.log(`${DESC} gets the cj server's options for coinjoins, e.g. assetid/name, denominations, etc\n`)
-    console.log(`${STDUSAGE} ${OPTIONS}`)
+    console.log(`${STD_USAGE} ${OPTIONS}`)
   } else {
-    getoptiondata()
+    get_option_data()
   }
 }
 
-const cmdGetJoinData = function() {
+const cmd_print_join_data = async() => {
   if (args[0] == "help"){
     console.log(`${DESC} gets the data for a specific join that is in the CJ server.\n`)
-    console.log(`${STDUSAGE} ${JOININFO} *joinid*`)
+    console.log(`${STD_USAGE} ${JOININFO} (join_id)`)
   } else {
-    getjoindata(parseInt(args[0]))
+    const join_data = (await get_join_data(parseInt(args[0])))
+    console.log(join_data_readable(join_data))
   }
 }
 
-const cmdFindMatchingJoin = function() {
+const cmd_find_matching_joins = async() => {
     let min_users = undefined
     let max_users = undefined
 
@@ -130,16 +103,22 @@ const cmdFindMatchingJoin = function() {
     }
     if (args[0] == "help"){
         console.log(`${DESC} runs the matchmaking service on the CJ server with given paramaters, and returns back applicable joins\n`)
-        console.log(`${STDUSAGE} ${SEARCH} *assetid/name* *targetamount* *networkID* *min_users?* *max_users?*`)
+        console.log(`${STD_USAGE} ${SEARCH} (assetid | name) (targetamount) (networkID) [min_users] [max_users]`)
     } 
     else {
-        findMatchingJoins(args[0], parseInt(args[1]), parseInt(args[2]), min_users, max_users)
+        const join_list = (await find_matching_joins(args[0], parseInt(args[1]), parseInt(args[2]), min_users, max_users))
+        console.log(join_list)
+        let join_data = ""
+        join_list.forEach(item => {
+          join_data += join_data_readable(item)
+        })
+        console.log(join_data)
     }
 }
 
-const cmdExitCJ = function() {
+const cmd_exit_cj = function() {
 
-    const joinid = parseInt(args[0])
+    const join_ID = parseInt(args[0])
     const networkID = parseInt(args[1])
 
     let publickey = undefined
@@ -165,10 +144,12 @@ const cmdExitCJ = function() {
 
     if (args[0] == "help"){
         console.log(`${DESC} exits a particular coinjoin by signing a nonce\n`)
-        console.log(`${STDUSAGE} ${EXIT} *joinid* *networkID* *testkeypair / privatekey* *pubkey*`)
+        console.log(`${STD_USAGE} ${EXIT} (join_ID) (networkID) (testkeypair / privatekey) (pubkey)`)
     } 
     else {
-        exitcj(joinid, networkID, publickey, privatekey)
+        exit_cj(join_ID, networkID, publickey, privatekey)
     }
 }
+
+
 main()

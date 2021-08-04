@@ -38,15 +38,20 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 exports.__esModule = true;
 var processmessage_1 = require("./processmessage");
 var consts = require("./constants");
-var getjoindata = function (joinid) { return __awaiter(void 0, void 0, void 0, function () {
-    var returnData;
+var get_join_data = function (join_ID) { return __awaiter(void 0, void 0, void 0, function () {
+    var returnData, join_data;
     return __generator(this, function (_a) {
-        returnData = {
-            "messagetype": consts.GET_JOIN_DATA,
-            "joinid": joinid
-        };
-        processmessage_1.sendRecieve(returnData);
-        return [2 /*return*/];
+        switch (_a.label) {
+            case 0:
+                returnData = {
+                    "message_type": consts.GET_JOIN_DATA,
+                    "join_ID": join_ID
+                };
+                return [4 /*yield*/, processmessage_1.send_recieve(returnData)];
+            case 1:
+                join_data = (_a.sent())[0];
+                return [2 /*return*/, join_data];
+        }
     });
 }); };
-exports.getjoindata = getjoindata;
+exports.get_join_data = get_join_data;
