@@ -13,7 +13,7 @@ class User:
     def get_input_buf(self):
         if not self.input:
             return None
-        return self.input.raw_buffer
+        return self.input.raw_buf
 
     def get_input_amount(self):
         if not self.input:
@@ -33,7 +33,7 @@ class User:
     def get_output_buf(self):
         if not self.output:
             return None
-        return self.output.raw_buffer
+        return self.output.raw_buf
     
     def get_output_amount(self):
         if not self.output:
@@ -61,7 +61,7 @@ class User:
     def get_sig_buf(self):
         if not self.sig:
             return None
-        return self.sig.raw_buffer
+        return self.sig.raw_buf
 
     def get_sig_addr(self):
         if not self.sig:
@@ -91,7 +91,7 @@ class UserList:
     def get_all_inputs(self):
         inputs = []
         for user in self.user_list:
-            inputs.append(user.input.raw_buffer)
+            inputs.append(user.input.raw_buf)
         return inputs
 
     def remove_all_sigs(self):
@@ -101,7 +101,7 @@ class UserList:
     def get_all_outputs(self):
         outputs = []
         for user in self.user_list:
-            outputs.append(user.output.raw_buffer)
+            outputs.append(user.output.raw_buf)
         return outputs
 
     def reset_list(self):

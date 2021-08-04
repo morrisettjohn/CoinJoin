@@ -193,7 +193,7 @@ class JoinState:
             result.check_returncode()
         except Exception:
             print(result.stderr)
-            raise Exception("bad transaction data")
+            raise Exception(result.stderr)
         
         wtx_buf = convert_to_jsbuffer(result.stdout)
         return wtx_buf
@@ -310,6 +310,7 @@ class JoinState:
                                                     self.wtx = self.craft_wtx()
                                                 except Exception:
                                                     print("bad unsigned transaction")
+                                                    print(Exception.with_traceback())
                                                     self.send_err_to_all("bad unsigned transaction data.  Send input again")
                                                     self.reset_join()
                                                     return

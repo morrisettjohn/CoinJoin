@@ -35,7 +35,7 @@ const process_data = function(data){
 
     const asset_ID_buf = bintools.cb58Decode(fee_data["asset_ID"])
 
-    const fee_addr = [networkData.xchain.parseAddress(fee_data["address"])]
+    const fee_addr = [network_data.xchain.parseAddress(fee_data["address"])]
     const secp_fee_output = new avm_1.SECPTransferOutput(new avalanche_1.BN(fee_data["amount"]), fee_addr)
     const fee_output = new avm_1.TransferableOutput(asset_ID_buf, secp_fee_output)
     outputs.push(fee_output)

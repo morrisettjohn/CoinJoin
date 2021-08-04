@@ -201,7 +201,7 @@ var send_data = function (join_ID, pub_addr, ticket, input, output) { return __a
                 log_data = "successfully joined CJ of tx_ID " + join_ID + " using address " + pub_addr + ".";
                 console.log(log_data);
                 loginfo_1.log_info(log_data);
-                return [2 /*return*/, [recieved_data]];
+                return [2 /*return*/, recieved_data];
         }
     });
 }); };

@@ -182,7 +182,7 @@ const send_data = async(join_ID: number, pub_addr: string, ticket: any,
     console.log(log_data)
     log_info(log_data)
 
-    return [recieved_data]
+    return recieved_data
 }
 
 

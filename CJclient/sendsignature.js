@@ -52,14 +52,18 @@ var send_signature = function (join_ID, data, pub_addr, private_key, network_ID,
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
+                console.log("1");
+                console.log(data);
                 network_data = avalancheutils_1.generate_xchain(network_ID);
                 key_type = avalancheutils_1.get_key_type(private_key);
                 tx_buf = avalanche_1.Buffer.from(data);
+                console.log(tx_buf);
                 unsigned_tx = new avm_1.UnsignedTx();
                 unsigned_tx.fromBuffer(tx_buf);
                 inputs = unsigned_tx.getTransaction().getIns();
                 outputs = unsigned_tx.getTransaction().getOuts();
                 msg = avalanche_1.Buffer.from(crypto_1.createHash("sha256").update(tx_buf).digest());
+                console.log("2");
                 sig_buf = undefined;
                 sig = new common_1.Signature();
                 if (!(key_type == 0)) return [3 /*break*/, 2];
@@ -86,6 +90,7 @@ var send_signature = function (join_ID, data, pub_addr, private_key, network_ID,
                 sig.fromBuffer(sig_string);
                 _a.label = 5;
             case 5:
+                console.log("3");
                 send_data = {
                     "join_ID": join_ID,
                     "message_type": consts.COLLECT_SIGS,

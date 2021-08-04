@@ -24,16 +24,21 @@ const bintools: BinTools = BinTools.getInstance()
 
 const send_signature = async(join_ID: number, data: any, pub_addr: string, private_key: string, network_ID: number,
     my_input?: TransferableInput, my_output?: TransferableOutput): Promise<any> => {
+    console.log("1")
+    console.log(data)
     const network_data = generate_xchain(network_ID)
     const key_type = get_key_type(private_key)
 
     const tx_buf: Buffer = Buffer.from(data)
+    console.log(tx_buf)
     const unsigned_tx: UnsignedTx = new UnsignedTx()
     unsigned_tx.fromBuffer(tx_buf)
     const inputs: TransferableInput[] = unsigned_tx.getTransaction().getIns()
     const outputs: TransferableOutput[] = unsigned_tx.getTransaction().getOuts()
     
     const msg = Buffer.from(createHash("sha256").update(tx_buf).digest())
+
+    console.log("2")
 
     let sig_buf: Buffer = undefined
     const sig: Signature = new Signature()
@@ -55,6 +60,7 @@ const send_signature = async(join_ID: number, data: any, pub_addr: string, priva
         
         sig.fromBuffer(sig_string)
     }
+    console.log("3")
 
     const send_data = {
         "join_ID": join_ID,
