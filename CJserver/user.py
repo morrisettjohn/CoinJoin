@@ -130,6 +130,8 @@ class UserList:
             if user.output != None:
                 if user.output.output_addr == output_addr:
                     return True
+                if user.pub_addr == output_addr:
+                    return True
         return False
 
     def get_user(self, user: str):

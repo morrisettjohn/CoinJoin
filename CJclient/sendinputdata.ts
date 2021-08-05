@@ -45,7 +45,6 @@ const send_input_data = async(join_ID: number, asset_ID: string, input_amount: n
         
     }
 
-
 const craft_input = function(input_amount: number, asset_ID: string, tx_ID: string, 
     tx_index: number, pubaddr: string, network_ID: number): TransferableInput {
 

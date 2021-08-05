@@ -21,6 +21,7 @@ const commands = [JOIN, OPTIONS, JOININFO, SEARCH, EXIT, INFO, RECORD, ADDRS, RE
 
 const STD_USAGE = "usage: node coinjoin"
 const DESC = "description: "
+const HELP = "help"
 
 let args = process.argv.slice(2)
 const command = args[0]
@@ -69,7 +70,7 @@ const cmd_help = function(){
 }
 
 const cmd_record_address = function(){
-  if (args[0] == INFO){
+  if (args[0] == INFO || args[0] == HELP){
     console.log(`${DESC} locally stores a private key with a username for easy access`)
     console.log(`${STD_USAGE} ${RECORD} (private key) (username)`)
   } 
@@ -81,7 +82,7 @@ const cmd_record_address = function(){
 }
 
 const cmd_remove_address = function(){
-  if (args[0] == INFO){
+  if (args[0] == INFO || args[0] == HELP){
     console.log(`${DESC} removes one of the locally stored keys.  Use node coinjoin addrs to get a list of stored addresses`)
     console.log(`${STD_USAGE} ${REM_ADDR} (username)`)
   }
@@ -92,7 +93,7 @@ const cmd_remove_address = function(){
 }
 
 const cmd_print_recorded_addrs = function(){
-  if (args[0] == INFO){
+  if (args[0] == INFO || args[0] == HELP){
     console.log(`${DESC} prints all stored private keys along with their usernames`)
     console.log(`${STD_USAGE} ${ADDRS}`)
   }
@@ -130,7 +131,7 @@ const cmd_start_cj_instance = async(): Promise<any> => {
       private_key = address_data[private_key]
     }
 
-    if (args[0] == INFO){
+    if (args[0] == INFO || args[0] == HELP){
       console.log(`${DESC} runs a complete transaction from start to finish, I.e. sends a valid input/output to the server and then signs`)
       console.log(`${STD_USAGE} ${JOIN} (join_ID) (private_key) (dest_addr) [input_amount]`)
     } 
@@ -140,7 +141,7 @@ const cmd_start_cj_instance = async(): Promise<any> => {
 }
 
 const cmd_get_option_data = function(){
-  if (args[0] == INFO){
+  if (args[0] == INFO || args[0] == HELP){
     console.log(`${DESC} gets the cj server's options for coinjoins, e.g. assetid/name, denominations, etc`)
     console.log(`${STD_USAGE} ${OPTIONS}`)
   } else {
@@ -149,7 +150,7 @@ const cmd_get_option_data = function(){
 }
 
 const cmd_print_join_data = async() => {
-  if (args[0] == INFO){
+  if (args[0] == INFO || args[0] == HELP){
     console.log(`${DESC} gets the data for a specific join that is in the CJ server.`)
     console.log(`${STD_USAGE} ${JOININFO} (join_id)`)
   } else {
@@ -169,7 +170,7 @@ const cmd_find_matching_joins = async() => {
     if (args.length > 4){
         max_users = parseInt(args[4])
     }
-    if (args[0] == INFO){
+    if (args[0] == INFO || args[0] == HELP){
         console.log(`${DESC} runs the matchmaking service on the CJ server with given paramaters, and returns back applicable joins`)
         console.log(`${STD_USAGE} ${SEARCH} (assetid | name) (targetamount) (networkID) [min_users] [max_users]`)
     } 
@@ -210,7 +211,7 @@ const cmd_exit_cj = function() {
     }
 
 
-    if (args[0] == INFO){
+    if (args[0] == INFO || args[0] == HELP){
         console.log(`${DESC} exits a particular coinjoin by signing a nonce`)
         console.log(`${STD_USAGE} ${EXIT} (join_ID) (networkID) (testkeypair / privatekey) (pubkey)`)
     } 
