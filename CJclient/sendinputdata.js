@@ -48,7 +48,7 @@ var loginfo_1 = require("./loginfo");
 //setting up the xchain object
 var bintools = avalanche_1.BinTools.getInstance();
 var send_input_data = function (join_ID, asset_ID, input_amount, output_amount, dest_addr, private_key, network_ID) { return __awaiter(void 0, void 0, void 0, function () {
-    var network_data, xchain, sent_data, tx_ID, tx_index, pub_addr_buf, pub_addr, input, output, ticket, recieved_data;
+    var network_data, xchain, sent_data, tx_ID, tx_index, pub_addr_buf, pub_addr, input, output, nonce_sig_pair, nonce, nonce_sig, recieved_data;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -65,8 +65,10 @@ var send_input_data = function (join_ID, asset_ID, input_amount, output_amount, 
                 output = craft_output(output_amount, asset_ID, dest_addr, network_ID);
                 return [4 /*yield*/, requestnonce_1.request_nonce(join_ID, pub_addr, private_key, network_ID)];
             case 2:
-                ticket = _a.sent();
-                return [4 /*yield*/, send_data(join_ID, pub_addr, ticket, input, output)];
+                nonce_sig_pair = _a.sent();
+                nonce = nonce_sig_pair[0];
+                nonce_sig = nonce_sig_pair[1];
+                return [4 /*yield*/, send_data(join_ID, pub_addr, nonce, nonce_sig, input, output)];
             case 3:
                 recieved_data = _a.sent();
                 return [2 /*return*/, [recieved_data, input, output, pub_addr]];
@@ -181,7 +183,7 @@ var send_target_amount = function (network_ID, private_key, input_amount, asset_
         }
     });
 }); };
-var send_data = function (join_ID, pub_addr, ticket, input, output) { return __awaiter(void 0, void 0, void 0, function () {
+var send_data = function (join_ID, pub_addr, nonce, nonce_sig, input, output) { return __awaiter(void 0, void 0, void 0, function () {
     var send_data, recieved_data, log_data;
     return __generator(this, function (_a) {
         switch (_a.label) {
@@ -190,7 +192,8 @@ var send_data = function (join_ID, pub_addr, ticket, input, output) { return __a
                     "join_ID": join_ID,
                     "message_type": consts.COLLECT_INPUTS,
                     "pub_addr": pub_addr,
-                    "ticket": ticket,
+                    "nonce": nonce,
+                    "nonce_sig": nonce_sig,
                     "input_buf": input.toBuffer(),
                     "output_buf": output.toBuffer()
                 };

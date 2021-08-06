@@ -10,7 +10,7 @@ const process_data = async(data) => {
     
     data = JSON.parse(data)
 
-    const newtork_data = generate_xchain(data["network_ID"])
+    const network_data = generate_xchain(data["network_ID"])
     const input_buf = new avalanche_1.Buffer(data["inp_buf"])
     const input = new avm_1.TransferableInput()
     try {
@@ -25,7 +25,7 @@ const process_data = async(data) => {
 
     let input_tx_string = ""
     try {
-        input_tx_string = await newtork_data.xchain.getTx(input_tx_ID)
+        input_tx_string = await network_data.xchain.getTx(input_tx_ID)
     }
     catch (e){
         throw new Error("Input was not found")
@@ -34,7 +34,15 @@ const process_data = async(data) => {
     input_tx.fromString(input_tx_string)
     const input_base_tx = input_tx.getUnsignedTx().getTransaction()
 
-    const input_address = newtork_data.xchain.addressFromBuffer(input_base_tx.getOuts()[input_tx_index].getOutput().getAddress(0))
+    const input_address = network_data.xchain.addressFromBuffer(input_base_tx.getOuts()[input_tx_index].getOutput().getAddress(0))
+    const user_utxos = (await network_data.xchain.getUTXOs(input_address)).utxos
+    
+    const utxo = user_utxos.getUTXO(input.getUTXOID())
+
+    if (!user_utxos.includes(utxo)) {
+        throw new Error("this utxo is not in the user's list")
+    }
+    
     if (input.getInput().getSigIdxs().length > 1){
         throw new Error("address requires multiple signers")
     }

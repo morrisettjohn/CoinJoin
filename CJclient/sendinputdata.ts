@@ -38,11 +38,13 @@ const send_input_data = async(join_ID: number, asset_ID: string, input_amount: n
         const input: TransferableInput = craft_input(input_amount, asset_ID, tx_ID, tx_index, pub_addr, network_ID)
         const output: TransferableOutput = craft_output(output_amount, asset_ID, dest_addr, network_ID)
 
-        const ticket = await request_nonce(join_ID, pub_addr, private_key, network_ID)
-        const recieved_data = await send_data(join_ID, pub_addr, ticket, input, output)
+        const nonce_sig_pair = await request_nonce(join_ID, pub_addr, private_key, network_ID)
+        const nonce = nonce_sig_pair[0]
+        const nonce_sig = nonce_sig_pair[1]
+
+        const recieved_data = await send_data(join_ID, pub_addr, nonce, nonce_sig, input, output)
 
         return [recieved_data, input, output, pub_addr]
-        
     }
 
 const craft_input = function(input_amount: number, asset_ID: string, tx_ID: string, 
@@ -57,8 +59,6 @@ const craft_input = function(input_amount: number, asset_ID: string, tx_ID: stri
     const tx_ID_buf: Buffer = bintools.cb58Decode(tx_ID)
     const output_idx = Buffer.alloc(4)
     output_idx.writeIntBE(tx_index, 0, 4)
-
-
 
     const secp_transfer_input:  SECPTransferInput = new SECPTransferInput(inp_amount)
     secp_transfer_input.addSignatureIdx(0, pub_addr_buf)
@@ -162,14 +162,15 @@ const send_target_amount = async(network_ID: number, private_key: string, input_
     return {"tx_ID": tx_ID, "tx_index": tx_index, "pub_addr_buf": pub_addr_buf}
 }
 
-const send_data = async(join_ID: number, pub_addr: string, ticket: any, 
+const send_data = async(join_ID: number, pub_addr: string, nonce: string, nonce_sig: Buffer ,
     input: TransferableInput, output: TransferableOutput): Promise<any> => {
 
     const send_data = {
         "join_ID": join_ID,
         "message_type": consts.COLLECT_INPUTS,
         "pub_addr": pub_addr,
-        "ticket": ticket,
+        "nonce": nonce,
+        "nonce_sig": nonce_sig,
         "input_buf": input.toBuffer(),
         "output_buf": output.toBuffer()
     }
@@ -183,11 +184,5 @@ const send_data = async(join_ID: number, pub_addr: string, ticket: any,
 
     return recieved_data
 }
-
-
-
-
-
-
 
 export { send_input_data }

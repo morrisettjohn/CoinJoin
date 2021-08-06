@@ -1,5 +1,5 @@
 import { KeyPair, Tx as StandardTx} from "avalanche/dist/apis/avm"
-import { generatekeychain, generatexchain } from "../../avalancheutils"
+import { generate_key_chain, generate_xchain } from "../../avalancheutils"
 import { Buffer, Mnemonic, HDNode, BN, BinTools } from "avalanche"
 import { randomBytes } from "crypto"
 import { Wallet } from "ethers"
@@ -20,14 +20,36 @@ const mnemonicKey = "dismiss spoon penalty gentle unable music buffalo cause bun
 const bintools: BinTools = BinTools.getInstance()
 
 const test = async(networkID: number): Promise<any> => {
-    const networkData = generatexchain(5)
-    const keyData = generatekeychain(networkData.xchain, "PrivateKey-ryjZWerx1vRgQnFrLJ9oxBYUS7TdMRNrBLmSAAP78L4xixvT2")
+    const networkData = generate_xchain(5)
+    const keyData = generate_key_chain(networkData.xchain, "PrivateKey-2t6UmFMctYnZXMY1BFYF41k97ZAtcedN1U9GiQiGQzmzU21oBY")
+    const xchain = networkData.xchain
 
-    const x = keyData.myKeyPair.sign(new Buffer("hi"))
+    const q = "MtyBi5hmr3Xan22cQcJ4a6E4Bd3i9hZiv4rC9dw9KYFpdoyGG"
+    const u = "2GBGr6CdKFpoDzd7YiS3Vu8XpRjUCqcxHvQ7EKTZBwy3zE8Gv2"
 
-    const addr = keyData.myKeyPair.recover(new Buffer("hi"), x)
-    const addr2 = keyData.myKeyPair.addressFromPublicKey(addr)
-    console.log(networkData.xchain.addressFromBuffer(addr2))
+    const output_idx = Buffer.alloc(4)
+    output_idx.writeIntBE(1, 0, 4)
+    const asset_ID = await xchain.getAVAXAssetID()
+
+    const secpinput = new SECPTransferInput(new BN(1.01))
+    const input = new TransferableInput(bintools.cb58Decode(u), output_idx, asset_ID, secpinput)
+
+    const tx: Tx = new Tx()
+    const x = await networkData.xchain.getTx("2GBGr6CdKFpoDzd7YiS3Vu8XpRjUCqcxHvQ7EKTZBwy3zE8Gv2")
+    tx.fromString(x)
+    const z = tx.getUnsignedTx().getTransaction().getIns()[0].getUTXOID()
+    const v = tx.getUnsignedTx().getTransaction().getIns()[0].getTxID()
+    const utxo = "E3uDJkVNtkH1Byoj7LPANd8mhXXtHq2WJodxRAL9wDvoYNz8a"
+    const y: UTXOSet = (await networkData.xchain.getUTXOs("X-fuji1d6fetyekv4ec5enm9ltuxrd6n70ng04rpxq443")).utxos
+    const n = y.getAllUTXOs()
+    const b = y.getAllUTXOStrings()
+
+    const e = y.getUTXO(input.getUTXOID())
+    console.log(y.includes(e))
+    
+    console.log(input.getUTXOID())
+
+
 }
 
 const args = process.argv.slice(2)

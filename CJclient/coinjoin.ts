@@ -120,8 +120,6 @@ const cmd_start_cj_instance = async(): Promise<any> => {
       input_amount = parseFloat(args[26])
     }
     else if (args.length == 3 || args.length == 4) {
-
-
       private_key = args[1]
       dest_addr = args[2]
       input_amount = parseFloat(args[3])
@@ -160,23 +158,18 @@ const cmd_print_join_data = async() => {
 }
 
 const cmd_find_matching_joins = async() => {
-    let min_users = undefined
-    let max_users = undefined
+    const asset_ID = args[0]
+    const asset_amount = parseFloat(args[1])
+    const network_ID = parseInt(args[2])
+    const min_users = parseInt(args[3])
+    const max_users = parseInt(args[4])
 
-    if (args.length > 3){
-        min_users = parseInt(args[3])
-    }
-    
-    if (args.length > 4){
-        max_users = parseInt(args[4])
-    }
     if (args[0] == INFO || args[0] == HELP){
         console.log(`${DESC} runs the matchmaking service on the CJ server with given paramaters, and returns back applicable joins`)
         console.log(`${STD_USAGE} ${SEARCH} (assetid | name) (targetamount) (networkID) [min_users] [max_users]`)
     } 
     else {
-        const join_list = (await find_matching_joins(args[0], parseInt(args[1]), parseInt(args[2]), min_users, max_users))
-        console.log(join_list)
+        const join_list = (await find_matching_joins(asset_ID, asset_amount, network_ID, min_users, max_users))
         let join_data = ""
         join_list.forEach(item => {
           join_data += join_data_readable(item)
@@ -188,37 +181,21 @@ const cmd_find_matching_joins = async() => {
 const cmd_exit_cj = function() {
 
     const join_ID = parseInt(args[0])
-    const networkID = parseInt(args[1])
-
-    let publickey = undefined
-    let privatekey = undefined
-
-    if (args[2] in tests){
-        privatekey = tests[args[2]][1]
-        publickey = tests[args[2]][0]
+    let private_key = args[1]
+    const address_data = get_address_data()
+    if (private_key in address_data) {
+      private_key = address_data[private_key]
     }
-
-    else  if (args[2] in wtests){
-            privatekey = wtests[args[2]][1]
-            if (args.length < 4){
-                throw new Error("not enough args")
-            }
-            publickey = args[3]
-    }
-    else {
-        privatekey = args[2]
-        publickey = args[3]
-    }
-
-
+    
     if (args[0] == INFO || args[0] == HELP){
         console.log(`${DESC} exits a particular coinjoin by signing a nonce`)
         console.log(`${STD_USAGE} ${EXIT} (join_ID) (networkID) (testkeypair / privatekey) (pubkey)`)
     } 
     else {
-        exit_cj(join_ID, networkID, publickey, privatekey)
+        exit_cj(join_ID, private_key)
     }
 }
+
 
 
 main()

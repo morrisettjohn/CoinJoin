@@ -57,6 +57,7 @@ var REM_ADDR = "rem_addr";
 var commands = [JOIN, OPTIONS, JOININFO, SEARCH, EXIT, INFO, RECORD, ADDRS, REM_ADDR];
 var STD_USAGE = "usage: node coinjoin";
 var DESC = "description: ";
+var HELP = "help";
 var args = process.argv.slice(2);
 var command = args[0];
 args = args.slice(1);
@@ -101,7 +102,7 @@ var cmd_help = function () {
     console.log("");
 };
 var cmd_record_address = function () {
-    if (args[0] == INFO) {
+    if (args[0] == INFO || args[0] == HELP) {
         console.log(DESC + " locally stores a private key with a username for easy access");
         console.log(STD_USAGE + " " + RECORD + " (private key) (username)");
     }
@@ -112,7 +113,7 @@ var cmd_record_address = function () {
     }
 };
 var cmd_remove_address = function () {
-    if (args[0] == INFO) {
+    if (args[0] == INFO || args[0] == HELP) {
         console.log(DESC + " removes one of the locally stored keys.  Use node coinjoin addrs to get a list of stored addresses");
         console.log(STD_USAGE + " " + REM_ADDR + " (username)");
     }
@@ -122,7 +123,7 @@ var cmd_remove_address = function () {
     }
 };
 var cmd_print_recorded_addrs = function () {
-    if (args[0] == INFO) {
+    if (args[0] == INFO || args[0] == HELP) {
         console.log(DESC + " prints all stored private keys along with their usernames");
         console.log(STD_USAGE + " " + ADDRS);
     }
@@ -158,7 +159,7 @@ var cmd_start_cj_instance = function () { return __awaiter(void 0, void 0, void 
         if (private_key in address_data) {
             private_key = address_data[private_key];
         }
-        if (args[0] == INFO) {
+        if (args[0] == INFO || args[0] == HELP) {
             console.log(DESC + " runs a complete transaction from start to finish, I.e. sends a valid input/output to the server and then signs");
             console.log(STD_USAGE + " " + JOIN + " (join_ID) (private_key) (dest_addr) [input_amount]");
         }
@@ -169,7 +170,7 @@ var cmd_start_cj_instance = function () { return __awaiter(void 0, void 0, void 
     });
 }); };
 var cmd_get_option_data = function () {
-    if (args[0] == INFO) {
+    if (args[0] == INFO || args[0] == HELP) {
         console.log(DESC + " gets the cj server's options for coinjoins, e.g. assetid/name, denominations, etc");
         console.log(STD_USAGE + " " + OPTIONS);
     }
@@ -182,7 +183,7 @@ var cmd_print_join_data = function () { return __awaiter(void 0, void 0, void 0,
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
-                if (!(args[0] == INFO)) return [3 /*break*/, 1];
+                if (!(args[0] == INFO || args[0] == HELP)) return [3 /*break*/, 1];
                 console.log(DESC + " gets the data for a specific join that is in the CJ server.");
                 console.log(STD_USAGE + " " + JOININFO + " (join_id)");
                 return [3 /*break*/, 3];
@@ -196,26 +197,22 @@ var cmd_print_join_data = function () { return __awaiter(void 0, void 0, void 0,
     });
 }); };
 var cmd_find_matching_joins = function () { return __awaiter(void 0, void 0, void 0, function () {
-    var min_users, max_users, join_list, join_data_1;
+    var asset_ID, asset_amount, network_ID, min_users, max_users, join_list, join_data_1;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
-                min_users = undefined;
-                max_users = undefined;
-                if (args.length > 3) {
-                    min_users = parseInt(args[3]);
-                }
-                if (args.length > 4) {
-                    max_users = parseInt(args[4]);
-                }
-                if (!(args[0] == INFO)) return [3 /*break*/, 1];
+                asset_ID = args[0];
+                asset_amount = parseFloat(args[1]);
+                network_ID = parseInt(args[2]);
+                min_users = parseInt(args[3]);
+                max_users = parseInt(args[4]);
+                if (!(args[0] == INFO || args[0] == HELP)) return [3 /*break*/, 1];
                 console.log(DESC + " runs the matchmaking service on the CJ server with given paramaters, and returns back applicable joins");
                 console.log(STD_USAGE + " " + SEARCH + " (assetid | name) (targetamount) (networkID) [min_users] [max_users]");
                 return [3 /*break*/, 3];
-            case 1: return [4 /*yield*/, findmatchingjoins_1.find_matching_joins(args[0], parseInt(args[1]), parseInt(args[2]), min_users, max_users)];
+            case 1: return [4 /*yield*/, findmatchingjoins_1.find_matching_joins(asset_ID, asset_amount, network_ID, min_users, max_users)];
             case 2:
                 join_list = (_a.sent());
-                console.log(join_list);
                 join_data_1 = "";
                 join_list.forEach(function (item) {
                     join_data_1 += utils_1.join_data_readable(item);
@@ -228,30 +225,17 @@ var cmd_find_matching_joins = function () { return __awaiter(void 0, void 0, voi
 }); };
 var cmd_exit_cj = function () {
     var join_ID = parseInt(args[0]);
-    var networkID = parseInt(args[1]);
-    var publickey = undefined;
-    var privatekey = undefined;
-    if (args[2] in tests) {
-        privatekey = tests[args[2]][1];
-        publickey = tests[args[2]][0];
+    var private_key = args[1];
+    var address_data = getaddrdata_1.get_address_data();
+    if (private_key in address_data) {
+        private_key = address_data[private_key];
     }
-    else if (args[2] in wtests) {
-        privatekey = wtests[args[2]][1];
-        if (args.length < 4) {
-            throw new Error("not enough args");
-        }
-        publickey = args[3];
-    }
-    else {
-        privatekey = args[2];
-        publickey = args[3];
-    }
-    if (args[0] == INFO) {
+    if (args[0] == INFO || args[0] == HELP) {
         console.log(DESC + " exits a particular coinjoin by signing a nonce");
         console.log(STD_USAGE + " " + EXIT + " (join_ID) (networkID) (testkeypair / privatekey) (pubkey)");
     }
     else {
-        exitcj_1.exit_cj(join_ID, networkID, publickey, privatekey);
+        exitcj_1.exit_cj(join_ID, private_key);
     }
 };
 main();

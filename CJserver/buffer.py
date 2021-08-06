@@ -3,6 +3,7 @@ from subprocess import CalledProcessError
 import json
 from params import BNSCALE
 from decimal import Decimal, getcontext
+from params import *
 
 getcontext().prec = 9
 
@@ -61,14 +62,17 @@ class Nonce():
     def __init__(self, msg):
         self.msg = msg
 
-    def parse_nonce(self, signed_msg = None, network_ID: int = 5):
-        ticket_data = str.encode(json.dumps({
-            "msg": self.msg,
-            "signed_msg": signed_msg,
+    def parse_nonce(self, nonce: str, nonce_sig, network_ID: int = 5):
+        if nonce[:NONCE_LENGTH] != self.msg:
+            raise Exception("nonce does not match the one given to the user")
+        
+        verification_data = str.encode(json.dumps({
+            "msg": nonce,
+            "signed_msg": nonce_sig,
             "network_ID": network_ID
         }))
 
-        result = subprocess.run(['node', './js_scripts/getnoncedata.js'], input = ticket_data, capture_output=True)
+        result = subprocess.run(['node', './js_scripts/getnoncedata.js'], input = verification_data, capture_output=True)
         try:
             result.check_returncode()
         except CalledProcessError:

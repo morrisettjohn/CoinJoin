@@ -1,25 +1,17 @@
 import * as fs from "fs"
+import { generate_nonce } from "../../generatenonce"
 
 const log_info = function(message: any) {
-    let data = undefined
-    try {
-        data = fs.readFileSync('dmclean.txt', 'utf8')
-        console.log(data == "")
-    }   
-    catch (err) {
-        console.log(err)
-    }
 
-    fs.writeFile('nuts.txt', message, (err) => {
-        if (err){
-            console.log("error writing to log.txt")
-            throw err
-        }
-        else {
-            console.log("logged message")
-        }
-    })
+
 }
 
+const n = function() {
+    let z = []
+    for (let i = 0; i < 1000; i++){
+        z.push(generate_nonce(3))
+    }
+    console.log(z.toString())
+}
 
-log_info(JSON.stringify({"1": 1, "2": 2}))
+n()

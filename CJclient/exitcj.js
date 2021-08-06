@@ -40,15 +40,29 @@ var processmessage_1 = require("./processmessage");
 var consts = require("./constants");
 var requestnonce_1 = require("./requestnonce");
 var avalancheutils_1 = require("./avalancheutils");
-var exit_cj = function (join_ID, network_ID, pub_addr, private_key) { return __awaiter(void 0, void 0, void 0, function () {
-    var key_type, ticket, send_data;
+var getjoindata_1 = require("./getjoindata");
+var avalancheutils_2 = require("./avalancheutils");
+var avalancheutils_3 = require("./avalancheutils");
+var exit_cj = function (join_ID, private_key) { return __awaiter(void 0, void 0, void 0, function () {
+    var join_params, network_ID, key_type, user_list, network_data, pub_addr, key_data, ticket, send_data;
     return __generator(this, function (_a) {
         switch (_a.label) {
-            case 0:
-                key_type = avalancheutils_1.get_key_type(private_key);
-                console.log(network_ID);
-                return [4 /*yield*/, requestnonce_1.request_nonce(join_ID, pub_addr, private_key, network_ID)];
+            case 0: return [4 /*yield*/, getjoindata_1.get_join_data(join_ID)];
             case 1:
+                join_params = _a.sent();
+                network_ID = join_params["network_ID"];
+                key_type = avalancheutils_1.get_key_type(private_key);
+                return [4 /*yield*/, get_user_list(join_ID)];
+            case 2:
+                user_list = _a.sent();
+                network_data = avalancheutils_2.generate_xchain(network_ID);
+                pub_addr = undefined;
+                if (key_type == 0) {
+                    key_data = avalancheutils_3.generate_key_chain(network_data.xchain, private_key);
+                    pub_addr = key_data.my_addr_strings[0];
+                }
+                return [4 /*yield*/, requestnonce_1.request_nonce(join_ID, pub_addr, private_key, network_ID)];
+            case 3:
                 ticket = _a.sent();
                 send_data = {
                     "join_ID": join_ID,
@@ -58,7 +72,7 @@ var exit_cj = function (join_ID, network_ID, pub_addr, private_key) { return __a
                 };
                 console.log("sending data to coinjoin server now");
                 return [4 /*yield*/, processmessage_1.send_recieve(send_data)];
-            case 2:
+            case 4:
                 _a.sent();
                 return [2 /*return*/];
         }

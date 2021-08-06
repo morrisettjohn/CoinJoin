@@ -146,9 +146,12 @@ class JoinState:
     def extract_pub_addr(request_data):
         return request_data["pub_addr"]
 
-    def extract_ticket(request_data):
-        return request_data["ticket"]
-    
+    def extract_nonce(request_data):
+        return request_data["nonce"]
+
+    def extract_nonce_sig(request_data):
+        return request_data["nonce_sig"]
+
     #closes all cons associated with the cj
     def close_all_cons(self):
         for item in self.cons:
@@ -254,7 +257,7 @@ class JoinState:
         if message_type == REQUEST_NONCE:
             if self.users.user_awaiting_nonce(pub_addr):
                 send_message(conn, "sending new nonce")
-            nonce_msg = ''.join(choice(string.ascii_letters) for i in range(10))
+            nonce_msg = ''.join(choice(string.ascii_letters) for i in range(NONCE_LENGTH))
             nonce = Nonce(nonce_msg)
 
             if not user:
@@ -268,14 +271,15 @@ class JoinState:
         elif message_type == COLLECT_INPUTS:
             input_buf = JoinState.extract_input_buf(request_data)
             output_buf = JoinState.extract_output_buf(request_data)
-            signed_message_buf = JoinState.extract_ticket(request_data)
+            nonce = JoinState.extract_nonce(request_data)
+            nonce_sig = JoinState.extract_nonce_sig(request_data)
             
             try:
                 input = Input(input_buf, self.network_ID)
                 output = Output(output_buf, self.network_ID)
-                user.nonce.parse_nonce(signed_message_buf, self.network_ID)
+                user.nonce.parse_nonce(nonce, nonce_sig, self.network_ID)
             except Exception:
-                print(Exception.with_traceback())
+                print(Exception.with_traceback(tb = None))
                 print("couldn't read input/output data")
                 send_err(conn, "could not read input/output data or nonce")
                 return
@@ -286,7 +290,7 @@ class JoinState:
                         if user.pub_addr == input.pub_addr:
                             if input.asset_ID == output.asset_ID == self.asset_ID:
                                 if True: #not ip in self.IP_addrs:       #XXX need to comment out for testing purposes
-                                    if input.amt >= self.inp_amount and output.amt == self.out_amount:
+                                    if input.amt == self.inp_amount and output.amt == self.out_amount:
                                         if not self.users.check_repeat_output_addr(output.output_addr):
                                             #create input and output data when this has been determined to be valid information
                                             self.update_last_accessed()
@@ -445,7 +449,7 @@ class JoinState:
 
         elif message_type == EXIT:
 
-            signed_message_buf = JoinState.extract_ticket(request_data)
+            signed_message_buf = JoinState.extract_nonce(request_data)
 
             try:
                 user.nonce.parse_nonce(signed_message_buf, self.network_ID)

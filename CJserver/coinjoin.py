@@ -156,7 +156,8 @@ def is_valid_json_data(data):
         if not "join_ID" in data or not "pub_addr" in data:
             print("insufficient information to request nonce")
     elif data["message_type"] == COLLECT_INPUTS:
-        if not "join_ID" in data or not "pub_addr" in data or not "input_buf" in data or not "output_buf" in data or not "ticket" in data:
+        if not "join_ID" in data or not "pub_addr" in data or not "input_buf" in data or not "output_buf" in data\
+            or not "nonce" in data or not "nonce_sig" in data:
             print("insufficient data for input message")
             return False
     elif data["message_type"] == COLLECT_SIGS:
@@ -172,7 +173,7 @@ def is_valid_json_data(data):
             print("cannot send back wiretx")
             return False
     elif data["message_type"] == EXIT:
-        if not "join_ID" in data or not "pub_addr" in data or not "ticket" in data:
+        if not "join_ID" in data or not "pub_addr" in data or not "nonce" in data or not "nonce_sig" in data:
             print("insufficient data to exit CJ")
             return False
     else:

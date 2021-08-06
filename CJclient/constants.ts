@@ -8,3 +8,4 @@ export const ISSUE_TX = 5
 export const REQUEST_WTX = 6
 export const REQUEST_TO_JOIN = 7
 export const EXIT = 8
+export const GET_USER_LIST = 9

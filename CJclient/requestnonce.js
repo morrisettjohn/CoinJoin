@@ -43,9 +43,9 @@ var avalancheutils_1 = require("./avalancheutils");
 var avalanche_wallet_sdk_1 = require("@avalabs/avalanche-wallet-sdk");
 var bintools = avalanche_1.BinTools.getInstance();
 var request_nonce = function (join_ID, pub_addr, private_key, network_ID) { return __awaiter(void 0, void 0, void 0, function () {
-    var network_data, key_type, send_data, nonce, _a, _b, sig, key_data, my_wallet;
-    return __generator(this, function (_c) {
-        switch (_c.label) {
+    var network_data, key_type, send_data, recieved_nonce, my_nonce, full_nonce, full_nonce_buf, sig, key_data, my_wallet;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
             case 0:
                 network_data = avalancheutils_1.generate_xchain(network_ID);
                 key_type = avalancheutils_1.get_key_type(private_key);
@@ -54,25 +54,35 @@ var request_nonce = function (join_ID, pub_addr, private_key, network_ID) { retu
                     "message_type": consts.REQUEST_TO_JOIN,
                     "pub_addr": pub_addr
                 };
-                _b = (_a = avalanche_1.Buffer).from;
                 return [4 /*yield*/, processmessage_1.send_recieve(send_data)];
             case 1:
-                nonce = _b.apply(_a, [(_c.sent())[0]]);
+                recieved_nonce = (_a.sent())[0];
+                my_nonce = generate_nonce();
+                full_nonce = recieved_nonce + my_nonce;
+                full_nonce_buf = new avalanche_1.Buffer(full_nonce);
                 sig = undefined;
                 if (!(key_type == 0)) return [3 /*break*/, 2];
                 key_data = avalancheutils_1.generate_key_chain(network_data.xchain, private_key);
-                sig = key_data.my_key_pair.sign(nonce);
+                sig = key_data.my_key_pair.sign(full_nonce_buf);
                 return [3 /*break*/, 4];
             case 2:
                 if (!(key_type == 1)) return [3 /*break*/, 4];
                 my_wallet = avalanche_wallet_sdk_1.MnemonicWallet.fromMnemonic(private_key);
                 return [4 /*yield*/, my_wallet.resetHdIndices()];
             case 3:
-                _c.sent();
-                sig = my_wallet.getSigFromUTX(nonce, my_wallet.getExternalAddressesX().indexOf(pub_addr));
-                _c.label = 4;
-            case 4: return [2 /*return*/, sig.slice(0, 128)];
+                _a.sent();
+                sig = my_wallet.getSigFromUTX(full_nonce_buf, my_wallet.getExternalAddressesX().indexOf(pub_addr));
+                _a.label = 4;
+            case 4: return [2 /*return*/, [full_nonce, sig]];
         }
     });
 }); };
 exports.request_nonce = request_nonce;
+var ALPHABET = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+var generate_nonce = function () {
+    var return_nonce = "";
+    for (var i = 0; i < 5; i++) {
+        return_nonce += ALPHABET.charAt(Math.floor(Math.random() * ALPHABET.length));
+    }
+    return return_nonce;
+};

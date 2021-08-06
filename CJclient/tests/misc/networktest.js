@@ -38,18 +38,44 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 exports.__esModule = true;
 var avalancheutils_1 = require("../../avalancheutils");
 var avalanche_1 = require("avalanche");
+var avm_1 = require("@avalabs/avalanche-wallet-sdk/node_modules/avalanche/dist/apis/avm");
 var mnemonicKey = "dismiss spoon penalty gentle unable music buffalo cause bundle rural twist cheese discover this oyster garden globe excite kitchen rival diamond please clog swing";
 var bintools = avalanche_1.BinTools.getInstance();
 var test = function (networkID) { return __awaiter(void 0, void 0, void 0, function () {
-    var networkData, keyData, x, addr, addr2;
+    var networkData, keyData, xchain, q, u, output_idx, asset_ID, secpinput, input, tx, x, z, v, utxo, y, n, b, e;
     return __generator(this, function (_a) {
-        networkData = avalancheutils_1.generatexchain(5);
-        keyData = avalancheutils_1.generatekeychain(networkData.xchain, "PrivateKey-ryjZWerx1vRgQnFrLJ9oxBYUS7TdMRNrBLmSAAP78L4xixvT2");
-        x = keyData.myKeyPair.sign(new avalanche_1.Buffer("hi"));
-        addr = keyData.myKeyPair.recover(new avalanche_1.Buffer("hi"), x);
-        addr2 = keyData.myKeyPair.addressFromPublicKey(addr);
-        console.log(networkData.xchain.addressFromBuffer(addr2));
-        return [2 /*return*/];
+        switch (_a.label) {
+            case 0:
+                networkData = avalancheutils_1.generate_xchain(5);
+                keyData = avalancheutils_1.generate_key_chain(networkData.xchain, "PrivateKey-2t6UmFMctYnZXMY1BFYF41k97ZAtcedN1U9GiQiGQzmzU21oBY");
+                xchain = networkData.xchain;
+                q = "MtyBi5hmr3Xan22cQcJ4a6E4Bd3i9hZiv4rC9dw9KYFpdoyGG";
+                u = "2GBGr6CdKFpoDzd7YiS3Vu8XpRjUCqcxHvQ7EKTZBwy3zE8Gv2";
+                output_idx = avalanche_1.Buffer.alloc(4);
+                output_idx.writeIntBE(1, 0, 4);
+                return [4 /*yield*/, xchain.getAVAXAssetID()];
+            case 1:
+                asset_ID = _a.sent();
+                secpinput = new avm_1.SECPTransferInput(new avalanche_1.BN(1.01));
+                input = new avm_1.TransferableInput(bintools.cb58Decode(u), output_idx, asset_ID, secpinput);
+                tx = new avm_1.Tx();
+                return [4 /*yield*/, networkData.xchain.getTx("2GBGr6CdKFpoDzd7YiS3Vu8XpRjUCqcxHvQ7EKTZBwy3zE8Gv2")];
+            case 2:
+                x = _a.sent();
+                tx.fromString(x);
+                z = tx.getUnsignedTx().getTransaction().getIns()[0].getUTXOID();
+                v = tx.getUnsignedTx().getTransaction().getIns()[0].getTxID();
+                utxo = "E3uDJkVNtkH1Byoj7LPANd8mhXXtHq2WJodxRAL9wDvoYNz8a";
+                return [4 /*yield*/, networkData.xchain.getUTXOs("X-fuji1d6fetyekv4ec5enm9ltuxrd6n70ng04rpxq443")];
+            case 3:
+                y = (_a.sent()).utxos;
+                n = y.getAllUTXOs();
+                b = y.getAllUTXOStrings();
+                e = y.getUTXO(input.getUTXOID());
+                console.log(y.includes(e));
+                console.log(input.getUTXOID());
+                return [2 /*return*/];
+        }
     });
 }); };
 var args = process.argv.slice(2);
