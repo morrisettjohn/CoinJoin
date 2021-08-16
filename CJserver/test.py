@@ -1,5 +1,8 @@
-from decimal import *
+import traceback
 
-getcontext().prec = 3
+try:
+    print(1/0)
+except Exception:
+    traceback.print_exc()
 
-print(1.01 + 1.01)
+print("hi")

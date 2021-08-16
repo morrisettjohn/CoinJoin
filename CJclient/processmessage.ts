@@ -12,8 +12,8 @@ class Message {
     message_data: any
     message_resolve: string
     private cache_timeout: number
-    static message_types = ["MSG", "ERR", "OPT", "JLS", "JDT", "NCE", "WTX", "STX", "TXD", "UND"]
-    static resolve_types = ["cache", "return", "print"]
+    static message_types = ["MSG", "ERR", "OPT", "JLS", "JDT", "NCE", "WTX", "STX", "TXD", "UND", "LOG"]
+    static resolve_types = ["cache", "return", "print", "log"]
     constructor (message_type?: string, message_data?: any, message_resolve?: string, cache_timeout?: number){
         this.message_type = message_type
         this.message_data = message_data

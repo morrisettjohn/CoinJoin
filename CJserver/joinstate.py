@@ -4,12 +4,12 @@ import subprocess
 import time
 import string
 from hashlib import sha256
+import traceback
 
 from assetinfo import *
-from messages import send_err, send_message, send_stx, send_wtx, send_accepted_tx_ID, send_nonce
+from messages import send_err, send_message, send_stx, send_wtx, send_accepted_tx_ID, send_nonce, send_log_confirmation
 from utils.httprequest import *
 from params import *
-from decimal import Decimal, ROUND_HALF_DOWN, ROUND_HALF_EVEN, getcontext, Context
 from struct import *
 from utils.bufferutils import convert_to_jsbuffer
 from random import choice
@@ -17,9 +17,6 @@ from subprocess import *
 from datatypes import Input, Nonce, Output, Sig
 from user import User, UserList
 from config import *
-
-getcontext().prec = 9
-context = Context(prec = 9, rounding=ROUND_HALF_DOWN)
 
 #This is a class which holds all the data for a coinjoin.  The CoinJoin has two main states that it can be in:  collecting utxo inputs and collecting
 #signatures.  
@@ -31,11 +28,7 @@ def get_address(network_ID):
     }))
 
     result = subprocess.run(['node', './js_scripts/generatepubaddr.js'], input = pub_addr_data, capture_output=True)
-    try:
-        result.check_returncode()
-    except Exception:
-        print(result.stderr)
-        raise Exception("something went wrong")
+    result.check_returncode()
     result_data = json.loads(bytes.decode((result.stdout)))
     return result_data
 
@@ -46,7 +39,7 @@ def generate_join_tx_ID():
 
 class JoinState:
     current_id = 0
-    completed_join_txs = 0
+    num_current_address_uses = 0
     fee_pub_addr = ""
     fee_priv_key = ""
 
@@ -77,22 +70,20 @@ class JoinState:
         self.blacklist = []
         self.debug_mode = debug_mode
 
-        if(self.ID == 8):
-            print(self.out_amount)
-            print(self.inp_amount)
-
         if not self.is_valid_join():
             raise Exception("bad parameters")
 
         JoinState.current_id += 1
 
     def update_address(network_ID):
-        if JoinState.fee_pub_addr == "" or JoinState.completed_join_txs == GENERATE_NEW_ADDRESS_NUM:
+        
+        if JoinState.fee_pub_addr == "" or JoinState.num_current_address_uses == GENERATE_NEW_ADDRESS_NUM:
             key_data = get_address(network_ID)
             
             print("switching to address: " + key_data["pub_addr"])
             JoinState.fee_pub_addr = key_data["pub_addr"]
             JoinState.fee_priv_key = key_data["priv_key"]
+        JoinState.num_current_address_uses += 1
 
     #Returns the number of cons that have joined during the input stage
     def get_current_input_count(self):
@@ -147,8 +138,6 @@ class JoinState:
     def get_all_sigs(self):
         return self.users.get_all_sigs()
 
-
-
     def remove_connection(self, conn):
         try:
             conn.close()
@@ -158,7 +147,6 @@ class JoinState:
 
     #resets the join back to its base state
     def reset_join(self):
-        JoinState.completed_join_txs += 1
         JoinState.update_address(self.network_ID)
         
         self.state = COLLECT_INPUTS
@@ -239,9 +227,6 @@ class JoinState:
 
     def craft_wtx(self):
         
-        for item in self.users.user_list:
-            print(item.input.amt)
-            print(item.output.amt)
         fee_data = {
             "asset_ID": self.asset_ID, 
             "amount": self.get_fee_after_burn()*BNSCALE, 
@@ -256,13 +241,7 @@ class JoinState:
         }))
 
         result = subprocess.run(['node', './js_scripts/craftunsignedtx.js'], input = wtx_data, capture_output=True)
-
-        try:
-            result.check_returncode()
-        except Exception:
-            print(result.stderr)
-            raise Exception(result.stderr)
-        
+        result.check_returncode()
         wtx_buf = convert_to_jsbuffer(result.stdout)
         return wtx_buf
 
@@ -274,13 +253,7 @@ class JoinState:
         }))
 
         result = subprocess.run(['node', './js_scripts/craftsignedtx.js'], input = stx_data, capture_output=True)
-        try:
-            result.check_returncode()
-        except Exception:
-            print(result.stdout)
-            print(result.stderr)
-            raise Exception("bad stx data")
-        
+        result.check_returncode()
         stx_buf = convert_to_jsbuffer(result.stdout)
         return stx_buf
 
@@ -292,11 +265,7 @@ class JoinState:
         }))
 
         result = subprocess.run(['node', './js_scripts/issuestx.js'], input = issue_data, capture_output=True)
-        try:
-            result.check_returncode()
-        except Exception:
-            print(result.stderr)
-            raise Exception("something went wrong")
+        result.check_returncode()
         result_data = json.loads(bytes.decode((result.stdout)))
         return result_data
 
@@ -308,15 +277,8 @@ class JoinState:
         }))
 
         result = subprocess.run(['node', './js_scripts/signservernonce.js'], input = server_sign_data, capture_output=True)
-        try:
-            result.check_returncode()
-        except Exception:
-            print(result.stderr)
-
-            raise Exception("something went wrong")
-        print(result.stdout)
+        result.check_returncode()
         result_data = json.loads(bytes.decode((result.stdout)))
-        print(result_data)
         return result_data["server_sig"]
 
     def remove_user(self, pub_addr, blacklist = True):
@@ -376,6 +338,7 @@ class JoinState:
                 user.nonce.parse_nonce(nonce, nonce_sig, self.network_ID)
             except Exception:
                 print("couldn't read input/output data")
+                traceback.print_exc()
                 send_err(conn, "could not read input/output data or nonce")
                 return
 
@@ -410,6 +373,7 @@ class JoinState:
                                                     self.wtx = self.craft_wtx()
                                                 except Exception:
                                                     print("bad unsigned transaction")
+                                                    traceback.print_exc()
                                                     self.send_err_to_all("bad unsigned transaction data.  Send input again")
                                                     self.reset_join()
                                                     return
@@ -460,6 +424,8 @@ class JoinState:
             try:
                 sig = Sig(self.wtx, request_data["sig"], self.network_ID)
             except Exception:
+                print("couldn't parse signature")
+                traceback.print_exc()
                 send_err(conn, "could not parse signature")
                 return
 
@@ -483,6 +449,7 @@ class JoinState:
                                     self.stx = self.craft_stx()
                                 except Exception:
                                     print("transaction didn't form properly")
+                                    traceback.print_exc()
                                     self.send_err_to_all("transaction didn't form properly, send signature again")
                                     self.set_to_collect_sigs()
                                     return
@@ -548,6 +515,7 @@ class JoinState:
                 user.nonce.parse_nonce(signed_message_buf, self.network_ID)
             except Exception:
                 print("couldn't parse nonce for exit")
+                traceback.print_exc()
                 send_err(conn, "could not parse nonce")
                 return
 

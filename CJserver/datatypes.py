@@ -20,14 +20,7 @@ class Input:
         }))
 
         result = subprocess.run(['node', './js_scripts/getinputdata.js'], input = input_data, capture_output = True)
-        try:
-            result.check_returncode()
-        except Exception:
-            print(result.stdout)
-            print(result.stderr)
-            raise Exception
-            
-
+        result.check_returncode()
         result_data = json.loads(bytes.decode((result.stdout)))
         self.amt = float(result_data["amt"])/BNSCALE
         self.asset_ID = result_data["asset_ID"]
@@ -46,12 +39,7 @@ class Output:
         }))
 
         result = subprocess.run(['node', './js_scripts/getoutputdata.js'], input = output_data, capture_output = True)
-        try:
-            result.check_returncode()
-        except Exception:
-            print(result.stderr)
-            raise Exception
-
+        result.check_returncode()
         result_data = json.loads(bytes.decode((result.stdout)))
         self.amt = float(result_data["amt"])/BNSCALE
         self.asset_ID = result_data["asset_ID"]
@@ -74,12 +62,7 @@ class Nonce:
         }))
 
         result = subprocess.run(['node', './js_scripts/getnoncedata.js'], input = verification_data, capture_output=True)
-        try:
-            result.check_returncode()
-        except CalledProcessError:
-            print(result.stderr)
-            raise Exception
-
+        result.check_returncode()
         result_data = json.loads(bytes.decode((result.stdout)))
         self.nonce_addr = result_data["nonce_addr"]
 
@@ -98,11 +81,6 @@ class Sig:
         }))
         
         result = subprocess.run(['node', './js_scripts/getsigdata.js'], input = sig_data, capture_output=True)
-        try:
-            result.check_returncode()
-        except CalledProcessError:
-            print(result.stderr)
-            raise Exception
-
+        result.check_returncode()
         result_data = json.loads(bytes.decode((result.stdout)))
         self.sig_addr = result_data["sig_addr"]

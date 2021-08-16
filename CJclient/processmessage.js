@@ -26,8 +26,8 @@ var Message = /** @class */ (function () {
     Message.prototype.get_cache_timeout = function () {
         return this.cache_timeout;
     };
-    Message.message_types = ["MSG", "ERR", "OPT", "JLS", "JDT", "NCE", "WTX", "STX", "TXD", "UND"];
-    Message.resolve_types = ["cache", "return", "print"];
+    Message.message_types = ["MSG", "ERR", "OPT", "JLS", "JDT", "NCE", "WTX", "STX", "TXD", "UND", "LOG"];
+    Message.resolve_types = ["cache", "return", "print", "log"];
     return Message;
 }());
 var is_valid_join_data = function (data) {

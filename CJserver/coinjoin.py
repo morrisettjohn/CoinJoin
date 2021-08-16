@@ -12,8 +12,6 @@ import json
 import time
 from config import *
 
-
-fee_address = "X-fuji18gcr997m4cntu2pzp9u5p72pmm53d6376l6cee",
 fee_address = FEE_KEY
 standard_fee_percent = .10
 
@@ -185,7 +183,7 @@ def get_join(data):
         return join_list[data["join_ID"]]
     return None
 
-def get_message_type(data):
+def extract_message_type(data):
     return data["message_type"]
 
 def generate_option_data():
@@ -203,7 +201,7 @@ def process_data(conn, addr, network):
             send_err(conn, "no such join exists")
             return
 
-        message_type = get_message_type(data)
+        message_type = extract_message_type(data)
         if message_type == START_PROCESS:
             print("displaying options to user")
             option_data = generate_option_data()
@@ -220,7 +218,7 @@ def process_data(conn, addr, network):
         elif message_type == GET_JOIN_DATA:
             join = get_join(data)
             if join != None:
-                print("sending info for join of id %s" % join.get_status())
+                print("sending info for join of id %s" % join.ID)
                 send_join_data(conn, join.get_status())
             else:
                 print("tried to request information for join that doesn't exist")
@@ -231,15 +229,15 @@ def process_data(conn, addr, network):
             join.process_request(data, conn, addr)
         elif message_type == COLLECT_INPUTS: 
             join = get_join(data)
-            print("collecting input for join of id %s" % join)
+            print("collecting input for join of id %s" % join.ID)
             join.process_request(data, conn, addr)
         elif message_type == COLLECT_SIGS:
             join = get_join(data)
-            print("collecting signature for join of id %s" % join)
+            print("collecting signature for join of id %s" % join.ID)
             join.process_request(data, conn, addr)
         elif message_type == ISSUE_TX:
             join = get_join(data)
-            print("issuing transaction for join of id %s" % join)
+            print("issuing transaction for join of id %s" % join.ID)
             join.process_request(data, conn, addr)
         elif message_type == REQUEST_WTX:
             join = get_join(data)
@@ -258,6 +256,11 @@ def process_data(conn, addr, network):
 #Starts the whole coinjoin process, starting from beginning to end
 def start_server():
     global join_list
+
+    if sys.argv[1].lower() == "info" or sys.argv[1].lower() == "help":
+        print("Description:  Starts the coinjoin server.  Need to specify the network that the server will operate on")
+        print("Usage: python3 coinjoin.py (ip:port) network_ID")
+
     HOST = sys.argv[1][:sys.argv[1].find(":")]
     PORT = int(sys.argv[1][sys.argv[1].find(":")+1:])
     network = int(sys.argv[2])

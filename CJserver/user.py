@@ -176,7 +176,7 @@ class UserList:
         return return_val
 
     def get_total_fee_amount(self):
-        return self.get_total_input_amount() - self.get_total_output_amount()
+        return round(self.get_total_input_amount() - self.get_total_output_amount(), 9)
 
     def get_num_inputs(self):
         return len(self.user_list)

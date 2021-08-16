@@ -42,6 +42,10 @@ def send_nonce(conn, nonce_verification_data):
 def send_accepted_tx_ID(conn, tx_ID):
     data = str.encode("TXD" + tx_ID + req_terminator)
     send(conn, data)
+
+def send_log_confirmation(conn):
+    data = str.encode("LOG" + "T" + req_terminator)
+    send(conn, data)
     
 
 def send(conn, data):

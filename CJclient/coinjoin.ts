@@ -143,7 +143,6 @@ const cmd_print_join_data = async() => {
   } else {
     const ip = args[0]
     const join_ID = parseInt(args[1])
-    console.log(ip, join_ID)
     const join_data = (await get_join_data(join_ID, ip))
     console.log(join_data_readable(join_data))
   }

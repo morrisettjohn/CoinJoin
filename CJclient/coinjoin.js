@@ -178,7 +178,6 @@ var cmd_print_join_data = function () { return __awaiter(void 0, void 0, void 0,
             case 1:
                 ip = args[0];
                 join_ID = parseInt(args[1]);
-                console.log(ip, join_ID);
                 return [4 /*yield*/, getjoindata_1.get_join_data(join_ID, ip)];
             case 2:
                 join_data = (_a.sent());
