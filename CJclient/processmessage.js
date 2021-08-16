@@ -1,6 +1,8 @@
 "use strict";
 exports.__esModule = true;
 var http_1 = require("http");
+var utils_1 = require("./utils");
+var avalanche_1 = require("@avalabs/avalanche-wallet-sdk/node_modules/avalanche");
 var Message = /** @class */ (function () {
     function Message(message_type, message_data, message_resolve, cache_timeout) {
         this.message_type = message_type;
@@ -28,6 +30,14 @@ var Message = /** @class */ (function () {
     Message.resolve_types = ["cache", "return", "print"];
     return Message;
 }());
+var is_valid_join_data = function (data) {
+    if ("ID" in data && "asset_name" in data && "asset_ID" in data && "network_ID" in data &&
+        "state" in data && "input_limit" in data && "input_amount" in data && "output_amount" in data &&
+        "fee_percent" in data && "join_tx_ID" in data && "fee_addr" in data && "last_accessed" in data) {
+        return true;
+    }
+    return false;
+};
 var is_valid_wtx_data = function (data) {
     return true;
     if (!("inputs" in data && "outputs" in data)) {
@@ -89,11 +99,17 @@ var process_message = function (recieved_data) {
             message.message_resolve = "return";
         }
         else if (message_type == "JDT") {
-            message.message_data = JSON.parse(message_data);
-            message.message_resolve = "return";
+            var data = JSON.parse(message_data);
+            if (is_valid_join_data(data)) {
+                message.message_data = JSON.parse(message_data);
+                message.message_resolve = "return";
+            }
+            else {
+                console.log("join data missing entries");
+            }
         }
         else if (message_type == "NCE") {
-            message.message_data = message_data;
+            message.message_data = JSON.parse(message_data);
             message.message_resolve = "return";
         }
         //handling send_utxo data
@@ -132,21 +148,21 @@ var process_message = function (recieved_data) {
     return messages;
 };
 exports.process_message = process_message;
-var construct_header_options = function (content) {
+var construct_header_options = function (content, ip) {
     var options = {
-        host: "100.64.15.72",
-        port: "65432",
+        host: utils_1.extract_host(ip),
+        port: utils_1.extract_port(ip),
         method: "POST",
         headers: {
-            "Content-Length": Buffer.byteLength(content)
+            "Content-Length": avalanche_1.Buffer.byteLength(content)
         }
     };
     return options;
 };
 exports.construct_header_options = construct_header_options;
-var send_recieve = function (sendData) {
+var send_recieve = function (sendData, ip) {
     var return_data_string = JSON.stringify(sendData);
-    var options = construct_header_options(return_data_string);
+    var options = construct_header_options(return_data_string, ip);
     return new Promise(function (resolve, reject) {
         var cache = [];
         var timeout = undefined;

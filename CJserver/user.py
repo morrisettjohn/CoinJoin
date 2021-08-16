@@ -1,4 +1,4 @@
-from buffer import *
+from datatypes import *
 
 class User:
 
@@ -164,13 +164,13 @@ class UserList:
         self.user_list.append(user)
 
     def get_total_input_amount(self):
-        return_val = Decimal(0)
+        return_val = 0.0
         for item in self.user_list:
             return_val += item.get_input_amount()
         return return_val
 
     def get_total_output_amount(self):
-        return_val = Decimal(0)
+        return_val = 0.0
         for item in self.user_list:
             return_val += item.get_output_amount()
         return return_val

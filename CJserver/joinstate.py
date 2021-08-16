@@ -3,39 +3,70 @@ import json
 import subprocess
 import time
 import string
+from hashlib import sha256
 
 from assetinfo import *
 from messages import send_err, send_message, send_stx, send_wtx, send_accepted_tx_ID, send_nonce
 from utils.httprequest import *
 from params import *
-from decimal import Decimal, getcontext
+from decimal import Decimal, ROUND_HALF_DOWN, ROUND_HALF_EVEN, getcontext, Context
 from struct import *
 from utils.bufferutils import convert_to_jsbuffer
 from random import choice
 from subprocess import *
-from buffer import Input, Nonce, Output, Sig
+from datatypes import Input, Nonce, Output, Sig
 from user import User, UserList
+from config import *
 
 getcontext().prec = 9
+context = Context(prec = 9, rounding=ROUND_HALF_DOWN)
 
 #This is a class which holds all the data for a coinjoin.  The CoinJoin has two main states that it can be in:  collecting utxo inputs and collecting
 #signatures.  
 
+def get_address(network_ID):
+    pub_addr_data = str.encode(json.dumps({
+        "private_key": FEE_KEY,
+        "network_ID": network_ID
+    }))
+
+    result = subprocess.run(['node', './js_scripts/generatepubaddr.js'], input = pub_addr_data, capture_output=True)
+    try:
+        result.check_returncode()
+    except Exception:
+        print(result.stderr)
+        raise Exception("something went wrong")
+    result_data = json.loads(bytes.decode((result.stdout)))
+    return result_data
+
+def generate_join_tx_ID():
+    join_tx_ID = time.time_ns()//1000000
+    time.sleep(0.001)
+    return join_tx_ID
+
 class JoinState:
     current_id = 0
+    completed_join_txs = 0
+    fee_pub_addr = ""
+    fee_priv_key = ""
 
     def __init__(self, threshold:int = DEFAULT_LOWER_USER_BOUND, asset_ID:str = AVAX_FUJI_ID, out_amount = 1, 
-            fee_address:str = "", fee_percent = 0.10, network_ID = FUJI, debug_mode: bool = False):
+            fee_percent = 0.10, network_ID = FUJI, debug_mode: bool = False):
 
+        JoinState.update_address(network_ID)
+            
         self.ID = JoinState.current_id
+        self.network_ID = network_ID
         self.threshold = threshold
         self.asset_ID = asset_ID
-        self.fee_percent = Decimal(fee_percent)
-        self.out_amount = Decimal(out_amount)
+        self.fee_percent = fee_percent
+        self.out_amount = out_amount
         self.inp_amount = self.out_amount + self.out_amount * self.fee_percent
-        self.fee_address = fee_address
+        self.fee_address = JoinState.fee_pub_addr
+        self.fee_key = JoinState.fee_priv_key
         self.state = COLLECT_INPUTS
         self.network_ID = network_ID
+        self.join_tx_ID = generate_join_tx_ID()
         self.last_accessed = time.time()
         self.wtx = None
         self.stx = None
@@ -46,10 +77,22 @@ class JoinState:
         self.blacklist = []
         self.debug_mode = debug_mode
 
+        if(self.ID == 8):
+            print(self.out_amount)
+            print(self.inp_amount)
+
         if not self.is_valid_join():
             raise Exception("bad parameters")
 
         JoinState.current_id += 1
+
+    def update_address(network_ID):
+        if JoinState.fee_pub_addr == "" or JoinState.completed_join_txs == GENERATE_NEW_ADDRESS_NUM:
+            key_data = get_address(network_ID)
+            
+            print("switching to address: " + key_data["pub_addr"])
+            JoinState.fee_pub_addr = key_data["pub_addr"]
+            JoinState.fee_priv_key = key_data["priv_key"]
 
     #Returns the number of cons that have joined during the input stage
     def get_current_input_count(self):
@@ -62,6 +105,7 @@ class JoinState:
     #function that returns the current status of the join in json form, for easy access
     def get_status(self):
         asset_name = convert_to_asset_name(self.asset_ID)
+
         status = {       
             "ID": self.ID,
             "asset_name": asset_name,
@@ -72,8 +116,11 @@ class JoinState:
             "input_amount": float(self.inp_amount),
             "output_amount": float(self.out_amount),
             "fee_percent":  float(self.fee_percent),
+            "join_tx_ID": self.join_tx_ID,
+            "fee_addr": self.fee_address,
             "last_accessed": self.last_accessed
             }
+
         if self.state == COLLECT_INPUTS:
             status["current_input_count"] = self.get_current_input_count()
         elif self.state == COLLECT_SIGS:
@@ -82,9 +129,12 @@ class JoinState:
             Exception("bad")
         return status
 
+    def get_collected_fee_amt(self):
+        return self.users.get_total_fee_amount()
+
     #returns the value of the fee after burning the minimum avax amount
     def get_fee_after_burn(self):
-        return float(self.get_collected_fee_amt() - Decimal(STANDARD_BURN_AMOUNT))
+        return self.get_collected_fee_amt() - STANDARD_BURN_AMOUNT
 
     def get_all_inputs(self):
         return self.users.get_all_inputs()
@@ -97,8 +147,7 @@ class JoinState:
     def get_all_sigs(self):
         return self.users.get_all_sigs()
 
-    def get_collected_fee_amt(self):
-        return self.users.get_total_fee_amount()
+
 
     def remove_connection(self, conn):
         try:
@@ -109,7 +158,13 @@ class JoinState:
 
     #resets the join back to its base state
     def reset_join(self):
+        JoinState.completed_join_txs += 1
+        JoinState.update_address(self.network_ID)
+        
         self.state = COLLECT_INPUTS
+        self.join_tx_ID = generate_join_tx_ID()
+        self.fee_address = JoinState.fee_pub_addr
+        self.fee_key = JoinState.fee_priv_key
         self.last_accessed = time.time()
         self.wtx = None
         self.stx = None
@@ -133,6 +188,9 @@ class JoinState:
         if self.fee_percent < 0 or self.fee_percent >= 1:
             return False
         return True
+
+    def extract_server_nonce(request_data):
+        return request_data["server_nonce"]
         
     #extracts inputs from request data
     def extract_input_buf(request_data):
@@ -151,6 +209,9 @@ class JoinState:
 
     def extract_nonce_sig(request_data):
         return request_data["nonce_sig"]
+    
+    def generate_nonce():
+        return ''.join(choice(string.ascii_letters) for i in range(NONCE_LENGTH))
 
     #closes all cons associated with the cj
     def close_all_cons(self):
@@ -177,9 +238,13 @@ class JoinState:
         self.state = COLLECT_SIGS
 
     def craft_wtx(self):
+        
+        for item in self.users.user_list:
+            print(item.input.amt)
+            print(item.output.amt)
         fee_data = {
             "asset_ID": self.asset_ID, 
-            "amount": int(self.get_fee_after_burn()*BNSCALE), 
+            "amount": self.get_fee_after_burn()*BNSCALE, 
             "address": self.fee_address
         }
 
@@ -235,6 +300,25 @@ class JoinState:
         result_data = json.loads(bytes.decode((result.stdout)))
         return result_data
 
+    def sign_server_nonce(self, server_nonce):
+        server_sign_data = str.encode(json.dumps({
+            "server_nonce": server_nonce,
+            "priv_key": self.fee_priv_key,
+            "network_ID": self.network_ID
+        }))
+
+        result = subprocess.run(['node', './js_scripts/signservernonce.js'], input = server_sign_data, capture_output=True)
+        try:
+            result.check_returncode()
+        except Exception:
+            print(result.stderr)
+
+            raise Exception("something went wrong")
+        print(result.stdout)
+        result_data = json.loads(bytes.decode((result.stdout)))
+        print(result_data)
+        return result_data["server_sig"]
+
     def remove_user(self, pub_addr, blacklist = True):
         self.wtx = None
         self.stx = None
@@ -257,14 +341,26 @@ class JoinState:
         if message_type == REQUEST_NONCE:
             if self.users.user_awaiting_nonce(pub_addr):
                 send_message(conn, "sending new nonce")
-            nonce_msg = ''.join(choice(string.ascii_letters) for i in range(NONCE_LENGTH))
+            nonce_msg = JoinState.generate_nonce()
+
+            server_nonce = JoinState.extract_server_nonce(request_data)
+            server_nonce += JoinState.generate_nonce()
+            server_sig = self.sign_server_nonce(server_nonce)
+
             nonce = Nonce(nonce_msg)
 
             if not user:
                 user = User(pub_addr)
                 self.users.append(user)
             user.nonce = nonce
-            send_nonce(conn, nonce.msg)
+
+            nonce_verification_data = {
+                "nonce": nonce.msg, 
+                "server_nonce": server_nonce, 
+                "server_sig": server_sig, 
+                "server_pub_addr": self.fee_address
+            }
+            send_nonce(conn, nonce_verification_data)
             return
 
         #When handling a potential input
@@ -273,13 +369,12 @@ class JoinState:
             output_buf = JoinState.extract_output_buf(request_data)
             nonce = JoinState.extract_nonce(request_data)
             nonce_sig = JoinState.extract_nonce_sig(request_data)
-            
+
             try:
                 input = Input(input_buf, self.network_ID)
                 output = Output(output_buf, self.network_ID)
                 user.nonce.parse_nonce(nonce, nonce_sig, self.network_ID)
             except Exception:
-                print(Exception.with_traceback(tb = None))
                 print("couldn't read input/output data")
                 send_err(conn, "could not read input/output data or nonce")
                 return
@@ -290,6 +385,7 @@ class JoinState:
                         if user.pub_addr == input.pub_addr:
                             if input.asset_ID == output.asset_ID == self.asset_ID:
                                 if True: #not ip in self.IP_addrs:       #XXX need to comment out for testing purposes
+                                    print(input.amt, self.inp_amount, output.amt, self.out_amount)
                                     if input.amt == self.inp_amount and output.amt == self.out_amount:
                                         if not self.users.check_repeat_output_addr(output.output_addr):
                                             #create input and output data when this has been determined to be valid information
@@ -314,7 +410,6 @@ class JoinState:
                                                     self.wtx = self.craft_wtx()
                                                 except Exception:
                                                     print("bad unsigned transaction")
-                                                    print(Exception.with_traceback())
                                                     self.send_err_to_all("bad unsigned transaction data.  Send input again")
                                                     self.reset_join()
                                                     return
@@ -365,7 +460,6 @@ class JoinState:
             try:
                 sig = Sig(self.wtx, request_data["sig"], self.network_ID)
             except Exception:
-                print(Exception.with_traceback())
                 send_err(conn, "could not parse signature")
                 return
 
@@ -389,7 +483,6 @@ class JoinState:
                                     self.stx = self.craft_stx()
                                 except Exception:
                                     print("transaction didn't form properly")
-                                    print(Exception.with_traceback())
                                     self.send_err_to_all("transaction didn't form properly, send signature again")
                                     self.set_to_collect_sigs()
                                     return

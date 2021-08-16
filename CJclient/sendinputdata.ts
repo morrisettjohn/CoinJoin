@@ -17,13 +17,14 @@ import { BNSCALE } from "./constants";
 import { MnemonicWallet } from "@avalabs/avalanche-wallet-sdk";
 import * as consts from "./constants"
 import { request_nonce } from "./requestnonce";
-import { log_info } from "./loginfo";
+import { add_log } from "./addlog";
+import { KeyChain, KeyPair } from "avalanche/dist/apis/avm";
 
 //setting up the xchain object
 const bintools: BinTools = BinTools.getInstance()
 
-const send_input_data = async(join_ID: number, asset_ID: string, input_amount: number, 
-    output_amount: number, dest_addr: string, private_key: string, network_ID: number): Promise<any> => {
+const send_input_data = async(join_ID: number, asset_ID: string, input_amount: number, output_amount: number, 
+    dest_addr: string, private_key: string, network_ID: number, join_tx_ID: string, server_addr: string, ip: string,): Promise<any> => {
 
         const network_data = generate_xchain(network_ID)
         const xchain = network_data.xchain
@@ -33,19 +34,42 @@ const send_input_data = async(join_ID: number, asset_ID: string, input_amount: n
         const tx_ID = sent_data["tx_ID"]
         const tx_index = sent_data["tx_index"]
         const pub_addr_buf = sent_data["pub_addr_buf"]
-        const pub_addr = xchain.addressFromBuffer(pub_addr_buf[0])
+        const pub_addr = xchain.addressFromBuffer(pub_addr_buf)
 
         const input: TransferableInput = craft_input(input_amount, asset_ID, tx_ID, tx_index, pub_addr, network_ID)
         const output: TransferableOutput = craft_output(output_amount, asset_ID, dest_addr, network_ID)
 
-        const nonce_sig_pair = await request_nonce(join_ID, pub_addr, private_key, network_ID)
+        const nonce_sig_pair = await request_nonce(join_ID, pub_addr, private_key, network_ID, ip)
         const nonce = nonce_sig_pair[0]
         const nonce_sig = nonce_sig_pair[1]
 
-        const recieved_data = await send_data(join_ID, pub_addr, nonce, nonce_sig, input, output)
+        construct_log(join_tx_ID, join_ID, ip, network_ID, pub_addr, server_addr, input, output)
+        const recieved_data = await send_data(join_ID, pub_addr, nonce, nonce_sig, input, output, ip)
+
 
         return [recieved_data, input, output, pub_addr]
     }
+
+const construct_log = async(join_tx_ID: string, join_ID: number, ip: string, network_ID: number,
+    user_addr: string, server_addr: string, input: any, output: any) => {
+    const join_tx_data = {
+        "server_addr": server_addr,
+        "join_tx_ID": join_tx_ID,
+        "join_ID": join_ID,
+        "host": ip,
+        "network_ID": network_ID,
+        "users": {}
+    }
+
+    const user_data = {
+        "pub_addr": user_addr,
+        "input": input.toBuffer(), 
+        "output": output.toBuffer(), 
+        "last_status": consts.COLLECT_INPUTS,
+        "time": new Date().getTime()
+    }
+    add_log(server_addr, join_tx_ID, join_tx_data, user_addr, user_data)
+}
 
 const craft_input = function(input_amount: number, asset_ID: string, tx_ID: string, 
     tx_index: number, pubaddr: string, network_ID: number): TransferableInput {
@@ -94,7 +118,6 @@ const send_target_amount = async(network_ID: number, private_key: string, input_
 
     const key_type = get_key_type(private_key)
     
-
     let signed_tx: Tx = new Tx()
     if (key_type == 0){  //for private keys
         const key_data = generate_key_chain(network_data.xchain, private_key)
@@ -120,6 +143,7 @@ const send_target_amount = async(network_ID: number, private_key: string, input_
         const my_wallet = MnemonicWallet.fromMnemonic(private_key)
         await my_wallet.resetHdIndices()
         await my_wallet.updateUtxosX()
+        
         const from = my_wallet.getAllAddressesX()
         const to = my_wallet.getAddressX()
         const change = my_wallet.getChangeAddressX()
@@ -157,13 +181,13 @@ const send_target_amount = async(network_ID: number, private_key: string, input_
         }
         tx_index += 1
     }
-    const pub_addr_buf = [signed_tx.getUnsignedTx().getTransaction().getOuts()[tx_index].getOutput().getAddress(0)]
+    const pub_addr_buf = signed_tx.getUnsignedTx().getTransaction().getOuts()[tx_index].getOutput().getAddress(0)
 
     return {"tx_ID": tx_ID, "tx_index": tx_index, "pub_addr_buf": pub_addr_buf}
 }
 
 const send_data = async(join_ID: number, pub_addr: string, nonce: string, nonce_sig: Buffer ,
-    input: TransferableInput, output: TransferableOutput): Promise<any> => {
+    input: TransferableInput, output: TransferableOutput, ip: string): Promise<any> => {
 
     const send_data = {
         "join_ID": join_ID,
@@ -174,14 +198,10 @@ const send_data = async(join_ID: number, pub_addr: string, nonce: string, nonce_
         "input_buf": input.toBuffer(),
         "output_buf": output.toBuffer()
     }
-
+    
     console.log("sending data to coinjoin server now")
 
-    const recieved_data = (await send_recieve(send_data))[0]
-    const log_data = `successfully joined CJ of tx_ID ${join_ID} using address ${pub_addr}.`
-    console.log(log_data)
-    log_info(log_data)
-
+    const recieved_data = (await send_recieve(send_data, ip))[0]
     return recieved_data
 }
 

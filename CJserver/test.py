@@ -1,8 +1,5 @@
-from decimal import Decimal, getcontext
-getcontext().prec = 9
+from decimal import *
 
+getcontext().prec = 3
 
-x = None
-
-if not x:
-    print("hi")
+print(1.01 + 1.01)

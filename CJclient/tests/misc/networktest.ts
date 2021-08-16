@@ -9,7 +9,7 @@ import { TransferableInput, TransferableOutput, Tx, UTXO, UTXOSet, KeyChain, SEC
 
 
 
-import {MnemonicWallet, Network, NetworkConstants} from "@avalabs/avalanche-wallet-sdk"
+import {MnemonicWallet, Network, NetworkConstants, PublicMnemonicWallet} from "@avalabs/avalanche-wallet-sdk"
 import { Address } from "avalanche/dist/common"
 import { XChainAlias } from "avalanche/dist/utils"
 import { bnToBig } from "@avalabs/avalanche-wallet-sdk/dist/utils"
@@ -17,42 +17,77 @@ import { WalletBalanceX } from "@avalabs/avalanche-wallet-sdk/dist/Wallet/types"
 import { Defaults } from "avalanche/dist/utils"
 
 const mnemonicKey = "dismiss spoon penalty gentle unable music buffalo cause bundle rural twist cheese discover this oyster garden globe excite kitchen rival diamond please clog swing"
+const mnemonic2 = "defense seven hip situate stool outer float ball fine piano unable slim system ring path voyage rabbit inside power agree tomorrow rich fabric woman"
 const bintools: BinTools = BinTools.getInstance()
 
 const test = async(networkID: number): Promise<any> => {
+
+    const wallet = MnemonicWallet.fromMnemonic(mnemonic2)
+    console.log(wallet.getKeyChainX())
+
     const networkData = generate_xchain(5)
     const keyData = generate_key_chain(networkData.xchain, "PrivateKey-2t6UmFMctYnZXMY1BFYF41k97ZAtcedN1U9GiQiGQzmzU21oBY")
     const xchain = networkData.xchain
 
-    const q = "MtyBi5hmr3Xan22cQcJ4a6E4Bd3i9hZiv4rC9dw9KYFpdoyGG"
-    const u = "2GBGr6CdKFpoDzd7YiS3Vu8XpRjUCqcxHvQ7EKTZBwy3zE8Gv2"
 
-    const output_idx = Buffer.alloc(4)
-    output_idx.writeIntBE(1, 0, 4)
-    const asset_ID = await xchain.getAVAXAssetID()
-
-    const secpinput = new SECPTransferInput(new BN(1.01))
-    const input = new TransferableInput(bintools.cb58Decode(u), output_idx, asset_ID, secpinput)
 
     const tx: Tx = new Tx()
     const x = await networkData.xchain.getTx("2GBGr6CdKFpoDzd7YiS3Vu8XpRjUCqcxHvQ7EKTZBwy3zE8Gv2")
     tx.fromString(x)
-    const z = tx.getUnsignedTx().getTransaction().getIns()[0].getUTXOID()
-    const v = tx.getUnsignedTx().getTransaction().getIns()[0].getTxID()
-    const utxo = "E3uDJkVNtkH1Byoj7LPANd8mhXXtHq2WJodxRAL9wDvoYNz8a"
-    const y: UTXOSet = (await networkData.xchain.getUTXOs("X-fuji1d6fetyekv4ec5enm9ltuxrd6n70ng04rpxq443")).utxos
-    const n = y.getAllUTXOs()
-    const b = y.getAllUTXOStrings()
 
-    const e = y.getUTXO(input.getUTXOID())
-    console.log(y.includes(e))
+    const z = tx.getUnsignedTx().getTransaction().getIns()[0].toBuffer()
+    const v = tx.getUnsignedTx().getTransaction().getOuts()[0].toBuffer()
+
+    console.log(z)
+    const t = bintools.cb58Encode(z)
+    console.log(t)
+    console.log(bintools.cb58Decode(t))
+    console.log(bintools.cb58Encode(new Buffer(t)))
     
-    console.log(input.getUTXOID())
 
+    const y = Buffer.concat([z, v])
+    const c = Buffer.from(createHash("sha256").update(new Buffer(y)).digest())
+    const d = bintools.cb58Encode(c)
+
+
+    const b = bintools.bufferToB58(z)
+    const a = bintools.bufferToB58(y)
+
+    const n = new Buffer(x)
+    const m = Buffer.from(createHash("sha256").update(n).digest())
 
 }
 
-const args = process.argv.slice(2)
+const hest = async() => {
+    const networkData = generate_xchain(5)
+    const wallet = MnemonicWallet.fromMnemonic(mnemonic2)
+    console.log(wallet.getExternalAddressesX())
+    const b = wallet.getKeyChainX()
+    console.log(b.getAddressStrings())
+    
+}
 
-//test(parseInt(args[0]))
-test(5)
+const best = async() => {
+    const networkData = generate_xchain(5)
+    const t = "sport fee fever myself private monster ladder leaf ritual month near can exhaust skin weird morning umbrella earn stone orphan enemy dry party ecology"
+    const z = MnemonicWallet.fromMnemonic(t)
+    await z.resetHdIndices()
+    const b = z.getKeyChainX()
+    const v = networkData.xchain.parseAddress(z.getExternalAddressesX()[0])
+    console.log(b.getKey(v))
+
+}
+
+const vest = async() => {
+    const network_data = generate_xchain(5)
+    const key_data = generate_key_chain(network_data.xchain, "PrivateKey-ryjZWerx1vRgQnFrLJ9oxBYUS7TdMRNrBLmSAAP78L4xixvT2")
+    const time = new BN(new Date().getTime())
+    const time_buf = Buffer.from(time.toBuffer())
+    const sig = key_data.my_key_pair.sign(new Buffer("1"))
+    const time_hash = Buffer.from(createHash("sha256").update(sig).digest("hex"))
+
+    console.log(time_hash.toString().length)
+    
+}
+
+vest()

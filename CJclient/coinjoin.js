@@ -135,36 +135,23 @@ var cmd_print_recorded_addrs = function () {
     }
 };
 var cmd_start_cj_instance = function () { return __awaiter(void 0, void 0, void 0, function () {
-    var join_ID, private_key, dest_addr, input_amount, key_list, address_data;
+    var ip, join_ID, private_key, dest_addr, input_amount, address_data;
     return __generator(this, function (_a) {
-        join_ID = parseInt(args[0]);
-        private_key = undefined;
-        dest_addr = undefined;
-        input_amount = undefined;
-        if (args.length == 26 || args.length == 27) {
-            key_list = args.slice(1, 25);
-            private_key = "";
-            key_list.forEach(function (item) {
-                private_key += item + " ";
-            });
-            dest_addr = args[25];
-            input_amount = parseFloat(args[26]);
-        }
-        else if (args.length == 3 || args.length == 4) {
-            private_key = args[1];
-            dest_addr = args[2];
-            input_amount = parseFloat(args[3]);
-        }
-        address_data = getaddrdata_1.get_address_data();
-        if (private_key in address_data) {
-            private_key = address_data[private_key];
-        }
-        if (args[0] == INFO || args[0] == HELP) {
+        if (args[0] == INFO || args[0] == HELP || args.length == 0) {
             console.log(DESC + " runs a complete transaction from start to finish, I.e. sends a valid input/output to the server and then signs");
-            console.log(STD_USAGE + " " + JOIN + " (join_ID) (private_key) (dest_addr) [input_amount]");
+            console.log(STD_USAGE + " " + JOIN + " (ip) (join_ID) (private_key) (dest_addr) [input_amount]");
         }
         else {
-            cjtxtypes_1.full_cj_tx(join_ID, private_key, dest_addr, input_amount);
+            ip = args[0];
+            join_ID = parseInt(args[1]);
+            private_key = args[2];
+            dest_addr = args[3];
+            input_amount = parseFloat(args[4]);
+            address_data = getaddrdata_1.get_address_data();
+            if (private_key in address_data) {
+                private_key = address_data[private_key];
+            }
+            cjtxtypes_1.full_cj_tx(join_ID, private_key, dest_addr, ip, input_amount);
         }
         return [2 /*return*/];
     });
@@ -172,22 +159,27 @@ var cmd_start_cj_instance = function () { return __awaiter(void 0, void 0, void 
 var cmd_get_option_data = function () {
     if (args[0] == INFO || args[0] == HELP) {
         console.log(DESC + " gets the cj server's options for coinjoins, e.g. assetid/name, denominations, etc");
-        console.log(STD_USAGE + " " + OPTIONS);
+        console.log(STD_USAGE + " " + OPTIONS + " (ip)");
     }
     else {
-        getoptiondata_1.get_option_data();
+        var ip = args[0];
+        getoptiondata_1.get_option_data(ip);
     }
 };
 var cmd_print_join_data = function () { return __awaiter(void 0, void 0, void 0, function () {
-    var join_data;
+    var ip, join_ID, join_data;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
                 if (!(args[0] == INFO || args[0] == HELP)) return [3 /*break*/, 1];
                 console.log(DESC + " gets the data for a specific join that is in the CJ server.");
-                console.log(STD_USAGE + " " + JOININFO + " (join_id)");
+                console.log(STD_USAGE + " " + JOININFO + " (ip) (join_id)");
                 return [3 /*break*/, 3];
-            case 1: return [4 /*yield*/, getjoindata_1.get_join_data(parseInt(args[0]))];
+            case 1:
+                ip = args[0];
+                join_ID = parseInt(args[1]);
+                console.log(ip, join_ID);
+                return [4 /*yield*/, getjoindata_1.get_join_data(join_ID, ip)];
             case 2:
                 join_data = (_a.sent());
                 console.log(utils_1.join_data_readable(join_data));
@@ -197,20 +189,21 @@ var cmd_print_join_data = function () { return __awaiter(void 0, void 0, void 0,
     });
 }); };
 var cmd_find_matching_joins = function () { return __awaiter(void 0, void 0, void 0, function () {
-    var asset_ID, asset_amount, network_ID, min_users, max_users, join_list, join_data_1;
+    var ip, asset_ID, asset_amount, network_ID, min_users, max_users, join_list, join_data_1;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
-                asset_ID = args[0];
-                asset_amount = parseFloat(args[1]);
-                network_ID = parseInt(args[2]);
-                min_users = parseInt(args[3]);
-                max_users = parseInt(args[4]);
+                ip = args[0];
+                asset_ID = args[1];
+                asset_amount = parseFloat(args[2]);
+                network_ID = parseInt(args[3]);
+                min_users = parseInt(args[4]);
+                max_users = parseInt(args[5]);
                 if (!(args[0] == INFO || args[0] == HELP)) return [3 /*break*/, 1];
                 console.log(DESC + " runs the matchmaking service on the CJ server with given paramaters, and returns back applicable joins");
-                console.log(STD_USAGE + " " + SEARCH + " (assetid | name) (targetamount) (networkID) [min_users] [max_users]");
+                console.log(STD_USAGE + " " + SEARCH + " (ip) (assetid | name) (targetamount) (networkID) [min_users] [max_users]");
                 return [3 /*break*/, 3];
-            case 1: return [4 /*yield*/, findmatchingjoins_1.find_matching_joins(asset_ID, asset_amount, network_ID, min_users, max_users)];
+            case 1: return [4 /*yield*/, findmatchingjoins_1.find_matching_joins(asset_ID, asset_amount, network_ID, ip, min_users, max_users)];
             case 2:
                 join_list = (_a.sent());
                 join_data_1 = "";
@@ -224,18 +217,20 @@ var cmd_find_matching_joins = function () { return __awaiter(void 0, void 0, voi
     });
 }); };
 var cmd_exit_cj = function () {
-    var join_ID = parseInt(args[0]);
-    var private_key = args[1];
+    var ip = args[0];
+    var join_ID = parseInt(args[1]);
+    var private_key = args[2];
     var address_data = getaddrdata_1.get_address_data();
     if (private_key in address_data) {
         private_key = address_data[private_key];
     }
     if (args[0] == INFO || args[0] == HELP) {
-        console.log(DESC + " exits a particular coinjoin by signing a nonce");
-        console.log(STD_USAGE + " " + EXIT + " (join_ID) (networkID) (testkeypair / privatekey) (pubkey)");
+        console.log(DESC + " exits a particular coinjoin by signing a nonce.");
+        console.log("NOTE: if you have signed in to a join with multiple addresses (not recommended), you MUST enter your private key to determine which address you used.");
+        console.log(STD_USAGE + " " + EXIT + " (ip) (join_ID) [priv_key]");
     }
     else {
-        exitcj_1.exit_cj(join_ID, private_key);
+        exitcj_1.exit_cj(ip, join_ID, private_key);
     }
 };
 main();

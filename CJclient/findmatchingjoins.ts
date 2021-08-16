@@ -2,7 +2,8 @@ import { send_recieve } from "./processmessage"
 import * as consts from "./constants"
 import { join_data_readable } from "./utils"
 
-const find_matching_joins = async(asset_ID: string, asset_amount: number, network_ID: number, min_users?: number, max_users?: number): Promise<any> => {
+const find_matching_joins = async(asset_ID: string, asset_amount: number, network_ID: number, ip: string, 
+    min_users?: number, max_users?: number): Promise<any> => {
     
     const return_data = {
         "message_type": consts.SELECT_OPTIONS,
@@ -17,9 +18,7 @@ const find_matching_joins = async(asset_ID: string, asset_amount: number, networ
     if (max_users){
         return_data["max_users"] = max_users
     }
-    const join_list = (await send_recieve(return_data))[0]
-    console.log(join_list)
-    console.log("hi")
+    const join_list = (await send_recieve(return_data, ip))[0]
     return join_list
 }
 

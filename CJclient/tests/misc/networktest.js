@@ -38,46 +38,85 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 exports.__esModule = true;
 var avalancheutils_1 = require("../../avalancheutils");
 var avalanche_1 = require("avalanche");
+var crypto_1 = require("crypto");
 var avm_1 = require("@avalabs/avalanche-wallet-sdk/node_modules/avalanche/dist/apis/avm");
+var avalanche_wallet_sdk_1 = require("@avalabs/avalanche-wallet-sdk");
 var mnemonicKey = "dismiss spoon penalty gentle unable music buffalo cause bundle rural twist cheese discover this oyster garden globe excite kitchen rival diamond please clog swing";
+var mnemonic2 = "defense seven hip situate stool outer float ball fine piano unable slim system ring path voyage rabbit inside power agree tomorrow rich fabric woman";
 var bintools = avalanche_1.BinTools.getInstance();
 var test = function (networkID) { return __awaiter(void 0, void 0, void 0, function () {
-    var networkData, keyData, xchain, q, u, output_idx, asset_ID, secpinput, input, tx, x, z, v, utxo, y, n, b, e;
+    var wallet, networkData, keyData, xchain, tx, x, z, v, t, y, c, d, b, a, n, m;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
+                wallet = avalanche_wallet_sdk_1.MnemonicWallet.fromMnemonic(mnemonic2);
+                console.log(wallet.getKeyChainX());
                 networkData = avalancheutils_1.generate_xchain(5);
                 keyData = avalancheutils_1.generate_key_chain(networkData.xchain, "PrivateKey-2t6UmFMctYnZXMY1BFYF41k97ZAtcedN1U9GiQiGQzmzU21oBY");
                 xchain = networkData.xchain;
-                q = "MtyBi5hmr3Xan22cQcJ4a6E4Bd3i9hZiv4rC9dw9KYFpdoyGG";
-                u = "2GBGr6CdKFpoDzd7YiS3Vu8XpRjUCqcxHvQ7EKTZBwy3zE8Gv2";
-                output_idx = avalanche_1.Buffer.alloc(4);
-                output_idx.writeIntBE(1, 0, 4);
-                return [4 /*yield*/, xchain.getAVAXAssetID()];
-            case 1:
-                asset_ID = _a.sent();
-                secpinput = new avm_1.SECPTransferInput(new avalanche_1.BN(1.01));
-                input = new avm_1.TransferableInput(bintools.cb58Decode(u), output_idx, asset_ID, secpinput);
                 tx = new avm_1.Tx();
                 return [4 /*yield*/, networkData.xchain.getTx("2GBGr6CdKFpoDzd7YiS3Vu8XpRjUCqcxHvQ7EKTZBwy3zE8Gv2")];
-            case 2:
+            case 1:
                 x = _a.sent();
                 tx.fromString(x);
-                z = tx.getUnsignedTx().getTransaction().getIns()[0].getUTXOID();
-                v = tx.getUnsignedTx().getTransaction().getIns()[0].getTxID();
-                utxo = "E3uDJkVNtkH1Byoj7LPANd8mhXXtHq2WJodxRAL9wDvoYNz8a";
-                return [4 /*yield*/, networkData.xchain.getUTXOs("X-fuji1d6fetyekv4ec5enm9ltuxrd6n70ng04rpxq443")];
-            case 3:
-                y = (_a.sent()).utxos;
-                n = y.getAllUTXOs();
-                b = y.getAllUTXOStrings();
-                e = y.getUTXO(input.getUTXOID());
-                console.log(y.includes(e));
-                console.log(input.getUTXOID());
+                z = tx.getUnsignedTx().getTransaction().getIns()[0].toBuffer();
+                v = tx.getUnsignedTx().getTransaction().getOuts()[0].toBuffer();
+                console.log(z);
+                t = bintools.cb58Encode(z);
+                console.log(t);
+                console.log(bintools.cb58Decode(t));
+                console.log(bintools.cb58Encode(new avalanche_1.Buffer(t)));
+                y = avalanche_1.Buffer.concat([z, v]);
+                c = avalanche_1.Buffer.from(crypto_1.createHash("sha256").update(new avalanche_1.Buffer(y)).digest());
+                d = bintools.cb58Encode(c);
+                b = bintools.bufferToB58(z);
+                a = bintools.bufferToB58(y);
+                n = new avalanche_1.Buffer(x);
+                m = avalanche_1.Buffer.from(crypto_1.createHash("sha256").update(n).digest());
                 return [2 /*return*/];
         }
     });
 }); };
-var args = process.argv.slice(2);
-//test(parseInt(args[0]))
-test(5);
+var hest = function () { return __awaiter(void 0, void 0, void 0, function () {
+    var networkData, wallet, b;
+    return __generator(this, function (_a) {
+        networkData = avalancheutils_1.generate_xchain(5);
+        wallet = avalanche_wallet_sdk_1.MnemonicWallet.fromMnemonic(mnemonic2);
+        console.log(wallet.getExternalAddressesX());
+        b = wallet.getKeyChainX();
+        console.log(b.getAddressStrings());
+        return [2 /*return*/];
+    });
+}); };
+var best = function () { return __awaiter(void 0, void 0, void 0, function () {
+    var networkData, t, z, b, v;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                networkData = avalancheutils_1.generate_xchain(5);
+                t = "sport fee fever myself private monster ladder leaf ritual month near can exhaust skin weird morning umbrella earn stone orphan enemy dry party ecology";
+                z = avalanche_wallet_sdk_1.MnemonicWallet.fromMnemonic(t);
+                return [4 /*yield*/, z.resetHdIndices()];
+            case 1:
+                _a.sent();
+                b = z.getKeyChainX();
+                v = networkData.xchain.parseAddress(z.getExternalAddressesX()[0]);
+                console.log(b.getKey(v));
+                return [2 /*return*/];
+        }
+    });
+}); };
+var vest = function () { return __awaiter(void 0, void 0, void 0, function () {
+    var network_data, key_data, time, time_buf, sig, time_hash;
+    return __generator(this, function (_a) {
+        network_data = avalancheutils_1.generate_xchain(5);
+        key_data = avalancheutils_1.generate_key_chain(network_data.xchain, "PrivateKey-ryjZWerx1vRgQnFrLJ9oxBYUS7TdMRNrBLmSAAP78L4xixvT2");
+        time = new avalanche_1.BN(new Date().getTime());
+        time_buf = avalanche_1.Buffer.from(time.toBuffer());
+        sig = key_data.my_key_pair.sign(new avalanche_1.Buffer("1"));
+        time_hash = avalanche_1.Buffer.from(crypto_1.createHash("sha256").update(sig).digest("hex"));
+        console.log(time_hash.toString().length);
+        return [2 /*return*/];
+    });
+}); };
+vest();

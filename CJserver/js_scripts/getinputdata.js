@@ -28,7 +28,7 @@ const process_data = async(data) => {
         input_tx_string = await network_data.xchain.getTx(input_tx_ID)
     }
     catch (e){
-        throw new Error("Input was not found")
+        throw new Error("Input was not found" + " " + input_tx_ID)
     }
     const input_tx = new avm_1.Tx()
     input_tx.fromString(input_tx_string)

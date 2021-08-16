@@ -42,8 +42,8 @@ var consts = require("./constants");
 var avalancheutils_1 = require("./avalancheutils");
 var avalanche_wallet_sdk_1 = require("@avalabs/avalanche-wallet-sdk");
 var bintools = avalanche_1.BinTools.getInstance();
-var request_nonce = function (join_ID, pub_addr, private_key, network_ID) { return __awaiter(void 0, void 0, void 0, function () {
-    var network_data, key_type, send_data, recieved_nonce, my_nonce, full_nonce, full_nonce_buf, sig, key_data, my_wallet;
+var request_nonce = function (join_ID, pub_addr, private_key, network_ID, ip) { return __awaiter(void 0, void 0, void 0, function () {
+    var network_data, key_type, send_data, nonce_data, server_nonce, server_sig, server_pub_addr, dummy_pair, nonce_addr_buf, nonce_addr, recieved_nonce, my_nonce, full_nonce, full_nonce_buf, sig, key_data, my_wallet, my_key;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -52,11 +52,22 @@ var request_nonce = function (join_ID, pub_addr, private_key, network_ID) { retu
                 send_data = {
                     "join_ID": join_ID,
                     "message_type": consts.REQUEST_TO_JOIN,
-                    "pub_addr": pub_addr
+                    "pub_addr": pub_addr,
+                    "server_nonce": generate_nonce()
                 };
-                return [4 /*yield*/, processmessage_1.send_recieve(send_data)];
+                return [4 /*yield*/, processmessage_1.send_recieve(send_data, ip)];
             case 1:
-                recieved_nonce = (_a.sent())[0];
+                nonce_data = (_a.sent())[0];
+                server_nonce = nonce_data["server_nonce"];
+                server_sig = nonce_data["server_sig"];
+                server_pub_addr = nonce_data["server_pub_addr"];
+                dummy_pair = network_data.xchain.keyChain().makeKey();
+                nonce_addr_buf = dummy_pair.addressFromPublicKey(dummy_pair.recover(avalanche_1.Buffer.from(server_nonce), avalanche_1.Buffer.from(server_sig)));
+                nonce_addr = network_data.xchain.addressFromBuffer(nonce_addr_buf);
+                if (nonce_addr != server_pub_addr) {
+                    throw new Error("recovered address does not match to server address");
+                }
+                recieved_nonce = nonce_data["nonce"];
                 my_nonce = generate_nonce();
                 full_nonce = recieved_nonce + my_nonce;
                 full_nonce_buf = new avalanche_1.Buffer(full_nonce);
@@ -71,7 +82,9 @@ var request_nonce = function (join_ID, pub_addr, private_key, network_ID) { retu
                 return [4 /*yield*/, my_wallet.resetHdIndices()];
             case 3:
                 _a.sent();
-                sig = my_wallet.getSigFromUTX(full_nonce_buf, my_wallet.getExternalAddressesX().indexOf(pub_addr));
+                my_wallet.getKeyChainX();
+                my_key = my_wallet.getKeyChainX().getKey(network_data.xchain.parseAddress(pub_addr));
+                sig = my_key.sign(full_nonce_buf);
                 _a.label = 4;
             case 4: return [2 /*return*/, [full_nonce, sig]];
         }

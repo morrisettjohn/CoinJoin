@@ -7,6 +7,7 @@ var join_data_readable = function (join) {
         state = "signatures";
     }
     var message = "Join ID: " + join["ID"];
+    message += "\n\tJoin Transaction ID: " + join["join_tx_ID"];
     message += "\n\tAsset Name: " + join["asset_name"];
     message += "\n\tAsset ID: " + join["asset_ID"];
     message += "\n\tNetwork ID: " + join["network_ID"];
@@ -18,3 +19,11 @@ var join_data_readable = function (join) {
     return message;
 };
 exports.join_data_readable = join_data_readable;
+var extract_host = function (ip) {
+    return ip.slice(0, ip.indexOf(":"));
+};
+exports.extract_host = extract_host;
+var extract_port = function (ip) {
+    return ip.slice(ip.indexOf(":") + 1);
+};
+exports.extract_port = extract_port;

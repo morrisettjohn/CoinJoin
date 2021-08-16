@@ -35,8 +35,8 @@ def send_stx(conn, stx):
     data = str.encode("STX" + json.dumps(stx) + req_terminator)
     send(conn, data)
 
-def send_nonce(conn, nonce):
-    data = str.encode("NCE" + nonce + req_terminator)
+def send_nonce(conn, nonce_verification_data):
+    data = str.encode("NCE" + json.dumps(nonce_verification_data) + req_terminator)
     send(conn, data)
 
 def send_accepted_tx_ID(conn, tx_ID):

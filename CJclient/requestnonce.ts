@@ -9,7 +9,7 @@ import { MnemonicWallet } from "@avalabs/avalanche-wallet-sdk";
 
 const bintools: BinTools = BinTools.getInstance()
 
-const request_nonce = async(join_ID: number, pub_addr: string, private_key: string, network_ID: number): Promise<any> => {
+const request_nonce = async(join_ID: number, pub_addr: string, private_key: string, network_ID: number, ip: string): Promise<any> => {
     const network_data = generate_xchain(network_ID)
     const key_type = get_key_type(private_key)
 
@@ -17,9 +17,24 @@ const request_nonce = async(join_ID: number, pub_addr: string, private_key: stri
         "join_ID": join_ID,
         "message_type": consts.REQUEST_TO_JOIN,
         "pub_addr": pub_addr,
+        "server_nonce": generate_nonce()
     }
     
-    const recieved_nonce: string = (await send_recieve(send_data))[0]
+    const nonce_data = (await send_recieve(send_data, ip))[0]
+
+    const server_nonce = nonce_data["server_nonce"]
+    const server_sig = nonce_data["server_sig"]
+    const server_pub_addr = nonce_data["server_pub_addr"]
+
+    const dummy_pair = network_data.xchain.keyChain().makeKey()
+    const nonce_addr_buf = dummy_pair.addressFromPublicKey(dummy_pair.recover(Buffer.from(server_nonce), Buffer.from(server_sig)))
+    const nonce_addr = network_data.xchain.addressFromBuffer(nonce_addr_buf)
+
+    if (nonce_addr != server_pub_addr) {
+        throw new Error("recovered address does not match to server address")
+    }
+
+    const recieved_nonce: string = nonce_data["nonce"]
     const my_nonce: string = generate_nonce()
     const full_nonce = recieved_nonce + my_nonce
     const full_nonce_buf = new Buffer(full_nonce)
@@ -32,7 +47,9 @@ const request_nonce = async(join_ID: number, pub_addr: string, private_key: stri
     else if (key_type == 1){
         const my_wallet = MnemonicWallet.fromMnemonic(private_key)
         await my_wallet.resetHdIndices()
-        sig = my_wallet.getSigFromUTX(full_nonce_buf, my_wallet.getExternalAddressesX().indexOf(pub_addr))
+        my_wallet.getKeyChainX()
+        const my_key = my_wallet.getKeyChainX().getKey(network_data.xchain.parseAddress(pub_addr))
+        sig = my_key.sign(full_nonce_buf)
     }
     return [full_nonce, sig]
 }

@@ -23,12 +23,13 @@ class Input:
         try:
             result.check_returncode()
         except Exception:
+            print(result.stdout)
             print(result.stderr)
             raise Exception
             
 
         result_data = json.loads(bytes.decode((result.stdout)))
-        self.amt = Decimal(result_data["amt"])/BNSCALE
+        self.amt = float(result_data["amt"])/BNSCALE
         self.asset_ID = result_data["asset_ID"]
         self.pub_addr = result_data["pub_addr"]
 
@@ -52,12 +53,12 @@ class Output:
             raise Exception
 
         result_data = json.loads(bytes.decode((result.stdout)))
-        self.amt = Decimal(result_data["amt"])/BNSCALE
+        self.amt = float(result_data["amt"])/BNSCALE
         self.asset_ID = result_data["asset_ID"]
         self.output_addr = result_data["output_addr"]
 
 
-class Nonce():
+class Nonce:
 
     def __init__(self, msg):
         self.msg = msg
@@ -83,7 +84,7 @@ class Nonce():
         self.nonce_addr = result_data["nonce_addr"]
 
     
-class Sig():
+class Sig:
     
     def __init__(self, utx, sig, network_ID):
         self.sig = sig

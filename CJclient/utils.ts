@@ -6,6 +6,7 @@ const join_data_readable = function(join: any) {
         state = "signatures"
     }
     let message = `Join ID: ${join["ID"]}`
+    message += `\n\tJoin Transaction ID: ${join["join_tx_ID"]}`
     message += `\n\tAsset Name: ${join["asset_name"]}`
     message += `\n\tAsset ID: ${join["asset_ID"]}`
     message += `\n\tNetwork ID: ${join["network_ID"]}`
@@ -17,4 +18,13 @@ const join_data_readable = function(join: any) {
     return message
   }
 
-export { join_data_readable }
+const extract_host = function(ip:string) {
+  return ip.slice(0, ip.indexOf(":"))
+}
+
+const extract_port = function(ip:string) {
+  return ip.slice(ip.indexOf(":") + 1)
+}
+
+
+export { join_data_readable, extract_host, extract_port }

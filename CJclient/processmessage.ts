@@ -1,5 +1,11 @@
+import { bintools } from "@avalabs/avalanche-wallet-sdk/dist/common"
+import { KeyPair } from "avalanche/dist/apis/avm"
 import { request } from "http"
+import { generate_xchain } from "./avalancheutils"
 import * as consts from "./constants"
+import { extract_host, extract_port } from "./utils"
+import { Buffer } from "@avalabs/avalanche-wallet-sdk/node_modules/avalanche" 
+import { createHash } from 'crypto'
 
 class Message {
     message_type: string
@@ -30,6 +36,15 @@ class Message {
     get_cache_timeout(){
         return this.cache_timeout
     }
+}
+
+const is_valid_join_data = function(data: any): boolean {
+    if ("ID" in data && "asset_name" in data && "asset_ID" in data && "network_ID" in data &&
+    "state" in data && "input_limit" in data && "input_amount" in data && "output_amount" in data && 
+    "fee_percent" in data && "join_tx_ID" in data && "fee_addr" in data && "last_accessed" in data) {
+        return true
+    }
+    return false
 }
 
 const is_valid_wtx_data = function(data: any): boolean {
@@ -97,11 +112,16 @@ const process_message = function (recieved_data: string): Message[]{
             message.message_resolve = "return"
         }
         else if (message_type == "JDT"){
-            message.message_data = JSON.parse(message_data)
-            message.message_resolve = "return"
+            const data = JSON.parse(message_data)
+            if (is_valid_join_data(data)) {
+                message.message_data = JSON.parse(message_data)
+                message.message_resolve = "return"
+            } else {
+                console.log("join data missing entries")
+            }
         }
         else if (message_type == "NCE"){
-            message.message_data = message_data
+            message.message_data = JSON.parse(message_data)
             message.message_resolve = "return"
         }
         //handling send_utxo data
@@ -142,21 +162,24 @@ const process_message = function (recieved_data: string): Message[]{
     return messages
 }
 
-const construct_header_options = function (content: any): any{
+const construct_header_options = function (content: any, ip: string): any{
+
     const options = {
-        host: "100.64.15.72",
-        port: "65432",
+        host: extract_host(ip),
+        port: extract_port(ip),
         method: "POST",
         headers: {
             "Content-Length": Buffer.byteLength(content)
         }
+        
     }
+
     return options
 }
 
-const send_recieve = function (sendData: any): Promise<any[]> {
+const send_recieve = function (sendData: any, ip: string): Promise<any[]> {
     const return_data_string = JSON.stringify(sendData)
-    const options = construct_header_options(return_data_string)
+    const options = construct_header_options(return_data_string, ip)
     return new Promise((resolve, reject) => {
         const cache = []
         let timeout = undefined

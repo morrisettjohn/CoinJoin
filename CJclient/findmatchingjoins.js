@@ -38,7 +38,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 exports.__esModule = true;
 var processmessage_1 = require("./processmessage");
 var consts = require("./constants");
-var find_matching_joins = function (asset_ID, asset_amount, network_ID, min_users, max_users) { return __awaiter(void 0, void 0, void 0, function () {
+var find_matching_joins = function (asset_ID, asset_amount, network_ID, ip, min_users, max_users) { return __awaiter(void 0, void 0, void 0, function () {
     var return_data, join_list;
     return __generator(this, function (_a) {
         switch (_a.label) {
@@ -55,11 +55,9 @@ var find_matching_joins = function (asset_ID, asset_amount, network_ID, min_user
                 if (max_users) {
                     return_data["max_users"] = max_users;
                 }
-                return [4 /*yield*/, processmessage_1.send_recieve(return_data)];
+                return [4 /*yield*/, processmessage_1.send_recieve(return_data, ip)];
             case 1:
                 join_list = (_a.sent())[0];
-                console.log(join_list);
-                console.log("hi");
                 return [2 /*return*/, join_list];
         }
     });

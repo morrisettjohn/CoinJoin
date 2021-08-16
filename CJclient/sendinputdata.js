@@ -44,10 +44,10 @@ var constants_1 = require("./constants");
 var avalanche_wallet_sdk_1 = require("@avalabs/avalanche-wallet-sdk");
 var consts = require("./constants");
 var requestnonce_1 = require("./requestnonce");
-var loginfo_1 = require("./loginfo");
+var addlog_1 = require("./addlog");
 //setting up the xchain object
 var bintools = avalanche_1.BinTools.getInstance();
-var send_input_data = function (join_ID, asset_ID, input_amount, output_amount, dest_addr, private_key, network_ID) { return __awaiter(void 0, void 0, void 0, function () {
+var send_input_data = function (join_ID, asset_ID, input_amount, output_amount, dest_addr, private_key, network_ID, join_tx_ID, server_addr, ip) { return __awaiter(void 0, void 0, void 0, function () {
     var network_data, xchain, sent_data, tx_ID, tx_index, pub_addr_buf, pub_addr, input, output, nonce_sig_pair, nonce, nonce_sig, recieved_data;
     return __generator(this, function (_a) {
         switch (_a.label) {
@@ -60,15 +60,16 @@ var send_input_data = function (join_ID, asset_ID, input_amount, output_amount, 
                 tx_ID = sent_data["tx_ID"];
                 tx_index = sent_data["tx_index"];
                 pub_addr_buf = sent_data["pub_addr_buf"];
-                pub_addr = xchain.addressFromBuffer(pub_addr_buf[0]);
+                pub_addr = xchain.addressFromBuffer(pub_addr_buf);
                 input = craft_input(input_amount, asset_ID, tx_ID, tx_index, pub_addr, network_ID);
                 output = craft_output(output_amount, asset_ID, dest_addr, network_ID);
-                return [4 /*yield*/, requestnonce_1.request_nonce(join_ID, pub_addr, private_key, network_ID)];
+                return [4 /*yield*/, requestnonce_1.request_nonce(join_ID, pub_addr, private_key, network_ID, ip)];
             case 2:
                 nonce_sig_pair = _a.sent();
                 nonce = nonce_sig_pair[0];
                 nonce_sig = nonce_sig_pair[1];
-                return [4 /*yield*/, send_data(join_ID, pub_addr, nonce, nonce_sig, input, output)];
+                construct_log(join_tx_ID, join_ID, ip, network_ID, pub_addr, server_addr, input, output);
+                return [4 /*yield*/, send_data(join_ID, pub_addr, nonce, nonce_sig, input, output, ip)];
             case 3:
                 recieved_data = _a.sent();
                 return [2 /*return*/, [recieved_data, input, output, pub_addr]];
@@ -76,6 +77,28 @@ var send_input_data = function (join_ID, asset_ID, input_amount, output_amount, 
     });
 }); };
 exports.send_input_data = send_input_data;
+var construct_log = function (join_tx_ID, join_ID, ip, network_ID, user_addr, server_addr, input, output) { return __awaiter(void 0, void 0, void 0, function () {
+    var join_tx_data, user_data;
+    return __generator(this, function (_a) {
+        join_tx_data = {
+            "server_addr": server_addr,
+            "join_tx_ID": join_tx_ID,
+            "join_ID": join_ID,
+            "host": ip,
+            "network_ID": network_ID,
+            "users": {}
+        };
+        user_data = {
+            "pub_addr": user_addr,
+            "input": input.toBuffer(),
+            "output": output.toBuffer(),
+            "last_status": consts.COLLECT_INPUTS,
+            "time": new Date().getTime()
+        };
+        addlog_1.add_log(server_addr, join_tx_ID, join_tx_data, user_addr, user_data);
+        return [2 /*return*/];
+    });
+}); };
 var craft_input = function (input_amount, asset_ID, tx_ID, tx_index, pubaddr, network_ID) {
     var network_data = avalancheutils_1.generate_xchain(network_ID);
     var xchain = network_data.xchain;
@@ -178,13 +201,13 @@ var send_target_amount = function (network_ID, private_key, input_amount, asset_
                     }
                     tx_index += 1;
                 }
-                pub_addr_buf = [signed_tx.getUnsignedTx().getTransaction().getOuts()[tx_index].getOutput().getAddress(0)];
+                pub_addr_buf = signed_tx.getUnsignedTx().getTransaction().getOuts()[tx_index].getOutput().getAddress(0);
                 return [2 /*return*/, { "tx_ID": tx_ID, "tx_index": tx_index, "pub_addr_buf": pub_addr_buf }];
         }
     });
 }); };
-var send_data = function (join_ID, pub_addr, nonce, nonce_sig, input, output) { return __awaiter(void 0, void 0, void 0, function () {
-    var send_data, recieved_data, log_data;
+var send_data = function (join_ID, pub_addr, nonce, nonce_sig, input, output, ip) { return __awaiter(void 0, void 0, void 0, function () {
+    var send_data, recieved_data;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -198,12 +221,9 @@ var send_data = function (join_ID, pub_addr, nonce, nonce_sig, input, output) { 
                     "output_buf": output.toBuffer()
                 };
                 console.log("sending data to coinjoin server now");
-                return [4 /*yield*/, processmessage_1.send_recieve(send_data)];
+                return [4 /*yield*/, processmessage_1.send_recieve(send_data, ip)];
             case 1:
                 recieved_data = (_a.sent())[0];
-                log_data = "successfully joined CJ of tx_ID " + join_ID + " using address " + pub_addr + ".";
-                console.log(log_data);
-                loginfo_1.log_info(log_data);
                 return [2 /*return*/, recieved_data];
         }
     });

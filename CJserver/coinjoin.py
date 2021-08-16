@@ -4,15 +4,17 @@ from utils.httprequest import *
 
 from assetinfo import *
 from params import *
-from joinstatesamples import samples
-from messages import send_err, send_option_data, send_compatable_join_list, send_join_data, send_nonce
+from joinstatesamples import samples, generate_samples
+from messages import send_err, send_message, send_option_data, send_compatable_join_list, send_join_data, send_nonce
 import socket
 import sys
 import json
 import time
+from config import *
 
 
 fee_address = "X-fuji18gcr997m4cntu2pzp9u5p72pmm53d6376l6cee",
+fee_address = FEE_KEY
 standard_fee_percent = .10
 
 join_list = {}
@@ -75,7 +77,6 @@ def create_new_join(asset_type, amount, network_ID, limit):
         network_ID = network_ID,
         out_amount = amount,
         fee_percent = standard_fee_percent,
-        fee_address = fee_address
     )
     return new_join
 
@@ -93,7 +94,7 @@ def find_joins(asset_ID, amount, network_ID, min_users, max_users):
         print("no joins found, creating new join")
         #If no join is found, create a new one
         new_join = create_new_join(asset_ID, amount, network_ID, min_users)
-        join_list[new_join.id] = new_join
+        join_list[new_join.ID] = new_join
         matches.append(new_join.get_status())
     return matches
 
@@ -132,8 +133,6 @@ def is_valid_json_data(data):
         return False
     if data["message_type"] == START_PROCESS: 
         return True
-    if "join_ID" in data and data["join_ID"] not in join_list:
-        return False
 
     elif data["message_type"] == SELECT_OPTIONS: 
         #checks if the select options data has all of the necessary information required
@@ -153,7 +152,7 @@ def is_valid_json_data(data):
             print("no join_ID in data for selectjoin message")
             return False
     elif data["message_type"] == REQUEST_NONCE:
-        if not "join_ID" in data or not "pub_addr" in data:
+        if not "join_ID" in data or not "pub_addr" in data or not "server_nonce" in data:
             print("insufficient information to request nonce")
     elif data["message_type"] == COLLECT_INPUTS:
         if not "join_ID" in data or not "pub_addr" in data or not "input_buf" in data or not "output_buf" in data\
@@ -196,10 +195,14 @@ def generate_option_data():
     return return_data
 
 #Processes data based on what kind of message the data contains
-def process_data(conn, addr):
+def process_data(conn, addr, network):
     global join_list
     data = get_json_data(conn)
     if is_valid_json_data(data):
+        if "join_ID" in data and data["join_ID"] not in join_list:
+            send_err(conn, "no such join exists")
+            return
+
         message_type = get_message_type(data)
         if message_type == START_PROCESS:
             print("displaying options to user")
@@ -207,9 +210,13 @@ def process_data(conn, addr):
             send_option_data(conn, option_data)
         elif message_type == SELECT_OPTIONS:
             print("sending compatible coinjoins")
-            specs = parse_option_data(data)
-            matches = find_joins(specs[0], specs[1], specs[2], specs[3], specs[4])
-            send_compatable_join_list(conn, matches)
+            
+            if data["network_ID"] != network:
+                send_err(conn, "join server is on network %s, not network %s" % (network, data["network_ID"]))
+            else:
+                specs = parse_option_data(data)
+                matches = find_joins(specs[0], specs[1], specs[2], specs[3], specs[4])
+                send_compatable_join_list(conn, matches)
         elif message_type == GET_JOIN_DATA:
             join = get_join(data)
             if join != None:
@@ -250,18 +257,22 @@ def process_data(conn, addr):
 
 #Starts the whole coinjoin process, starting from beginning to end
 def start_server():
+    global join_list
     HOST = sys.argv[1][:sys.argv[1].find(":")]
     PORT = int(sys.argv[1][sys.argv[1].find(":")+1:])
+    network = int(sys.argv[2])
+
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)   #XXX just doing this for testing purposes, can be deleted later
     s.bind((HOST, PORT))
     s.listen()
-
+    join_list = generate_samples(network)
+    
     while True:
         conn, addr = s.accept()
         conn.sendall(b"HTTP/1.1 200 OK\r\n\r\n")   #initializes http response
         print("Connected by", addr)
-        process_data(conn, addr)
+        process_data(conn, addr, network)
 
-join_list = samples
+
 start_server()

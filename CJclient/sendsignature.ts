@@ -16,14 +16,13 @@ import { createHash } from "crypto"
 import { generate_key_chain, generate_xchain, get_key_type } from "./avalancheutils"
 import { MnemonicWallet } from "@avalabs/avalanche-wallet-sdk"
 import * as consts from "./constants"
-import { log_info } from "./loginfo"
 import { issuetx} from "./issuestx"
 
 
 const bintools: BinTools = BinTools.getInstance()
 
 const send_signature = async(join_ID: number, data: any, pub_addr: string, private_key: string, network_ID: number,
-    my_input?: TransferableInput, my_output?: TransferableOutput): Promise<any> => {
+    ip: string, my_input?: TransferableInput, my_output?: TransferableOutput): Promise<any> => {
     const network_data = generate_xchain(network_ID)
     const key_type = get_key_type(private_key)
 
@@ -51,7 +50,8 @@ const send_signature = async(join_ID: number, data: any, pub_addr: string, priva
         await my_wallet.updateUtxosX()
         run_security_checks(inputs, outputs, my_input, my_output, my_wallet.utxosX.getAllUTXOs())
 
-        const sig_string = my_wallet.getSigFromUTX(msg, my_wallet.getAllAddressesX().indexOf(pub_addr))
+        const my_key = my_wallet.getKeyChainX().getKey(network_data.xchain.parseAddress(pub_addr))
+        const sig_string = my_key.sign(msg)
         
         sig.fromBuffer(sig_string)
     }
@@ -63,7 +63,7 @@ const send_signature = async(join_ID: number, data: any, pub_addr: string, priva
         "pub_addr": pub_addr,
     }
 
-    const return_data = (await send_recieve(send_data))
+    const return_data = (await send_recieve(send_data, ip))
     if (return_data.length == 1){
         console.log("server did not issue in a timely manner, manually issuing tx")
         issuetx(return_data[0], network_ID)
@@ -73,8 +73,6 @@ const send_signature = async(join_ID: number, data: any, pub_addr: string, priva
     }
 
     const log_data = `successfully sent signature to CJ of id ${join_ID} using address ${pub_addr}.`
-    console.log(log_data)
-    log_info(log_data)
     
 }
 

@@ -106,70 +106,63 @@ const cmd_print_recorded_addrs = function(){
 }
 
 const cmd_start_cj_instance = async(): Promise<any> => {
-    const join_ID = parseInt(args[0])
-    let private_key = undefined
-    let dest_addr = undefined
-    let input_amount = undefined
-    if (args.length == 26 || args.length == 27){
-      const key_list = args.slice(1, 25)
-      private_key = ""
-      key_list.forEach(item => {
-        private_key += item + " "
-      })
-      dest_addr = args[25]
-      input_amount = parseFloat(args[26])
-    }
-    else if (args.length == 3 || args.length == 4) {
-      private_key = args[1]
-      dest_addr = args[2]
-      input_amount = parseFloat(args[3])
-    }
+
+  if (args[0] == INFO || args[0] == HELP || args.length == 0){
+    console.log(`${DESC} runs a complete transaction from start to finish, I.e. sends a valid input/output to the server and then signs`)
+    console.log(`${STD_USAGE} ${JOIN} (ip) (join_ID) (private_key) (dest_addr) [input_amount]`)
+  } else {
+    const ip = args[0]
+    const join_ID = parseInt(args[1])
+    let private_key = args[2]
+    const dest_addr = args[3]
+    const input_amount = parseFloat(args[4])
+
+
     const address_data = get_address_data()
     if (private_key in address_data) {
       private_key = address_data[private_key]
     }
-
-    if (args[0] == INFO || args[0] == HELP){
-      console.log(`${DESC} runs a complete transaction from start to finish, I.e. sends a valid input/output to the server and then signs`)
-      console.log(`${STD_USAGE} ${JOIN} (join_ID) (private_key) (dest_addr) [input_amount]`)
-    } 
-    else {
-      full_cj_tx(join_ID, private_key, dest_addr, input_amount)
-    }
+    full_cj_tx(join_ID, private_key, dest_addr, ip, input_amount)
+  }
 }
 
 const cmd_get_option_data = function(){
   if (args[0] == INFO || args[0] == HELP){
     console.log(`${DESC} gets the cj server's options for coinjoins, e.g. assetid/name, denominations, etc`)
-    console.log(`${STD_USAGE} ${OPTIONS}`)
+    console.log(`${STD_USAGE} ${OPTIONS} (ip)`)
   } else {
-    get_option_data()
+    const ip = args[0]
+    get_option_data(ip)
   }
 }
 
 const cmd_print_join_data = async() => {
   if (args[0] == INFO || args[0] == HELP){
     console.log(`${DESC} gets the data for a specific join that is in the CJ server.`)
-    console.log(`${STD_USAGE} ${JOININFO} (join_id)`)
+    console.log(`${STD_USAGE} ${JOININFO} (ip) (join_id)`)
   } else {
-    const join_data = (await get_join_data(parseInt(args[0])))
+    const ip = args[0]
+    const join_ID = parseInt(args[1])
+    console.log(ip, join_ID)
+    const join_data = (await get_join_data(join_ID, ip))
     console.log(join_data_readable(join_data))
   }
 }
 
 const cmd_find_matching_joins = async() => {
-    const asset_ID = args[0]
-    const asset_amount = parseFloat(args[1])
-    const network_ID = parseInt(args[2])
-    const min_users = parseInt(args[3])
-    const max_users = parseInt(args[4])
+    const ip = args[0]
+    const asset_ID = args[1]
+    const asset_amount = parseFloat(args[2])
+    const network_ID = parseInt(args[3])
+    const min_users = parseInt(args[4])
+    const max_users = parseInt(args[5])
 
     if (args[0] == INFO || args[0] == HELP){
         console.log(`${DESC} runs the matchmaking service on the CJ server with given paramaters, and returns back applicable joins`)
-        console.log(`${STD_USAGE} ${SEARCH} (assetid | name) (targetamount) (networkID) [min_users] [max_users]`)
+        console.log(`${STD_USAGE} ${SEARCH} (ip) (assetid | name) (targetamount) (networkID) [min_users] [max_users]`)
     } 
     else {
-        const join_list = (await find_matching_joins(asset_ID, asset_amount, network_ID, min_users, max_users))
+        const join_list = (await find_matching_joins(asset_ID, asset_amount, network_ID, ip, min_users, max_users))
         let join_data = ""
         join_list.forEach(item => {
           join_data += join_data_readable(item)
@@ -180,22 +173,23 @@ const cmd_find_matching_joins = async() => {
 
 const cmd_exit_cj = function() {
 
-    const join_ID = parseInt(args[0])
-    let private_key = args[1]
+    const ip = args[0]
+    const join_ID = parseInt(args[1])
+    let private_key = args[2]
     const address_data = get_address_data()
+
     if (private_key in address_data) {
       private_key = address_data[private_key]
     }
     
     if (args[0] == INFO || args[0] == HELP){
-        console.log(`${DESC} exits a particular coinjoin by signing a nonce`)
-        console.log(`${STD_USAGE} ${EXIT} (join_ID) (networkID) (testkeypair / privatekey) (pubkey)`)
+        console.log(`${DESC} exits a particular coinjoin by signing a nonce.`)
+        console.log(`NOTE: if you have signed in to a join with multiple addresses (not recommended), you MUST enter your private key to determine which address you used.`)
+        console.log(`${STD_USAGE} ${EXIT} (ip) (join_ID) [priv_key]`)
     } 
     else {
-        exit_cj(join_ID, private_key)
+        exit_cj(ip, join_ID, private_key)
     }
 }
-
-
 
 main()

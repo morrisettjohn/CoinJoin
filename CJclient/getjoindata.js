@@ -38,16 +38,16 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 exports.__esModule = true;
 var processmessage_1 = require("./processmessage");
 var consts = require("./constants");
-var get_join_data = function (join_ID) { return __awaiter(void 0, void 0, void 0, function () {
-    var returnData, join_data;
+var get_join_data = function (join_ID, ip) { return __awaiter(void 0, void 0, void 0, function () {
+    var return_data, join_data;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
-                returnData = {
+                return_data = {
                     "message_type": consts.GET_JOIN_DATA,
                     "join_ID": join_ID
                 };
-                return [4 /*yield*/, processmessage_1.send_recieve(returnData)];
+                return [4 /*yield*/, processmessage_1.send_recieve(return_data, ip)];
             case 1:
                 join_data = (_a.sent())[0];
                 return [2 /*return*/, join_data];

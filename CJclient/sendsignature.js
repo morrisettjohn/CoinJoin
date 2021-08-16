@@ -44,11 +44,10 @@ var crypto_1 = require("crypto");
 var avalancheutils_1 = require("./avalancheutils");
 var avalanche_wallet_sdk_1 = require("@avalabs/avalanche-wallet-sdk");
 var consts = require("./constants");
-var loginfo_1 = require("./loginfo");
 var issuestx_1 = require("./issuestx");
 var bintools = avalanche_1.BinTools.getInstance();
-var send_signature = function (join_ID, data, pub_addr, private_key, network_ID, my_input, my_output) { return __awaiter(void 0, void 0, void 0, function () {
-    var network_data, key_type, tx_buf, unsigned_tx, inputs, outputs, msg, sig_buf, sig, key_data, utxo_set, my_utxos, my_wallet, sig_string, send_data, return_data, log_data;
+var send_signature = function (join_ID, data, pub_addr, private_key, network_ID, ip, my_input, my_output) { return __awaiter(void 0, void 0, void 0, function () {
+    var network_data, key_type, tx_buf, unsigned_tx, inputs, outputs, msg, sig_buf, sig, key_data, utxo_set, my_utxos, my_wallet, my_key, sig_string, send_data, return_data, log_data;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -82,7 +81,8 @@ var send_signature = function (join_ID, data, pub_addr, private_key, network_ID,
             case 4:
                 _a.sent();
                 run_security_checks(inputs, outputs, my_input, my_output, my_wallet.utxosX.getAllUTXOs());
-                sig_string = my_wallet.getSigFromUTX(msg, my_wallet.getAllAddressesX().indexOf(pub_addr));
+                my_key = my_wallet.getKeyChainX().getKey(network_data.xchain.parseAddress(pub_addr));
+                sig_string = my_key.sign(msg);
                 sig.fromBuffer(sig_string);
                 _a.label = 5;
             case 5:
@@ -92,7 +92,7 @@ var send_signature = function (join_ID, data, pub_addr, private_key, network_ID,
                     "sig": sig.toBuffer(),
                     "pub_addr": pub_addr
                 };
-                return [4 /*yield*/, processmessage_1.send_recieve(send_data)];
+                return [4 /*yield*/, processmessage_1.send_recieve(send_data, ip)];
             case 6:
                 return_data = (_a.sent());
                 if (return_data.length == 1) {
@@ -103,8 +103,6 @@ var send_signature = function (join_ID, data, pub_addr, private_key, network_ID,
                     console.log("server succesfully issued tx of id " + return_data[1]);
                 }
                 log_data = "successfully sent signature to CJ of id " + join_ID + " using address " + pub_addr + ".";
-                console.log(log_data);
-                loginfo_1.log_info(log_data);
                 return [2 /*return*/];
         }
     });
