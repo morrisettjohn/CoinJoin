@@ -43,17 +43,18 @@ var avalancheutils_1 = require("./avalancheutils");
 var avalanche_wallet_sdk_1 = require("@avalabs/avalanche-wallet-sdk");
 var bintools = avalanche_1.BinTools.getInstance();
 var request_nonce = function (join_ID, pub_addr, private_key, network_ID, ip) { return __awaiter(void 0, void 0, void 0, function () {
-    var network_data, key_type, send_data, nonce_data, server_nonce, server_sig, server_pub_addr, dummy_pair, nonce_addr_buf, nonce_addr, recieved_nonce, my_nonce, full_nonce, full_nonce_buf, sig, key_data, my_wallet, my_key;
+    var network_data, key_type, half_server_nonce, send_data, nonce_data, server_nonce, server_sig, server_pub_addr, dummy_pair, nonce_addr_buf, nonce_addr, recieved_nonce, my_nonce, full_nonce, full_nonce_buf, sig, key_data, my_wallet, my_key;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
                 network_data = avalancheutils_1.generate_xchain(network_ID);
                 key_type = avalancheutils_1.get_key_type(private_key);
+                half_server_nonce = generate_nonce();
                 send_data = {
                     "join_ID": join_ID,
                     "message_type": consts.REQUEST_TO_JOIN,
                     "pub_addr": pub_addr,
-                    "server_nonce": generate_nonce()
+                    "server_nonce": half_server_nonce
                 };
                 return [4 /*yield*/, processmessage_1.send_recieve(send_data, ip)];
             case 1:
@@ -61,6 +62,9 @@ var request_nonce = function (join_ID, pub_addr, private_key, network_ID, ip) { 
                 server_nonce = nonce_data["server_nonce"];
                 server_sig = nonce_data["server_sig"];
                 server_pub_addr = nonce_data["server_pub_addr"];
+                if (!server_nonce.startsWith(half_server_nonce)) {
+                    throw new Error("server nonce does not start with provided nonce");
+                }
                 dummy_pair = network_data.xchain.keyChain().makeKey();
                 nonce_addr_buf = dummy_pair.addressFromPublicKey(dummy_pair.recover(avalanche_1.Buffer.from(server_nonce), avalanche_1.Buffer.from(server_sig)));
                 nonce_addr = network_data.xchain.addressFromBuffer(nonce_addr_buf);

@@ -1,9 +1,8 @@
-from assetinfo import AVAX_FUJI_ID, convert_to_asset_id, convert_to_asset_name
+from assetinfo import AVAX_FUJI_ID, convert_to_asset_name
 import json
 import subprocess
 import time
 import string
-from hashlib import sha256
 import traceback
 
 from assetinfo import *
@@ -37,9 +36,11 @@ def generate_join_tx_ID():
     time.sleep(0.001)
     return join_tx_ID
 
+
+
 class JoinState:
     current_id = 0
-    num_current_address_uses = 0
+    completed_join_txs = 0
     fee_pub_addr = ""
     fee_priv_key = ""
 
@@ -76,14 +77,12 @@ class JoinState:
         JoinState.current_id += 1
 
     def update_address(network_ID):
-        
-        if JoinState.fee_pub_addr == "" or JoinState.num_current_address_uses == GENERATE_NEW_ADDRESS_NUM:
+        if JoinState.fee_pub_addr == "" or JoinState.completed_join_txs == GENERATE_NEW_ADDRESS_NUM:
             key_data = get_address(network_ID)
             
             print("switching to address: " + key_data["pub_addr"])
             JoinState.fee_pub_addr = key_data["pub_addr"]
             JoinState.fee_priv_key = key_data["priv_key"]
-        JoinState.num_current_address_uses += 1
 
     #Returns the number of cons that have joined during the input stage
     def get_current_input_count(self):
@@ -147,6 +146,7 @@ class JoinState:
 
     #resets the join back to its base state
     def reset_join(self):
+        JoinState.completed_join_txs += 1
         JoinState.update_address(self.network_ID)
         
         self.state = COLLECT_INPUTS
@@ -346,62 +346,64 @@ class JoinState:
                 if user.nonce.nonce_addr == user.pub_addr:
                     if self.state == COLLECT_INPUTS:
                         if user.pub_addr == input.pub_addr:
-                            if input.asset_ID == output.asset_ID == self.asset_ID:
-                                if True: #not ip in self.IP_addrs:       #XXX need to comment out for testing purposes
-                                    print(input.amt, self.inp_amount, output.amt, self.out_amount)
-                                    if input.amt == self.inp_amount and output.amt == self.out_amount:
-                                        if not self.users.check_repeat_output_addr(output.output_addr):
-                                            #create input and output data when this has been determined to be valid information
-                                            self.update_last_accessed()
-                                            self.cons.append(conn)
-                                            self.IP_addrs.append(ip)
-                                            user.remove_nonce()
-                                            user.input = input
-                                            user.output = output
-                                            user.in_join = True
+                            if user.pub_addr != output.output_addr:
+                                if input.asset_ID == output.asset_ID == self.asset_ID:
+                                    if True: #not ip in self.IP_addrs:       #XXX need to comment out for testing purposes
+                                        if input.amt == self.inp_amount and output.amt == self.out_amount:
+                                            if not self.users.check_repeat_output_addr(output.output_addr):
+                                                #create input and output data when this has been determined to be valid information
+                                                self.update_last_accessed()
+                                                self.cons.append(conn)
+                                                self.IP_addrs.append(ip)
+                                                user.remove_nonce()
+                                                user.input = input
+                                                user.output = output
+                                                user.in_join = True
 
-                                            print("collected fees: " + str(float((self.get_collected_fee_amt()))))
-                                            send_message(conn, "transaction data accepted, please wait for other users to input data")
+                                                print("collected fees: " + str(float((self.get_collected_fee_amt()))))
+                                                send_message(conn, "transaction data accepted, please wait for other users to input data")
 
-                                            for item in self.cons:
-                                                send_message(item, "%d out of %d users connected" % (self.get_current_input_count(), self.threshold))
-                                            
-                                            #when sufficient cons are created, go through the process of sending out the transaction
-                                            if self.get_current_input_count() >= self.threshold:
-                                                #add the fee to the outputs
-                                                try: 
-                                                    self.wtx = self.craft_wtx()
-                                                except Exception:
-                                                    print("bad unsigned transaction")
-                                                    traceback.print_exc()
-                                                    self.send_err_to_all("bad unsigned transaction data.  Send input again")
-                                                    self.reset_join()
-                                                    return
-                                                self.users.sort_users()
-                                                #send out transaction to every user
                                                 for item in self.cons:
-                                                    send_message(item, "all transactions complete, please input signature now")
-                                                    send_wtx(item, self.wtx)
-                                                self.close_all_cons()
-                                                self.IP_addrs = [] #delete ip addresses for security
-                                                self.state = COLLECT_SIGS
-                                            return
+                                                    send_message(item, "%d out of %d users connected" % (self.get_current_input_count(), self.threshold))
+                                                
+                                                #when sufficient cons are created, go through the process of sending out the transaction
+                                                if self.get_current_input_count() >= self.threshold:
+                                                    #add the fee to the outputs
+                                                    try: 
+                                                        self.wtx = self.craft_wtx()
+                                                    except Exception:
+                                                        print("bad unsigned transaction")
+                                                        traceback.print_exc()
+                                                        self.send_err_to_all("bad unsigned transaction data.  Send input again")
+                                                        self.reset_join()
+                                                        return
+                                                    self.users.sort_users()
+                                                    #send out transaction to every user
+                                                    for item in self.cons:
+                                                        send_message(item, "all transactions complete, please input signature now")
+                                                        send_wtx(item, self.wtx)
+                                                    self.close_all_cons()
+                                                    self.IP_addrs = [] #delete ip addresses for security
+                                                    self.state = COLLECT_SIGS
+                                                return
+                                            else:
+                                                print("repeated address")
+                                                send_err(conn, "cannot send to this user")
+                                                return
                                         else:
-                                            print("nonce did not verify to pub_addr")
-                                            send_err(conn, "signature not associated with pubkey")
+                                            print("Quantity of avax needs to be the same")
+                                            send_err(conn, "Quantity of inputs/outputs needs to match")
                                             return
                                     else:
-                                        print("Quantity of avax needs to be the same")
-                                        send_err(conn, "Quantity of inputs/outputs needs to match")
+                                        print("matching ip address already in use")
+                                        send_err(conn, "matching ip address already in use")
                                         return
                                 else:
-                                    print("matching ip address already in use")
-                                    send_err(conn, "matching ip address already in use")
+                                    print("Mismatched asset-type")
+                                    send_err(conn, "Mismatched asset-type")
                                     return
                             else:
-                                print("Mismatched asset-type")
-                                send_err(conn, "Mismatched asset-type")
-                                return
+                                print("cannot send to self")
                         else:
                             print("output does not belong to user")
                             send_err(conn, "The output selected does not belong to the pub_addr used")
@@ -493,14 +495,31 @@ class JoinState:
         #handles wtx request
         elif message_type == REQUEST_WTX:
             if self.state == COLLECT_SIGS:
-                if user and user.in_join:
-                    print("sending wtx to participant")
-                    send_message(conn, "sending wtx information over")
-                    send_wtx(conn, self.wtx)
+
+                nonce = JoinState.extract_nonce(request_data)
+                nonce_sig = JoinState.extract_nonce_sig(request_data)
+
+                try:
+                    user.nonce.parse_nonce(nonce, nonce_sig, self.network_ID)
+                except Exception:
+                    print("couldn't parse nonce for exit")
+                    traceback.print_exc()
+                    send_err(conn, "could not parse nonce")
                     return
+
+                if user and user.in_join:
+                    if user.nonce.nonce_addr == user.pub_addr:
+                        print("sending wtx to participant")
+                        send_message(conn, "sending wtx information over")
+                        send_wtx(conn, self.wtx)
+                        return
+                    else:
+                        print("nonce did not validate to the public address provided")
+                        send_err(conn, "validation failed, cannot send wtx")
+                        return
                 else:
                     print("not part of join, cannot request wtx")
-                    send_err(conn, "not part of join, canont request wtx")
+                    send_err(conn, "not part of join, cann0t request wtx")
                     return
             else:
                 print("not in collect sigs, cannot send wtx")
@@ -509,10 +528,11 @@ class JoinState:
 
         elif message_type == EXIT:
 
-            signed_message_buf = JoinState.extract_nonce(request_data)
+            nonce = JoinState.extract_nonce(request_data)
+            nonce_sig = JoinState.extract_nonce_sig(request_data)
 
             try:
-                user.nonce.parse_nonce(signed_message_buf, self.network_ID)
+                user.nonce.parse_nonce(nonce, nonce_sig, self.network_ID)
             except Exception:
                 print("couldn't parse nonce for exit")
                 traceback.print_exc()
@@ -557,3 +577,6 @@ class JoinState:
         for item in status:
             return_string += item + " = " + str(status[item]) + "\r\n"
         return return_string
+
+class BadJoinState(JoinState):
+    pass

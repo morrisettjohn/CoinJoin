@@ -44,7 +44,7 @@ var constants_1 = require("./constants");
 var avalanche_wallet_sdk_1 = require("@avalabs/avalanche-wallet-sdk");
 var consts = require("./constants");
 var requestnonce_1 = require("./requestnonce");
-var addlog_1 = require("./addlog");
+var logs_1 = require("./logs");
 //setting up the xchain object
 var bintools = avalanche_1.BinTools.getInstance();
 var send_input_data = function (join_ID, asset_ID, input_amount, output_amount, dest_addr, private_key, network_ID, join_tx_ID, server_addr, ip) { return __awaiter(void 0, void 0, void 0, function () {
@@ -81,21 +81,18 @@ var construct_log = function (join_tx_ID, join_ID, ip, network_ID, user_addr, se
     var join_tx_data, user_data;
     return __generator(this, function (_a) {
         join_tx_data = {
-            "server_addr": server_addr,
-            "join_tx_ID": join_tx_ID,
             "join_ID": join_ID,
             "host": ip,
             "network_ID": network_ID,
             "users": {}
         };
         user_data = {
-            "pub_addr": user_addr,
-            "input": input.toBuffer(),
-            "output": output.toBuffer(),
+            "input": bintools.cb58Encode(input.toBuffer()),
+            "output": bintools.cb58Encode(output.toBuffer()),
             "last_status": consts.COLLECT_INPUTS,
             "time": new Date().getTime()
         };
-        addlog_1.add_log(server_addr, join_tx_ID, join_tx_data, user_addr, user_data);
+        logs_1.add_log(server_addr, join_tx_ID, join_tx_data, user_addr, user_data);
         return [2 /*return*/];
     });
 }); };
@@ -113,6 +110,7 @@ var craft_input = function (input_amount, asset_ID, tx_ID, tx_index, pubaddr, ne
     var input = new avm_1.TransferableInput(tx_ID_buf, output_idx, asset_ID_buf, secp_transfer_input);
     return input;
 };
+exports.craft_input = craft_input;
 var craft_output = function (output_amount, asset_ID, dest_addr, network_ID) {
     var network_data = avalancheutils_1.generate_xchain(network_ID);
     var xchain = network_data.xchain;
@@ -123,6 +121,7 @@ var craft_output = function (output_amount, asset_ID, dest_addr, network_ID) {
     var output = new avm_1.TransferableOutput(asset_ID_buf, secp_tranfser_output);
     return output;
 };
+exports.craft_output = craft_output;
 var send_target_amount = function (network_ID, private_key, input_amount, asset_ID) { return __awaiter(void 0, void 0, void 0, function () {
     var network_data, xchain, fee, inp_amount, inp_amount_fee, key_type, signed_tx, key_data, key_chain_addrs, pub_addr_buf_1, pub_addr, utxo_set, balance, unsigned_tx, my_wallet, from, to, change, wallet_utxos, unsigned_tx, tx_ID, status, outs, tx_index, i, pub_addr_buf;
     return __generator(this, function (_a) {

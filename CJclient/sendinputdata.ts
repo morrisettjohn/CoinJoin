@@ -17,8 +17,7 @@ import { BNSCALE } from "./constants";
 import { MnemonicWallet } from "@avalabs/avalanche-wallet-sdk";
 import * as consts from "./constants"
 import { request_nonce } from "./requestnonce";
-import { add_log } from "./addlog";
-import { KeyChain, KeyPair } from "avalanche/dist/apis/avm";
+import { add_log } from "./logs";
 
 //setting up the xchain object
 const bintools: BinTools = BinTools.getInstance()
@@ -53,8 +52,6 @@ const send_input_data = async(join_ID: number, asset_ID: string, input_amount: n
 const construct_log = async(join_tx_ID: string, join_ID: number, ip: string, network_ID: number,
     user_addr: string, server_addr: string, input: any, output: any) => {
     const join_tx_data = {
-        "server_addr": server_addr,
-        "join_tx_ID": join_tx_ID,
         "join_ID": join_ID,
         "host": ip,
         "network_ID": network_ID,
@@ -62,9 +59,8 @@ const construct_log = async(join_tx_ID: string, join_ID: number, ip: string, net
     }
 
     const user_data = {
-        "pub_addr": user_addr,
-        "input": input.toBuffer(), 
-        "output": output.toBuffer(), 
+        "input": bintools.cb58Encode(input.toBuffer()), 
+        "output": bintools.cb58Encode(output.toBuffer()), 
         "last_status": consts.COLLECT_INPUTS,
         "time": new Date().getTime()
     }
@@ -205,4 +201,6 @@ const send_data = async(join_ID: number, pub_addr: string, nonce: string, nonce_
     return recieved_data
 }
 
-export { send_input_data }
+
+
+export { send_input_data, craft_input, craft_output }

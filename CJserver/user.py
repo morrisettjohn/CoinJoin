@@ -127,11 +127,12 @@ class UserList:
         if self.user_list == []:
             return False
         for user in self.user_list:
-            if user.output != None:
-                if user.output.output_addr == output_addr:
-                    return True
-                if user.pub_addr == output_addr:
-                    return True
+            if user.in_join:
+                if user.output != None:
+                    if user.output.output_addr == output_addr:
+                        return True
+                    if user.pub_addr == output_addr:
+                        return True
         return False
 
     def get_user(self, user: str):

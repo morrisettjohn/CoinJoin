@@ -36,44 +36,42 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 exports.__esModule = true;
-var fs = require("fs");
-var n = function () { return __awaiter(void 0, void 0, void 0, function () {
-    var b;
+var avalanche_1 = require("@avalabs/avalanche-wallet-sdk/node_modules/avalanche");
+var getjoindata_1 = require("./getjoindata");
+var logs_1 = require("./logs");
+var sendsignature_1 = require("./sendsignature");
+var avm_1 = require("@avalabs/avalanche-wallet-sdk/node_modules/avalanche/dist/apis/avm");
+var requestwtx_1 = require("./requestwtx");
+var bintools = avalanche_1.BinTools.getInstance();
+var sign_cj_tx = function (join_ID, private_key, ip) { return __awaiter(void 0, void 0, void 0, function () {
+    var join_params, network_ID, join_tx_ID, server_addr, log_data, tx_data, pub_addr, pub_addr_log, wtx, input, output;
     return __generator(this, function (_a) {
-        b = new Date();
-        setTimeout(function () {
-            var v = new Date();
-            v.setTime(b.getTime());
-            console.log(v);
-            console.log(b);
-        }, 1000);
-        return [2 /*return*/];
-    });
-}); };
-var b = function () { return __awaiter(void 0, void 0, void 0, function () {
-    var data;
-    return __generator(this, function (_a) {
-        data = fs.readFileSync("./test.json", "utf8");
-        console.log(JSON.parse(data));
-        return [2 /*return*/];
-    });
-}); };
-var c = function () { return __awaiter(void 0, void 0, void 0, function () {
-    var v, key;
-    return __generator(this, function (_a) {
-        v = { "hi": 1, "bi": 2, "tri": 3 };
-        for (key in v) {
-            console.log(key);
+        switch (_a.label) {
+            case 0: return [4 /*yield*/, getjoindata_1.get_join_data(join_ID, ip)];
+            case 1:
+                join_params = _a.sent();
+                network_ID = join_params["network_ID"];
+                join_tx_ID = join_params["join_tx_ID"];
+                server_addr = join_params["fee_addr"];
+                log_data = logs_1.get_all_logs();
+                tx_data = logs_1.get_join_tx_data(log_data, server_addr, join_tx_ID);
+                return [4 /*yield*/, logs_1.get_pub_addr_from_tx(log_data, server_addr, join_tx_ID, private_key)];
+            case 2:
+                pub_addr = _a.sent();
+                pub_addr_log = logs_1.get_log_from_pub_key(log_data, server_addr, join_tx_ID, pub_addr);
+                return [4 /*yield*/, requestwtx_1.request_wtx(join_ID, private_key, pub_addr, network_ID, ip)];
+            case 3:
+                wtx = (_a.sent())[0];
+                input = new avm_1.TransferableInput();
+                output = new avm_1.TransferableOutput();
+                input.fromBuffer(bintools.cb58Decode(pub_addr_log["input"]));
+                output.fromBuffer(bintools.cb58Decode(pub_addr_log["output"]));
+                console.log(wtx, input, output);
+                return [4 /*yield*/, sendsignature_1.send_signature(join_ID, wtx, pub_addr, private_key, network_ID, ip, input, output)];
+            case 4:
+                _a.sent();
+                return [2 /*return*/];
         }
-        return [2 /*return*/];
     });
 }); };
-var v = function () {
-    var p = {};
-    p["1"]["2"] = 3;
-    console.log(p);
-};
-var l = function () {
-    console.log("hi_joHn".toLocaleLowerCase());
-};
-l();
+exports.sign_cj_tx = sign_cj_tx;

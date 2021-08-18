@@ -31,8 +31,8 @@ exports.generate_xchain = generate_xchain;
 var generate_key_chain = function (xchain, privatekey) {
     var x_key_chain = xchain.keyChain();
     var my_key_pair = x_key_chain.importKey(privatekey);
-    var my_addr_buf = xchain.keyChain().getAddresses();
-    var my_addr_strings = xchain.keyChain().getAddressStrings();
+    var my_addr_strings = [my_key_pair.getAddressString()];
+    var my_addr_buf = [my_key_pair.getAddress()];
     return { "x_key_chain": x_key_chain, "my_key_pair": my_key_pair, "my_addr_buf": my_addr_buf, "my_addr_strings": my_addr_strings };
 };
 exports.generate_key_chain = generate_key_chain;

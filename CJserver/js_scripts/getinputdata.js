@@ -37,17 +37,19 @@ const process_data = async(data) => {
     const input_address = network_data.xchain.addressFromBuffer(input_base_tx.getOuts()[input_tx_index].getOutput().getAddress(0))
     const user_utxos = (await network_data.xchain.getUTXOs(input_address)).utxos
     
-    const utxo = user_utxos.getUTXO(input.getUTXOID())
-
-    if (!user_utxos.includes(utxo)) {
-        throw new Error("this utxo is not in the user's list")
+    let utxo = undefined
+    try {
+        utxo = user_utxos.getUTXO(input.getUTXOID())
     }
-    
+    catch (e) {
+        throw new Error("utxo was not found in the user's list")
+    }
+
     if (input.getInput().getSigIdxs().length > 1){
         throw new Error("address requires multiple signers")
     }
 
-    const amount = input.getInput().getAmount().toString()
+    const amount = input_base_tx.getOuts()[input_tx_index].getOutput().getAmount().toString()
     const asset_ID = bintools.cb58Encode(input.getAssetID())
 
     const return_data = JSON.stringify({"amt": amount, "asset_ID": asset_ID, "pub_addr": input_address})

@@ -20,7 +20,6 @@ class Input:
         }))
 
         result = subprocess.run(['node', './js_scripts/getinputdata.js'], input = input_data, capture_output = True)
-        result.check_returncode()
         result_data = json.loads(bytes.decode((result.stdout)))
         self.amt = float(result_data["amt"])/BNSCALE
         self.asset_ID = result_data["asset_ID"]

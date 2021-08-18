@@ -28,7 +28,7 @@ export const get_join_tx_data = function (log_data: any, server_addr: string, jo
     }
 }
 
-export const get_join_tx_user_data = function(log_data: any, server_addr: string, join_tx_ID: string, user_addr: string) {
+export const get_log_from_pub_key = function(log_data: any, server_addr: string, join_tx_ID: string, user_addr: string) {
     const join_tx_user_data = get_join_tx_data(log_data, server_addr, join_tx_ID)["users"]
     if (user_addr in join_tx_user_data) {
         return join_tx_user_data[user_addr]
@@ -39,36 +39,42 @@ export const get_join_tx_user_data = function(log_data: any, server_addr: string
     }
 }
 
-export const get_log_from_priv_key = function(log_data: any, server_addr: string, join_tx_ID: string, priv_key: string) {
+export const get_pub_addr_from_tx = async(log_data: any, server_addr: string, join_tx_ID: string, priv_key: string) => {
     const key_type = get_key_type(priv_key)
     const join_tx_data = get_join_tx_data(log_data, server_addr, join_tx_ID)
 
-    if (join_tx_data != undefined){
+    if (join_tx_data != undefined) {
         const network_data = generate_xchain(join_tx_data["network_ID"])
 
         const user_data = join_tx_data["users"]
         if (key_type == 0) {
             const key_data = generate_key_chain(network_data.xchain, priv_key)
-            const addr = key_data.my_addr_strings[0]
-            if (addr in user_data) {
-                return user_data[addr]
-            }
+            return key_data.my_addr_strings[0]
         }
         else if (key_type == 1){
             const my_wallet = MnemonicWallet.fromMnemonic(priv_key)
-            my_wallet.getExternalAddressesX().forEach(addr => {
-                if (addr in user_data) {
-                    return user_data[addr]
-                }
-            })
+            await my_wallet.resetHdIndices()
+            const wallet_addrs = my_wallet.getExternalAddressesX()
+            for (let i = 0; i < wallet_addrs.length; i++) {
+                if (wallet_addrs[i] in user_data)
+                return wallet_addrs[i]
+            }
         }
         console.log("no public key associated with this private key has a log here")
-        return undefined
-
-    } else {
+    }
+    else { 
         return undefined
     }
+}
 
+export const get_log_from_priv_key = async(log_data: any, server_addr: string, join_tx_ID: string, priv_key: string): Promise<any> => {
+    const pub_addr = await get_pub_addr_from_tx(log_data, server_addr, join_tx_ID, priv_key)
+    if (pub_addr != undefined) {
+        return get_log_from_pub_key(log_data, server_addr, join_tx_ID, pub_addr)
+    }
+    else {
+        return undefined
+    }
 }
 
 export const add_log = function(server_addr: string, join_tx_ID: string, join_tx_data: any, user_addr: string, user_data: any) {

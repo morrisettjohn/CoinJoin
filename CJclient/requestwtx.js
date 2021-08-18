@@ -36,44 +36,32 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 exports.__esModule = true;
-var fs = require("fs");
-var n = function () { return __awaiter(void 0, void 0, void 0, function () {
-    var b;
+var avalanche_1 = require("@avalabs/avalanche-wallet-sdk/node_modules/avalanche");
+var processmessage_1 = require("./processmessage");
+var consts = require("./constants");
+var requestnonce_1 = require("./requestnonce");
+var bintools = avalanche_1.BinTools.getInstance();
+var request_wtx = function (join_ID, private_key, pub_addr, network_ID, ip) { return __awaiter(void 0, void 0, void 0, function () {
+    var nonce_sig_pair, nonce, nonce_sig, send_data, wtx;
     return __generator(this, function (_a) {
-        b = new Date();
-        setTimeout(function () {
-            var v = new Date();
-            v.setTime(b.getTime());
-            console.log(v);
-            console.log(b);
-        }, 1000);
-        return [2 /*return*/];
-    });
-}); };
-var b = function () { return __awaiter(void 0, void 0, void 0, function () {
-    var data;
-    return __generator(this, function (_a) {
-        data = fs.readFileSync("./test.json", "utf8");
-        console.log(JSON.parse(data));
-        return [2 /*return*/];
-    });
-}); };
-var c = function () { return __awaiter(void 0, void 0, void 0, function () {
-    var v, key;
-    return __generator(this, function (_a) {
-        v = { "hi": 1, "bi": 2, "tri": 3 };
-        for (key in v) {
-            console.log(key);
+        switch (_a.label) {
+            case 0: return [4 /*yield*/, requestnonce_1.request_nonce(join_ID, pub_addr, private_key, network_ID, ip)];
+            case 1:
+                nonce_sig_pair = _a.sent();
+                nonce = nonce_sig_pair[0];
+                nonce_sig = nonce_sig_pair[1];
+                send_data = {
+                    "message_type": consts.REQUEST_WTX,
+                    "join_ID": join_ID,
+                    "pub_addr": pub_addr,
+                    "nonce": nonce,
+                    "nonce_sig": nonce_sig
+                };
+                return [4 /*yield*/, processmessage_1.send_recieve(send_data, ip)];
+            case 2:
+                wtx = _a.sent();
+                return [2 /*return*/, wtx];
         }
-        return [2 /*return*/];
     });
 }); };
-var v = function () {
-    var p = {};
-    p["1"]["2"] = 3;
-    console.log(p);
-};
-var l = function () {
-    console.log("hi_joHn".toLocaleLowerCase());
-};
-l();
+exports.request_wtx = request_wtx;

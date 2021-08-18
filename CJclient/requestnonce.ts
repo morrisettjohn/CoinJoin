@@ -12,19 +12,24 @@ const bintools: BinTools = BinTools.getInstance()
 const request_nonce = async(join_ID: number, pub_addr: string, private_key: string, network_ID: number, ip: string): Promise<any> => {
     const network_data = generate_xchain(network_ID)
     const key_type = get_key_type(private_key)
+    const half_server_nonce = generate_nonce()
 
     const send_data = {
         "join_ID": join_ID,
         "message_type": consts.REQUEST_TO_JOIN,
         "pub_addr": pub_addr,
-        "server_nonce": generate_nonce()
+        "server_nonce": half_server_nonce
     }
     
     const nonce_data = (await send_recieve(send_data, ip))[0]
 
-    const server_nonce = nonce_data["server_nonce"]
+    const server_nonce: string = nonce_data["server_nonce"]
     const server_sig = nonce_data["server_sig"]
     const server_pub_addr = nonce_data["server_pub_addr"]
+
+    if (!server_nonce.startsWith(half_server_nonce)) {
+        throw new Error("server nonce does not start with provided nonce")
+    }
 
     const dummy_pair = network_data.xchain.keyChain().makeKey()
     const nonce_addr_buf = dummy_pair.addressFromPublicKey(dummy_pair.recover(Buffer.from(server_nonce), Buffer.from(server_sig)))

@@ -37,8 +37,8 @@ const generate_xchain = function(network_ID: number){
 const generate_key_chain = function(xchain: AVMAPI, privatekey: string){
     const x_key_chain: KeyChain = xchain.keyChain();
     const my_key_pair = x_key_chain.importKey(privatekey)
-    const my_addr_buf = xchain.keyChain().getAddresses()
-    const my_addr_strings = xchain.keyChain().getAddressStrings()
+    const my_addr_strings = [my_key_pair.getAddressString()]
+    const my_addr_buf = [my_key_pair.getAddress()]
 
     return {"x_key_chain": x_key_chain, "my_key_pair": my_key_pair, "my_addr_buf": my_addr_buf, "my_addr_strings": my_addr_strings}
 }

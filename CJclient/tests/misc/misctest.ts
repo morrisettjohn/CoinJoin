@@ -1,6 +1,6 @@
 
 import * as fs from "fs"
-import { get_all_logs, get_server_join_txs, get_join_tx_data } from "../../addlog"
+
 
 const n = async() => {
     const b = new Date()
@@ -25,13 +25,6 @@ const c = async() => {
     }
 }
 
-const a = async() => {
-    const z = get_all_logs()
-    console.log(z)
-    console.log(get_server_join_txs(z, "X-fuji13gpgdlfsz6nysrjh4trhuf2hj240aguah8rxwq"))
-    console.log(get_join_tx_data(z, "X-fuji13gpgdlfsz6nysrjh4trhuf2hj240aguah8rxwq", "1628879411470"))
-    
-}
 
 const v = function() {
     const p = {}
@@ -40,4 +33,8 @@ const v = function() {
     
 }
 
-a()
+const l = function() {
+    console.log("hi_joHn".toLocaleLowerCase())
+}
+
+l()
