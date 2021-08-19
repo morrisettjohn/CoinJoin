@@ -1,6 +1,8 @@
 "use strict";
+//various utilities
 exports.__esModule = true;
 var consts = require("./constants");
+//prints out join data in a readable, digestible fashion
 var join_data_readable = function (join) {
     var state = "inputs";
     if (join["state"] == consts.COLLECT_SIGS) {
@@ -19,10 +21,12 @@ var join_data_readable = function (join) {
     return message;
 };
 exports.join_data_readable = join_data_readable;
+//extracts host from data
 var extract_host = function (ip) {
     return ip.slice(0, ip.indexOf(":"));
 };
 exports.extract_host = extract_host;
+//extracts port from data
 var extract_port = function (ip) {
     return ip.slice(ip.indexOf(":") + 1);
 };

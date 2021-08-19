@@ -1,6 +1,5 @@
 from subprocess import *
 
-
 AVAX_FUJI_ID = "U8iRqJoiJm8xZHAacmvYyZVwqQx6uDNtQeP3CQ6fcgQk3JqnK"
 AVAX_FUJI_DENOMS = [1, 10, 100]
 AVAX_FUJI_NAME = "Avax-test"

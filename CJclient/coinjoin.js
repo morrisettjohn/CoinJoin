@@ -1,4 +1,5 @@
 "use strict";
+//runs the client for the coinjoin server.  Run 'node coinjoin' for info
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -60,8 +61,15 @@ var commands = [JOIN, SIGN, OPTIONS, JOININFO, SEARCH, EXIT, INFO, RECORD, ADDRS
 var STD_USAGE = "usage: node coinjoin";
 var DESC = "description: ";
 var HELP = "help";
+//determine what command the user has input
 var args = process.argv.slice(2);
-var command = args[0].toLocaleLowerCase();
+var command = "";
+if (args[0] == undefined) {
+    command = INFO;
+}
+else {
+    command = args[0].toString().toLocaleLowerCase();
+}
 args = args.slice(1);
 var main = function () {
     if (command == JOIN) {
@@ -99,6 +107,7 @@ var main = function () {
         cmd_help();
     }
 };
+//runs the help function
 var cmd_help = function () {
     console.log("run 'node coinjoin (command) info' for more information\n");
     commands.forEach(function (item) {
@@ -106,6 +115,7 @@ var cmd_help = function () {
     });
     console.log("");
 };
+//records an address in the client's local addr folder
 var cmd_record_address = function () {
     if (check_args_for_help(args)) {
         console.log(DESC + " locally stores a private key with a username for easy access");
@@ -117,6 +127,7 @@ var cmd_record_address = function () {
         recordaddress_1.record_address(addr_string, username);
     }
 };
+//removes an address from the client's local addr folder
 var cmd_remove_address = function () {
     if (check_args_for_help(args)) {
         console.log(DESC + " removes one of the locally stored keys.  Use node coinjoin addrs to get a list of stored addresses");
@@ -127,6 +138,7 @@ var cmd_remove_address = function () {
         removeaddr_1.remove_address(remove_item);
     }
 };
+//prints all recorded addresses stored in the client's local addr folder
 var cmd_print_recorded_addrs = function () {
     if (check_args_for_help(args)) {
         console.log(DESC + " prints all stored private keys along with their usernames");
@@ -139,6 +151,7 @@ var cmd_print_recorded_addrs = function () {
         }
     }
 };
+//run a complete coinjoin transaction
 var cmd_start_cj_instance = function () { return __awaiter(void 0, void 0, void 0, function () {
     var ip, join_ID, private_key, dest_addr, input_amount;
     return __generator(this, function (_a) {
@@ -158,6 +171,7 @@ var cmd_start_cj_instance = function () { return __awaiter(void 0, void 0, void 
         return [2 /*return*/];
     });
 }); };
+//sign an existing input to an existing join
 var cmd_sign_cj_tx = function () { return __awaiter(void 0, void 0, void 0, function () {
     var ip, join_ID, private_key;
     return __generator(this, function (_a) {
@@ -175,6 +189,7 @@ var cmd_sign_cj_tx = function () { return __awaiter(void 0, void 0, void 0, func
         return [2 /*return*/];
     });
 }); };
+//gets the option data for a cj server
 var cmd_get_option_data = function () {
     if (check_args_for_help(args)) {
         console.log(DESC + " gets the cj server's options for coinjoins, e.g. assetid/name, denominations, etc");
@@ -185,6 +200,7 @@ var cmd_get_option_data = function () {
         getoptiondata_1.get_option_data(ip);
     }
 };
+//gets the data for a specific join in the cj server
 var cmd_print_join_data = function () { return __awaiter(void 0, void 0, void 0, function () {
     var ip, join_ID, join_data;
     return __generator(this, function (_a) {
@@ -206,6 +222,7 @@ var cmd_print_join_data = function () { return __awaiter(void 0, void 0, void 0,
         }
     });
 }); };
+//searches for joins in a cj server that match the user's specification
 var cmd_find_matching_joins = function () { return __awaiter(void 0, void 0, void 0, function () {
     var ip, asset_ID, asset_amount, network_ID, min_users, max_users, join_list, join_data_1;
     return __generator(this, function (_a) {
@@ -234,6 +251,7 @@ var cmd_find_matching_joins = function () { return __awaiter(void 0, void 0, voi
         }
     });
 }); };
+//sends a request to a cj server to remove the user from a join
 var cmd_exit_cj = function () {
     if (check_args_for_help(args)) {
         console.log(DESC + " exits a particular coinjoin by signing a nonce.");
@@ -248,12 +266,14 @@ var cmd_exit_cj = function () {
         exitcj_1.exit_cj(ip, join_ID, private_key);
     }
 };
+//check if the first paramater of a command is a call for help
 var check_args_for_help = function (args) {
     if (args[0] == INFO || args[0] == HELP || args.length == 0 || args[0] == undefined) {
         return true;
     }
     return false;
 };
+//if a username for a private key is stored in the local addresses, convert the parameter to the private key
 var convert_pk_username = function (private_key) {
     var address_data = getaddrdata_1.get_address_data();
     if (private_key in address_data) {

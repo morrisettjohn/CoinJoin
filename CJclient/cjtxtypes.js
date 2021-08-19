@@ -1,4 +1,5 @@
 "use strict";
+//runs a complete cj transaction
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -61,8 +62,10 @@ var full_cj_tx = function (join_ID, private_key, dest_addr, ip, input_amount) { 
                 input = wtx_data[1];
                 output = wtx_data[2];
                 pub_addr = wtx_data[3];
+                //once the wtx has been obtained, construct the signature and send it back to the server
                 return [4 /*yield*/, sendsignature_1.send_signature(join_ID, wtx, pub_addr, private_key, network_ID, ip, input, output)];
             case 3:
+                //once the wtx has been obtained, construct the signature and send it back to the server
                 _a.sent();
                 return [2 /*return*/];
         }

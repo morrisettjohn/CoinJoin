@@ -1,4 +1,4 @@
-
+#general parameters for the cj server
 START_PROCESS, SELECT_OPTIONS, GET_JOIN_DATA, COLLECT_INPUTS, COLLECT_SIGS, ISSUE_TX, \
     REQUEST_WTX, REQUEST_NONCE, EXIT, GET_USER_LIST = range(10) #different states for a CoinJoin
 

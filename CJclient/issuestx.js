@@ -1,4 +1,5 @@
 "use strict";
+//in case the server does not issue the tx, directly issue the tx
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -38,8 +39,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 exports.__esModule = true;
 var avalanche_1 = require("@avalabs/avalanche-wallet-sdk/node_modules/avalanche");
 var avm_1 = require("@avalabs/avalanche-wallet-sdk/node_modules/avalanche/dist/apis/avm");
-var avalancheutils_1 = require("./avalancheutils");
-var bintools = avalanche_1.BinTools.getInstance();
+var avalancheutils_1 = require("../avalancheutils");
 var issuetx = function (data, network_ID) { return __awaiter(void 0, void 0, void 0, function () {
     var network_data, stx_buf, stx, id, status;
     return __generator(this, function (_a) {

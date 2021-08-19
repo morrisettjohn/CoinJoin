@@ -1,5 +1,8 @@
+//various utilities
+
 import * as consts from "./constants"
 
+//prints out join data in a readable, digestible fashion
 const join_data_readable = function(join: any) {
     let state = "inputs"
     if (join["state"] == consts.COLLECT_SIGS){
@@ -18,13 +21,14 @@ const join_data_readable = function(join: any) {
     return message
   }
 
+//extracts host from data
 const extract_host = function(ip:string) {
   return ip.slice(0, ip.indexOf(":"))
 }
 
+//extracts port from data
 const extract_port = function(ip:string) {
   return ip.slice(ip.indexOf(":") + 1)
 }
-
 
 export { join_data_readable, extract_host, extract_port }

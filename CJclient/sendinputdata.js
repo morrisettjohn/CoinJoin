@@ -1,4 +1,5 @@
 "use strict";
+//sends the input data for a join to the cj join
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -39,7 +40,7 @@ exports.__esModule = true;
 var avalanche_1 = require("@avalabs/avalanche-wallet-sdk/node_modules/avalanche");
 var avm_1 = require("@avalabs/avalanche-wallet-sdk/node_modules/avalanche/dist/apis/avm");
 var processmessage_1 = require("./processmessage");
-var avalancheutils_1 = require("./avalancheutils");
+var avalancheutils_1 = require("../avalancheutils");
 var constants_1 = require("./constants");
 var avalanche_wallet_sdk_1 = require("@avalabs/avalanche-wallet-sdk");
 var consts = require("./constants");
@@ -96,32 +97,39 @@ var construct_log = function (join_tx_ID, join_ID, ip, network_ID, user_addr, se
         return [2 /*return*/];
     });
 }); };
+//function that takes input data and constructs a TransferableInput for the join
 var craft_input = function (input_amount, asset_ID, tx_ID, tx_index, pubaddr, network_ID) {
     var network_data = avalancheutils_1.generate_xchain(network_ID);
     var xchain = network_data.xchain;
+    //convert inputs to usable forms
     var asset_ID_buf = bintools.cb58Decode(asset_ID);
     var pub_addr_buf = xchain.parseAddress(pubaddr);
     var inp_amount = new avalanche_1.BN(input_amount * constants_1.BNSCALE);
     var tx_ID_buf = bintools.cb58Decode(tx_ID);
     var output_idx = avalanche_1.Buffer.alloc(4);
     output_idx.writeIntBE(tx_index, 0, 4);
+    //construct the actual transferable input
     var secp_transfer_input = new avm_1.SECPTransferInput(inp_amount);
     secp_transfer_input.addSignatureIdx(0, pub_addr_buf);
     var input = new avm_1.TransferableInput(tx_ID_buf, output_idx, asset_ID_buf, secp_transfer_input);
     return input;
 };
 exports.craft_input = craft_input;
+//function that takes output data and constructs a TransferableOutput for the join
 var craft_output = function (output_amount, asset_ID, dest_addr, network_ID) {
     var network_data = avalancheutils_1.generate_xchain(network_ID);
     var xchain = network_data.xchain;
+    //convert ot usable data
     var asset_ID_buf = bintools.cb58Decode(asset_ID);
     var out_amount = new avalanche_1.BN(output_amount * constants_1.BNSCALE);
     var output_addr_buf = [xchain.parseAddress(dest_addr)];
+    //construct the actual transferable output
     var secp_tranfser_output = new avm_1.SECPTransferOutput(out_amount, output_addr_buf);
     var output = new avm_1.TransferableOutput(asset_ID_buf, secp_tranfser_output);
     return output;
 };
 exports.craft_output = craft_output;
+//send the user an amount of currency equal to the target input (basically just reordering utxos)
 var send_target_amount = function (network_ID, private_key, input_amount, asset_ID) { return __awaiter(void 0, void 0, void 0, function () {
     var network_data, xchain, fee, inp_amount, inp_amount_fee, key_type, signed_tx, key_data, key_chain_addrs, pub_addr_buf_1, pub_addr, utxo_set, balance, unsigned_tx, my_wallet, from, to, change, wallet_utxos, unsigned_tx, tx_ID, status, outs, tx_index, i, pub_addr_buf;
     return __generator(this, function (_a) {
@@ -205,6 +213,7 @@ var send_target_amount = function (network_ID, private_key, input_amount, asset_
         }
     });
 }); };
+//construct and send the data into json format for the server
 var send_data = function (join_ID, pub_addr, nonce, nonce_sig, input, output, ip) { return __awaiter(void 0, void 0, void 0, function () {
     var send_data, recieved_data;
     return __generator(this, function (_a) {

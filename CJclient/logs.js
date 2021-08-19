@@ -1,4 +1,5 @@
 "use strict";
+//file that defines methods to handle the storage/retrieval of logs
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -38,10 +39,11 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 exports.__esModule = true;
 var fs = require("fs");
 var avalanche_wallet_sdk_1 = require("@avalabs/avalanche-wallet-sdk");
-var avalancheutils_1 = require("./avalancheutils");
+var avalancheutils_1 = require("../avalancheutils");
 var WEEK_MLS = 604800000;
 var OLD_LOG_TIME = WEEK_MLS;
 var log_path = "/home/jcm/Documents/test/CoinJoin/CJclient/joinlogs/logs.json";
+//returns the data for a specific server address
 exports.get_server_join_txs = function (log_data, server_addr) {
     if (server_addr in log_data) {
         return log_data[server_addr];
@@ -51,6 +53,7 @@ exports.get_server_join_txs = function (log_data, server_addr) {
         return undefined;
     }
 };
+//returns the data for a specific join transaction associated with a specific server address
 exports.get_join_tx_data = function (log_data, server_addr, join_tx_ID) {
     var join_txs = exports.get_server_join_txs(log_data, server_addr);
     if (join_tx_ID in join_txs) {
@@ -61,6 +64,7 @@ exports.get_join_tx_data = function (log_data, server_addr, join_tx_ID) {
         return undefined;
     }
 };
+//get the log from a join tx associated with a public key
 exports.get_log_from_pub_key = function (log_data, server_addr, join_tx_ID, user_addr) {
     var join_tx_user_data = exports.get_join_tx_data(log_data, server_addr, join_tx_ID)["users"];
     if (user_addr in join_tx_user_data) {
@@ -71,6 +75,7 @@ exports.get_log_from_pub_key = function (log_data, server_addr, join_tx_ID, user
         return undefined;
     }
 };
+//from a private key, get the public address assoicated with the specific join transaction
 exports.get_pub_addr_from_tx = function (log_data, server_addr, join_tx_ID, priv_key) { return __awaiter(void 0, void 0, void 0, function () {
     var key_type, join_tx_data, network_data, user_data, key_data, my_wallet, wallet_addrs, i;
     return __generator(this, function (_a) {
@@ -104,6 +109,7 @@ exports.get_pub_addr_from_tx = function (log_data, server_addr, join_tx_ID, priv
         }
     });
 }); };
+//from a private key, get the log information for a specific join transaction
 exports.get_log_from_priv_key = function (log_data, server_addr, join_tx_ID, priv_key) { return __awaiter(void 0, void 0, void 0, function () {
     var pub_addr;
     return __generator(this, function (_a) {
@@ -121,6 +127,7 @@ exports.get_log_from_priv_key = function (log_data, server_addr, join_tx_ID, pri
         }
     });
 }); };
+//adds a log to the logs.json flie
 exports.add_log = function (server_addr, join_tx_ID, join_tx_data, user_addr, user_data) {
     console.log("logging data");
     try {
@@ -132,7 +139,7 @@ exports.add_log = function (server_addr, join_tx_ID, join_tx_data, user_addr, us
             log_data[server_addr][join_tx_ID] = join_tx_data;
         }
         log_data[server_addr][join_tx_ID]["users"][user_addr] = user_data;
-        fs.writeFileSync(log_path, JSON.stringify(log_data));
+        fs.writeFileSync("./joinlogs/logs.json", JSON.stringify(log_data));
         console.log("added log to file");
     }
     catch (err) {
@@ -140,6 +147,7 @@ exports.add_log = function (server_addr, join_tx_ID, join_tx_data, user_addr, us
         console.log("error recording log");
     }
 };
+//get all logs from the logs.json file
 exports.get_all_logs = function () {
     try {
         var data = JSON.parse(fs.readFileSync(log_path, 'utf8'));

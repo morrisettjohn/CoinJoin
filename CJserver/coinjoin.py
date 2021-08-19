@@ -1,22 +1,24 @@
+#File that runs the coinjoin server
+
 from json.decoder import JSONDecodeError
 from joinstate import JoinState
 from utils.httprequest import *
 
 from assetinfo import *
 from params import *
-from joinstatesamples import samples, generate_samples
-from messages import send_err, send_message, send_option_data, send_compatable_join_list, send_join_data, send_nonce
+from joinstatesamples import generate_samples
+from messages import send_err, send_option_data, send_compatable_join_list, send_join_data
 import socket
 import sys
 import json
-import time
 from config import *
 
-fee_address = FEE_KEY
-standard_fee_percent = .10
 
+fee_address = FEE_KEY
+standard_fee_percent = STANDARD_FEE_PERCENT
 join_list = {}
 
+#determines if the request headers are valid
 def isvalid_request(request_data):
     if request_data.command != 'POST':
         return False
@@ -28,9 +30,11 @@ def isvalid_request(request_data):
         return False
     return True
 
+#returns the length of the request
 def request_length(req):
     return int(req.headers['Content-Length'])
 
+#processes the headers for a message
 def process_header(message):
     print("processing headers")
     req = HTTPRequest(message)
@@ -80,6 +84,7 @@ def create_new_join(asset_type, amount, network_ID, limit):
 
 #Returns a list of joins that match the users specificaitons
 def find_joins(asset_ID, amount, network_ID, min_users, max_users):
+    global join_list
     matches = []
 
     for item in join_list:
@@ -178,6 +183,7 @@ def is_valid_json_data(data):
     print("good data")
     return True
 
+#returns a join instance based on the join id
 def get_join(data):
     if data["join_ID"] in join_list:
         return join_list[data["join_ID"]]
@@ -195,7 +201,13 @@ def generate_option_data():
 #Processes data based on what kind of message the data contains
 def process_data(conn, addr, network):
     global join_list
-    data = get_json_data(conn)
+
+    try:
+        data = get_json_data(conn)
+    except Exception:
+        print("data transfer was not completed")
+        return
+
     if is_valid_json_data(data):
         if "join_ID" in data and data["join_ID"] not in join_list:
             send_err(conn, "no such join exists")
@@ -264,18 +276,17 @@ def start_server():
     HOST = sys.argv[1][:sys.argv[1].find(":")]
     PORT = int(sys.argv[1][sys.argv[1].find(":")+1:])
     network = int(sys.argv[2])
+    join_list = generate_samples(network)
 
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)   #XXX just doing this for testing purposes, can be deleted later
     s.bind((HOST, PORT))
     s.listen()
-    join_list = generate_samples(network)
-    
+
     while True:
         conn, addr = s.accept()
         conn.sendall(b"HTTP/1.1 200 OK\r\n\r\n")   #initializes http response
         print("Connected by", addr)
         process_data(conn, addr, network)
-
 
 start_server()

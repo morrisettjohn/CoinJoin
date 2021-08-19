@@ -1,12 +1,13 @@
+//file that defines methods to handle the storage/retrieval of logs
+
 import * as fs from "fs"
 import { MnemonicWallet } from "@avalabs/avalanche-wallet-sdk"
-import { generate_xchain, generate_key_chain, get_key_type } from "./avalancheutils"
+import { generate_xchain, generate_key_chain, get_key_type } from "../avalancheutils"
 const WEEK_MLS = 604800000
 const OLD_LOG_TIME = WEEK_MLS
 const log_path = "/home/jcm/Documents/test/CoinJoin/CJclient/joinlogs/logs.json"
 
-
-
+//returns the data for a specific server address
 export const get_server_join_txs = function (log_data: any, server_addr: string) {
     if (server_addr in log_data) {
         return log_data[server_addr]
@@ -17,6 +18,7 @@ export const get_server_join_txs = function (log_data: any, server_addr: string)
     }
 }
 
+//returns the data for a specific join transaction associated with a specific server address
 export const get_join_tx_data = function (log_data: any, server_addr: string, join_tx_ID: string) {
     const join_txs = get_server_join_txs(log_data, server_addr)
     if (join_tx_ID in join_txs){ 
@@ -28,6 +30,7 @@ export const get_join_tx_data = function (log_data: any, server_addr: string, jo
     }
 }
 
+//get the log from a join tx associated with a public key
 export const get_log_from_pub_key = function(log_data: any, server_addr: string, join_tx_ID: string, user_addr: string) {
     const join_tx_user_data = get_join_tx_data(log_data, server_addr, join_tx_ID)["users"]
     if (user_addr in join_tx_user_data) {
@@ -39,6 +42,7 @@ export const get_log_from_pub_key = function(log_data: any, server_addr: string,
     }
 }
 
+//from a private key, get the public address assoicated with the specific join transaction
 export const get_pub_addr_from_tx = async(log_data: any, server_addr: string, join_tx_ID: string, priv_key: string) => {
     const key_type = get_key_type(priv_key)
     const join_tx_data = get_join_tx_data(log_data, server_addr, join_tx_ID)
@@ -67,6 +71,7 @@ export const get_pub_addr_from_tx = async(log_data: any, server_addr: string, jo
     }
 }
 
+//from a private key, get the log information for a specific join transaction
 export const get_log_from_priv_key = async(log_data: any, server_addr: string, join_tx_ID: string, priv_key: string): Promise<any> => {
     const pub_addr = await get_pub_addr_from_tx(log_data, server_addr, join_tx_ID, priv_key)
     if (pub_addr != undefined) {
@@ -77,6 +82,7 @@ export const get_log_from_priv_key = async(log_data: any, server_addr: string, j
     }
 }
 
+//adds a log to the logs.json flie
 export const add_log = function(server_addr: string, join_tx_ID: string, join_tx_data: any, user_addr: string, user_data: any) {
     console.log("logging data")
 
@@ -91,7 +97,7 @@ export const add_log = function(server_addr: string, join_tx_ID: string, join_tx
         }
         log_data[server_addr][join_tx_ID]["users"][user_addr] = user_data
         
-        fs.writeFileSync(log_path, JSON.stringify(log_data))
+        fs.writeFileSync("./joinlogs/logs.json", JSON.stringify(log_data))
         console.log("added log to file")
     }
     catch (err) {
@@ -101,6 +107,7 @@ export const add_log = function(server_addr: string, join_tx_ID: string, join_tx
 
 }
 
+//get all logs from the logs.json file
 export const get_all_logs = function() {
     try {
         const data = JSON.parse(fs.readFileSync(log_path, 'utf8'))

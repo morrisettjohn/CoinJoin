@@ -1,3 +1,5 @@
+#Class which creates a specific join, and handles all requests for the specific join
+
 from assetinfo import AVAX_FUJI_ID, convert_to_asset_name
 import json
 import subprocess
@@ -17,9 +19,7 @@ from datatypes import Input, Nonce, Output, Sig
 from user import User, UserList
 from config import *
 
-#This is a class which holds all the data for a coinjoin.  The CoinJoin has two main states that it can be in:  collecting utxo inputs and collecting
-#signatures.  
-
+#Given the specified fee key in config, generates a keypair for the server to use
 def get_address(network_ID):
     pub_addr_data = str.encode(json.dumps({
         "private_key": FEE_KEY,
@@ -31,13 +31,13 @@ def get_address(network_ID):
     result_data = json.loads(bytes.decode((result.stdout)))
     return result_data
 
+#generates the specific join tx id for the specified join
 def generate_join_tx_ID():
     join_tx_ID = time.time_ns()//1000000
     time.sleep(0.001)
     return join_tx_ID
 
-
-
+#Main joinstate class
 class JoinState:
     current_id = 0
     completed_join_txs = 0
@@ -76,6 +76,7 @@ class JoinState:
 
         JoinState.current_id += 1
 
+    #Determines if the current address needs to be updated, and if so, generates a new address
     def update_address(network_ID):
         if JoinState.fee_pub_addr == "" or JoinState.completed_join_txs == GENERATE_NEW_ADDRESS_NUM:
             key_data = get_address(network_ID)
@@ -119,6 +120,7 @@ class JoinState:
             Exception("bad")
         return status
 
+    #returns the total fee amount collected
     def get_collected_fee_amt(self):
         return self.users.get_total_fee_amount()
 
@@ -126,17 +128,19 @@ class JoinState:
     def get_fee_after_burn(self):
         return self.get_collected_fee_amt() - STANDARD_BURN_AMOUNT
 
+    #returns all inputs that users have submitted
     def get_all_inputs(self):
         return self.users.get_all_inputs()
 
-    #returns only the output data, not the ip addresses, from the output list
+    #returns all outputs that users have submitted
     def get_all_outputs(self):
         return self.users.get_all_outputs()
 
-    #returns only the signatures from the signature list, not the public addresses associated with them
+    #returns all signatures that users have submitted
     def get_all_sigs(self):
         return self.users.get_all_sigs()
 
+    #removes a given connection from a list
     def remove_connection(self, conn):
         try:
             conn.close()
@@ -177,6 +181,7 @@ class JoinState:
             return False
         return True
 
+    #extracts the half of the nonce the server signs that the client generates
     def extract_server_nonce(request_data):
         return request_data["server_nonce"]
         
@@ -192,12 +197,15 @@ class JoinState:
     def extract_pub_addr(request_data):
         return request_data["pub_addr"]
 
+    #extracts the nonce from the request data
     def extract_nonce(request_data):
         return request_data["nonce"]
 
+    #xtracts the signed nonce from the request data
     def extract_nonce_sig(request_data):
         return request_data["nonce_sig"]
     
+    #generates a random nonce using characters a-z and A-Z
     def generate_nonce():
         return ''.join(choice(string.ascii_letters) for i in range(NONCE_LENGTH))
 
@@ -222,11 +230,10 @@ class JoinState:
         self.stx = None
         self.stx_id = None
         self.sigs = None
-        
         self.state = COLLECT_SIGS
 
+    #calls a subprocess that crafts the wire transaction from the collected data
     def craft_wtx(self):
-        
         fee_data = {
             "asset_ID": self.asset_ID, 
             "amount": self.get_fee_after_burn()*BNSCALE, 
@@ -269,6 +276,7 @@ class JoinState:
         result_data = json.loads(bytes.decode((result.stdout)))
         return result_data
 
+    #cals a subprocess that signs the nonce that verifies the server's address
     def sign_server_nonce(self, server_nonce):
         server_sign_data = str.encode(json.dumps({
             "server_nonce": server_nonce,
@@ -281,6 +289,7 @@ class JoinState:
         result_data = json.loads(bytes.decode((result.stdout)))
         return result_data["server_sig"]
 
+    #removes a user from the user list
     def remove_user(self, pub_addr, blacklist = True):
         self.wtx = None
         self.stx = None
@@ -296,28 +305,38 @@ class JoinState:
         ip = addr[0]
         pub_addr = JoinState.extract_pub_addr(request_data)
         message_type = request_data["message_type"]
-
         user = self.users.get_user(pub_addr)
 
-        #if handling a nonce request
+        # Handles a nonce request.  Used for verifying that the client owns the public address provided, 
+        # and the server owns the public address they claim.
+
+        # Flow:  The client and the server send each other randomly generated 5 character nonces.  In order to verify
+        # that the message is not the hash of one of their own messages, both the server and client append 5 more randomly
+        # generated characters, and then both sides send the completed nonce and signature to each other.  If the message
+        # begins with the provided 5-character sequence, and the nonce and nonce signature can be verified to belong to
+        # the provided public address, both the client and server can verify that the other side actually has the private key
+        # to the public address they claim to have.
         if message_type == REQUEST_NONCE:
+            #if a user has already requested a nonce, send them back a new nonce
             if self.users.user_awaiting_nonce(pub_addr):
                 send_message(conn, "sending new nonce")
-            nonce_msg = JoinState.generate_nonce()
 
+            #nonce information that the server must sign
             server_nonce = JoinState.extract_server_nonce(request_data)
             server_nonce += JoinState.generate_nonce()
             server_sig = self.sign_server_nonce(server_nonce)
 
-            nonce = Nonce(nonce_msg)
+            #nonce information that the client must use
+            nonce_msg = JoinState.generate_nonce()
+            client_nonce = Nonce(nonce_msg)
 
             if not user:
                 user = User(pub_addr)
                 self.users.append(user)
-            user.nonce = nonce
+            user.nonce = client_nonce
 
             nonce_verification_data = {
-                "nonce": nonce.msg, 
+                "nonce": client_nonce.msg, 
                 "server_nonce": server_nonce, 
                 "server_sig": server_sig, 
                 "server_pub_addr": self.fee_address
@@ -325,7 +344,7 @@ class JoinState:
             send_nonce(conn, nonce_verification_data)
             return
 
-        #When handling a potential input
+        #verifies the legitimacy of an input a user sends, and if true, adds them to the join.
         elif message_type == COLLECT_INPUTS:
             input_buf = JoinState.extract_input_buf(request_data)
             output_buf = JoinState.extract_output_buf(request_data)
@@ -333,6 +352,7 @@ class JoinState:
             nonce_sig = JoinState.extract_nonce_sig(request_data)
 
             try:
+                #try to construct the user's input/output data as well as their nonce verification data
                 input = Input(input_buf, self.network_ID)
                 output = Output(output_buf, self.network_ID)
                 user.nonce.parse_nonce(nonce, nonce_sig, self.network_ID)
@@ -351,6 +371,7 @@ class JoinState:
                                     if True: #not ip in self.IP_addrs:       #XXX need to comment out for testing purposes
                                         if input.amt == self.inp_amount and output.amt == self.out_amount:
                                             if not self.users.check_repeat_output_addr(output.output_addr):
+
                                                 #create input and output data when this has been determined to be valid information
                                                 self.update_last_accessed()
                                                 self.cons.append(conn)
@@ -364,11 +385,11 @@ class JoinState:
                                                 send_message(conn, "transaction data accepted, please wait for other users to input data")
 
                                                 for item in self.cons:
+                                                    #whenever a user inputs a data, tell all users about a new input
                                                     send_message(item, "%d out of %d users connected" % (self.get_current_input_count(), self.threshold))
                                                 
-                                                #when sufficient cons are created, go through the process of sending out the transaction
+                                                #if the number of connections is equal to the threshold, construct the wtx and move to the collect sigs state
                                                 if self.get_current_input_count() >= self.threshold:
-                                                    #add the fee to the outputs
                                                     try: 
                                                         self.wtx = self.craft_wtx()
                                                     except Exception:
@@ -420,10 +441,11 @@ class JoinState:
                 print("user not found")
                 send_err(conn, "could not find user, make sure to request a nonce to initialize with the CJ")
 
-        #handles potential signature
+        #verifies the legitimacy of a signature, and then once all signatures are collected issue the tx
         elif message_type == COLLECT_SIGS:
 
             try:
+                #try to construct the signature from the provided data.
                 sig = Sig(self.wtx, request_data["sig"], self.network_ID)
             except Exception:
                 print("couldn't parse signature")
@@ -435,18 +457,19 @@ class JoinState:
                 if user and user.in_join == True:
                     if user.sig == None:
                         if user.pub_addr == sig.sig_addr:
-                            #When it has been determined that the signature is valid, continue through
+                            #When it has been determined that the signature is valid, add the signature to the user's data
                             self.update_last_accessed()
                             user.sig = sig
                             self.cons.append(conn)
                             send_message(conn, "signature registered, waiting for others in the coinjoin")
 
                             for item in self.cons:
+                                #update users on the number of signatures provided
                                 send_message(item, "%d out of %d users signed" % (self.get_current_sig_count(), self.threshold))
 
+                            #if the number of signatures reaches the threshold reached, construct the tx and issue
                             if self.get_current_sig_count() == self.threshold:
                                 print("all signed")
-
                                 try:
                                     self.stx = self.craft_stx()
                                 except Exception:
@@ -458,6 +481,7 @@ class JoinState:
 
                                 timeout = 5000
                                 for item in self.cons:
+                                    #send the signed transaction and the timeout counter if the server fails to issue in a timely manner
                                     send_message(item, "all participants have signed, submitting to blockchain")
                                     send_stx(item, {"stx": self.stx, "timeout": timeout})
                                     timeout += 100
@@ -492,10 +516,11 @@ class JoinState:
                 send_err(conn, "Message not applicable, join not in signature state")
                 return
 
-        #handles wtx request
+        #Handles a request to get the wtx information from the join
         elif message_type == REQUEST_WTX:
             if self.state == COLLECT_SIGS:
 
+                #verify that the user is in the join and they own the public key
                 nonce = JoinState.extract_nonce(request_data)
                 nonce_sig = JoinState.extract_nonce_sig(request_data)
 
@@ -509,6 +534,7 @@ class JoinState:
 
                 if user and user.in_join:
                     if user.nonce.nonce_addr == user.pub_addr:
+                        #if the user is in the join, send the wtx data
                         print("sending wtx to participant")
                         send_message(conn, "sending wtx information over")
                         send_wtx(conn, self.wtx)
@@ -526,8 +552,10 @@ class JoinState:
                 send_err(conn, "cannot send wtx, join not in collectsigs state")
                 return
 
+        #handles a case where a user wants to exit the cj
         elif message_type == EXIT:
 
+            #verify that the user is actually in the join and owns the public key
             nonce = JoinState.extract_nonce(request_data)
             nonce_sig = JoinState.extract_nonce_sig(request_data)
 
@@ -542,6 +570,7 @@ class JoinState:
             if user and user.in_join:
                 if user.nonce != None:
                     if user.nonce.nonce_addr == user.pub_addr:
+                        #if the user is in the join and verifies to the public address, remove them from the join
                         print("removing user %s" % pub_addr)
                         message = "user has been removed from the CJ"
                         if self.state == COLLECT_SIGS:
@@ -577,6 +606,3 @@ class JoinState:
         for item in status:
             return_string += item + " = " + str(status[item]) + "\r\n"
         return return_string
-
-class BadJoinState(JoinState):
-    pass

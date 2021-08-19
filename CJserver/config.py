@@ -1,4 +1,5 @@
 FEE_KEY = "dragon convince manual food velvet subject buffalo luxury farm anchor lawn comic obscure wood decorate reunion abandon slot idea grunt two govern wreck hen"
+STANDARD_FEE_PERCENT = .10
 
 MIN_USER_BOUND = 2
 MAX_USER_BOUND = 20

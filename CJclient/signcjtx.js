@@ -1,4 +1,5 @@
 "use strict";
+//signs an existing join that the user is a part of
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -44,7 +45,7 @@ var avm_1 = require("@avalabs/avalanche-wallet-sdk/node_modules/avalanche/dist/a
 var requestwtx_1 = require("./requestwtx");
 var bintools = avalanche_1.BinTools.getInstance();
 var sign_cj_tx = function (join_ID, private_key, ip) { return __awaiter(void 0, void 0, void 0, function () {
-    var join_params, network_ID, join_tx_ID, server_addr, log_data, tx_data, pub_addr, pub_addr_log, wtx, input, output;
+    var join_params, network_ID, join_tx_ID, server_addr, log_data, pub_addr, pub_addr_log, wtx, input, output;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0: return [4 /*yield*/, getjoindata_1.get_join_data(join_ID, ip)];
@@ -54,7 +55,6 @@ var sign_cj_tx = function (join_ID, private_key, ip) { return __awaiter(void 0, 
                 join_tx_ID = join_params["join_tx_ID"];
                 server_addr = join_params["fee_addr"];
                 log_data = logs_1.get_all_logs();
-                tx_data = logs_1.get_join_tx_data(log_data, server_addr, join_tx_ID);
                 return [4 /*yield*/, logs_1.get_pub_addr_from_tx(log_data, server_addr, join_tx_ID, private_key)];
             case 2:
                 pub_addr = _a.sent();
@@ -66,9 +66,10 @@ var sign_cj_tx = function (join_ID, private_key, ip) { return __awaiter(void 0, 
                 output = new avm_1.TransferableOutput();
                 input.fromBuffer(bintools.cb58Decode(pub_addr_log["input"]));
                 output.fromBuffer(bintools.cb58Decode(pub_addr_log["output"]));
-                console.log(wtx, input, output);
+                //send signature to coinjoin
                 return [4 /*yield*/, sendsignature_1.send_signature(join_ID, wtx, pub_addr, private_key, network_ID, ip, input, output)];
             case 4:
+                //send signature to coinjoin
                 _a.sent();
                 return [2 /*return*/];
         }

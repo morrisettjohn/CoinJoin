@@ -1,5 +1,6 @@
+//in case the server does not issue the tx, directly issue the tx
+
 import {
-    BinTools,
     Buffer,
   } from "@avalabs/avalanche-wallet-sdk/node_modules/avalanche" 
 import { 
@@ -7,15 +8,13 @@ import {
  } from "@avalabs/avalanche-wallet-sdk/node_modules/avalanche/dist/apis/avm"
 
 
-import { generate_xchain } from "./avalancheutils"
-
-
-const bintools: BinTools = BinTools.getInstance()
+import { generate_xchain } from "../avalancheutils"
 
 const issuetx = async(data: any, network_ID: number): Promise<any> => {
     const network_data = generate_xchain(network_ID)
     console.log("issuing tx")
 
+    //reconstruct the tx
     const stx_buf: Buffer = new Buffer(data)
     const stx: Tx = new Tx()
     stx.fromBuffer(stx_buf)

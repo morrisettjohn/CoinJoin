@@ -1,4 +1,5 @@
 "use strict";
+//sings the wtx from the join
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -41,13 +42,13 @@ var avm_1 = require("@avalabs/avalanche-wallet-sdk/node_modules/avalanche/dist/a
 var common_1 = require("@avalabs/avalanche-wallet-sdk/node_modules/avalanche/dist/common");
 var processmessage_1 = require("./processmessage");
 var crypto_1 = require("crypto");
-var avalancheutils_1 = require("./avalancheutils");
+var avalancheutils_1 = require("../avalancheutils");
 var avalanche_wallet_sdk_1 = require("@avalabs/avalanche-wallet-sdk");
 var consts = require("./constants");
 var issuestx_1 = require("./issuestx");
-var bintools = avalanche_1.BinTools.getInstance();
+//checks for any information that may put the user at risk, and if true, signs the tx and sends it back to the server
 var send_signature = function (join_ID, data, pub_addr, private_key, network_ID, ip, my_input, my_output) { return __awaiter(void 0, void 0, void 0, function () {
-    var network_data, key_type, tx_buf, unsigned_tx, inputs, outputs, msg, sig_buf, sig, key_data, utxo_set, my_utxos, my_wallet, my_key, sig_string, send_data, return_data, log_data;
+    var network_data, key_type, tx_buf, unsigned_tx, inputs, outputs, msg, sig, key_data, utxo_set, my_utxos, sig_buf, my_wallet, my_key, sig_buf, send_data, return_data;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -59,7 +60,6 @@ var send_signature = function (join_ID, data, pub_addr, private_key, network_ID,
                 inputs = unsigned_tx.getTransaction().getIns();
                 outputs = unsigned_tx.getTransaction().getOuts();
                 msg = avalanche_1.Buffer.from(crypto_1.createHash("sha256").update(tx_buf).digest());
-                sig_buf = undefined;
                 sig = new common_1.Signature();
                 if (!(key_type == 0)) return [3 /*break*/, 2];
                 key_data = avalancheutils_1.generate_key_chain(network_data.xchain, private_key);
@@ -67,9 +67,14 @@ var send_signature = function (join_ID, data, pub_addr, private_key, network_ID,
             case 1:
                 utxo_set = (_a.sent()).utxos;
                 my_utxos = utxo_set.getAllUTXOs();
-                run_security_checks(inputs, outputs, my_input, my_output, my_utxos);
-                sig_buf = key_data.my_key_pair.sign(msg);
-                sig.fromBuffer(sig_buf);
+                //run security checks on the wtx, making sure there are no bad actors at play
+                if (run_security_checks(inputs, outputs, my_input, my_output, my_utxos)) {
+                    sig_buf = key_data.my_key_pair.sign(msg);
+                    sig.fromBuffer(sig_buf);
+                }
+                else {
+                    throw new Error("did not pass security checks, server or coinjoin may have dropped your information or is malicious");
+                }
                 return [3 /*break*/, 5];
             case 2:
                 if (!(key_type == 1)) return [3 /*break*/, 5];
@@ -80,10 +85,15 @@ var send_signature = function (join_ID, data, pub_addr, private_key, network_ID,
                 return [4 /*yield*/, my_wallet.updateUtxosX()];
             case 4:
                 _a.sent();
-                run_security_checks(inputs, outputs, my_input, my_output, my_wallet.utxosX.getAllUTXOs());
                 my_key = my_wallet.getKeyChainX().getKey(network_data.xchain.parseAddress(pub_addr));
-                sig_string = my_key.sign(msg);
-                sig.fromBuffer(sig_string);
+                //run security chekcs on the wtx, making sure there are no bad actors at play
+                if (run_security_checks(inputs, outputs, my_input, my_output, my_wallet.utxosX.getAllUTXOs())) {
+                    sig_buf = my_key.sign(msg);
+                    sig.fromBuffer(sig_buf);
+                }
+                else {
+                    throw new Error("did not pass security checks, server or coinjoin may have dropped your information or is malicious");
+                }
                 _a.label = 5;
             case 5:
                 send_data = {
@@ -102,39 +112,39 @@ var send_signature = function (join_ID, data, pub_addr, private_key, network_ID,
                 else {
                     console.log("server succesfully issued tx of id " + return_data[1]);
                 }
-                log_data = "successfully sent signature to CJ of id " + join_ID + " using address " + pub_addr + ".";
                 return [2 /*return*/];
         }
     });
 }); };
 exports.send_signature = send_signature;
+//check inputs to make sure the client's input is included, and none of their other inputs are included as well
 var check_inputs = function (inputs, my_input, my_utxos) {
     var has_input = false;
-    var unwanted_utxo_count = 0;
     for (var i = 0; i < inputs.length; i++) {
         var check_item = inputs[i];
+        //check if the inputs contain the client's input
         if (check_item.getTxID().equals(my_input.getTxID()) && check_item.getOutputIdx().equals(my_input.getOutputIdx())) {
             has_input = true;
         }
         else {
+            //check if the inputs contain any of the client's other inputs
             for (var j = 0; j < my_utxos.length; j++) {
                 var test_utxo = my_utxos[j];
                 if (check_item.getTxID().equals(test_utxo.getTxID()) && check_item.getOutputIdx().equals(test_utxo.getOutputIdx())) {
-                    unwanted_utxo_count++;
-                    break;
+                    return false;
                 }
             }
         }
     }
     if (!has_input) {
-        throw Error("Your input is not recorded in the transaction, server or coinjoin participants may be malicious");
+        return false;
     }
-    if (unwanted_utxo_count > 0) {
-        throw Error(unwanted_utxo_count + " other utxo(s) that you own were recorded in the tx.  Server or cj participants may be malicious");
-    }
+    return true;
 };
+//check outputs to make sure the client's output is included
 var check_outputs = function (outputs, my_output) {
     var has_output = false;
+    //check if the outputs contains the client's output
     for (var i = 0; i < outputs.length; i++) {
         var check_item = outputs[i];
         if (check_item.toBuffer().equals(my_output.toBuffer())) {
@@ -142,11 +152,13 @@ var check_outputs = function (outputs, my_output) {
         }
     }
     if (!has_output) {
-        throw Error("Your output is not recorded in the transaction, server or coinjoin participants may be malicious");
+        return false;
     }
+    return true;
 };
+//run security checks on inputs and outputs
 var run_security_checks = function (inputs, outputs, my_input, my_output, my_utxos) {
-    check_inputs(inputs, my_input, my_utxos);
-    check_outputs(outputs, my_output);
-    console.log("All checks run, tx is good");
+    var inputs_check = check_inputs(inputs, my_input, my_utxos);
+    var outputs_check = check_outputs(outputs, my_output);
+    return (inputs_check && outputs_check);
 };

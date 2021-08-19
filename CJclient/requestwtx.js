@@ -1,4 +1,5 @@
 "use strict";
+//requests the wtx information from the cj server
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -36,11 +37,9 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 exports.__esModule = true;
-var avalanche_1 = require("@avalabs/avalanche-wallet-sdk/node_modules/avalanche");
 var processmessage_1 = require("./processmessage");
 var consts = require("./constants");
 var requestnonce_1 = require("./requestnonce");
-var bintools = avalanche_1.BinTools.getInstance();
 var request_wtx = function (join_ID, private_key, pub_addr, network_ID, ip) { return __awaiter(void 0, void 0, void 0, function () {
     var nonce_sig_pair, nonce, nonce_sig, send_data, wtx;
     return __generator(this, function (_a) {

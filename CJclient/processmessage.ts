@@ -1,12 +1,9 @@
-import { bintools } from "@avalabs/avalanche-wallet-sdk/dist/common"
-import { KeyPair } from "avalanche/dist/apis/avm"
 import { request } from "http"
-import { generate_xchain } from "./avalancheutils"
-import * as consts from "./constants"
 import { extract_host, extract_port } from "./utils"
 import { Buffer } from "@avalabs/avalanche-wallet-sdk/node_modules/avalanche" 
-import { createHash } from 'crypto'
+import { UnsignedTx } from "@avalabs/avalanche-wallet-sdk/node_modules/avalanche/dist/apis/avm"
 
+//class that creates a message used to parse communications from the cj server
 class Message {
     message_type: string
     message_data: any
@@ -47,39 +44,6 @@ const is_valid_join_data = function(data: any): boolean {
     return false
 }
 
-const is_valid_wtx_data = function(data: any): boolean {
-    return true
-    if (!("inputs" in data && "outputs" in data)){
-        return false
-    }
-    if (data["inputs"].length < 1 || data["outputs"].length < 1){
-        return false
-    }
-    data["inputs"].forEach(item => {
-        if (!("pubaddr" in item && "inputbuf" in item)){
-            return false
-        }
-    })
-    data["inputs"].forEach(item => {
-        if (!("outputbuf" in item)){
-            return false
-        }
-    })
-    return true
-}
-
-const is_valid_stx_data = function(data: any): boolean {
-    return true
-    /*XXX fix later
-    if (!("signatures" in data && "transaction" in data)){
-        return false
-    }
-    if (data["signatures"].length < 1 || data["transaction"].length != 1){
-        return false
-    }
-    return true*/
-}
-
 //takes a message from the coinjoin server and processes it, using a 3 character prefix as a message_type
 const process_message = function (recieved_data: string): Message[]{
     let messages: Message[] = []
@@ -111,6 +75,7 @@ const process_message = function (recieved_data: string): Message[]{
             message.message_data = JSON.parse(message_data)
             message.message_resolve = "return"
         }
+        //handles the join data
         else if (message_type == "JDT"){
             const data = JSON.parse(message_data)
             if (is_valid_join_data(data)) {
@@ -120,6 +85,7 @@ const process_message = function (recieved_data: string): Message[]{
                 console.log("join data missing entries")
             }
         }
+        //handles the nonce data
         else if (message_type == "NCE"){
             message.message_data = JSON.parse(message_data)
             message.message_resolve = "return"
@@ -127,27 +93,17 @@ const process_message = function (recieved_data: string): Message[]{
         //handling send_utxo data
         else if (message_type == "WTX"){
             const data = JSON.parse(message_data)
-            if (is_valid_wtx_data(data)){
-                message.message_data = data
-                message.message_resolve = "return"
-            }
-            else {
-                throw Error("Incomplete wtx")
-            }
-        }
+            message.message_data = data
+            message.message_resolve = "return"
 
+        }
         //handling signed_tx data
         else if (message_type == "STX"){
             const data = JSON.parse(message_data)
-            if (is_valid_stx_data(data)){
-                message.message_data = data["stx"]
-                message.message_resolve = "cache"
-                message.set_cache_timeout(data["timeout"])
-            }
-            else {
-                throw new Error("incomplete stx")
-            }
-            
+
+            message.message_data = data["stx"]
+            message.message_resolve = "cache"
+            message.set_cache_timeout(data["timeout"])
         }
         else if (message_type == "TXD"){
             message.message_data = message_data
@@ -162,8 +118,8 @@ const process_message = function (recieved_data: string): Message[]{
     return messages
 }
 
+//based on the content of a message, constructs the header options
 const construct_header_options = function (content: any, ip: string): any{
-
     const options = {
         host: extract_host(ip),
         port: extract_port(ip),
@@ -171,30 +127,42 @@ const construct_header_options = function (content: any, ip: string): any{
         headers: {
             "Content-Length": Buffer.byteLength(content)
         }
-        
     }
-
     return options
 }
 
+//main send/recieve function for communicating with the cj server.  Sends over a message, and recieves responses from the server
 const send_recieve = function (sendData: any, ip: string): Promise<any[]> {
     const return_data_string = JSON.stringify(sendData)
     const options = construct_header_options(return_data_string, ip)
+
     return new Promise((resolve, reject) => {
         const cache = []
         let timeout = undefined
+
+        //construct a request based on the option data above, and then write to it
         const req = request(options, res => {
+
+            //once the request has recieved data, parse the data
             res.on("data", d => {
                 let recieved_data = d.toString()
+
+                //multiple different messages may be sent in one packet.  Handle each message
                 const messages = process_message(recieved_data)
                 messages.forEach(item => {
+                    //if the message is one that prints out information to the console, just print it out.  Do not cache information
                     if (item.message_resolve == "print"){
                         console.log(item.message_data)
                     }
+                    //if the message requires that the results be returned, resolve the promise
                     else if (item.message_resolve == "return"){
                         cache.push(item.message_data)
                         resolve(cache)
                     }
+                    //if the message requires that the results be cached, store that information in the promise cache.
+                    //if the message has a cachetimeout, then the cache will be returned either when:
+                    //1. a message with a return resolve has been accepted
+                    //2. the number of mllseconds specified in the cachetimeout has passed
                     else if (item.message_resolve == "cache"){
                         cache.push(item.message_data)
                         if (item.get_cache_timeout()){
@@ -207,9 +175,7 @@ const send_recieve = function (sendData: any, ip: string): Promise<any[]> {
                 if (timeout){
                     setTimeout(() => {resolve(cache)}, timeout)
                 }
-                
             })
-
         })
         req.write(return_data_string)
         req.end()

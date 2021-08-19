@@ -1,3 +1,5 @@
+//return back the option data from a specified server
+
 import { send_recieve } from "./processmessage"
 import * as consts from "./constants"
 

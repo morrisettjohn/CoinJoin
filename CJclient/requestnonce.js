@@ -1,4 +1,5 @@
 "use strict";
+//function that requests a nonce from the cj server for validation
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -39,9 +40,8 @@ exports.__esModule = true;
 var avalanche_1 = require("@avalabs/avalanche-wallet-sdk/node_modules/avalanche");
 var processmessage_1 = require("./processmessage");
 var consts = require("./constants");
-var avalancheutils_1 = require("./avalancheutils");
+var avalancheutils_1 = require("../avalancheutils");
 var avalanche_wallet_sdk_1 = require("@avalabs/avalanche-wallet-sdk");
-var bintools = avalanche_1.BinTools.getInstance();
 var request_nonce = function (join_ID, pub_addr, private_key, network_ID, ip) { return __awaiter(void 0, void 0, void 0, function () {
     var network_data, key_type, half_server_nonce, send_data, nonce_data, server_nonce, server_sig, server_pub_addr, dummy_pair, nonce_addr_buf, nonce_addr, recieved_nonce, my_nonce, full_nonce, full_nonce_buf, sig, key_data, my_wallet, my_key;
     return __generator(this, function (_a) {
@@ -62,6 +62,7 @@ var request_nonce = function (join_ID, pub_addr, private_key, network_ID, ip) { 
                 server_nonce = nonce_data["server_nonce"];
                 server_sig = nonce_data["server_sig"];
                 server_pub_addr = nonce_data["server_pub_addr"];
+                //if the server nonce doesn't start with the nonce the user provided, they may be using an old nonce.  Throw an error
                 if (!server_nonce.startsWith(half_server_nonce)) {
                     throw new Error("server nonce does not start with provided nonce");
                 }
@@ -95,10 +96,12 @@ var request_nonce = function (join_ID, pub_addr, private_key, network_ID, ip) { 
     });
 }); };
 exports.request_nonce = request_nonce;
+//generates a 5 digit nonce
 var ALPHABET = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+var NONCE_LENGTH = 5;
 var generate_nonce = function () {
     var return_nonce = "";
-    for (var i = 0; i < 5; i++) {
+    for (var i = 0; i < NONCE_LENGTH; i++) {
         return_nonce += ALPHABET.charAt(Math.floor(Math.random() * ALPHABET.length));
     }
     return return_nonce;

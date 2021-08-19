@@ -1,3 +1,5 @@
+//runs the client for the coinjoin server.  Run 'node coinjoin' for info
+
 import { exit_cj } from "./exitcj"
 import { find_matching_joins } from "./findmatchingjoins";
 import { get_join_data } from "./getjoindata";
@@ -25,9 +27,17 @@ const STD_USAGE = "usage: node coinjoin"
 const DESC = "description: "
 const HELP = "help"
 
+//determine what command the user has input
 let args = process.argv.slice(2)
-const command = args[0].toLocaleLowerCase()
+let command = ""
+if (args[0] == undefined) {
+  command = INFO
+}
+else {
+  command = args[0].toString().toLocaleLowerCase()
+}
 args = args.slice(1)
+
 
 const main = function(){
     if (command == JOIN){
@@ -66,6 +76,7 @@ const main = function(){
     }
 }
 
+//runs the help function
 const cmd_help = function(){
   console.log("run 'node coinjoin (command) info' for more information\n")
   commands.forEach(item => {
@@ -74,6 +85,7 @@ const cmd_help = function(){
   console.log("")
 }
 
+//records an address in the client's local addr folder
 const cmd_record_address = function(){
   if (check_args_for_help(args)){
     console.log(`${DESC} locally stores a private key with a username for easy access`)
@@ -86,6 +98,7 @@ const cmd_record_address = function(){
   }
 }
 
+//removes an address from the client's local addr folder
 const cmd_remove_address = function(){
   if (check_args_for_help(args)){
     console.log(`${DESC} removes one of the locally stored keys.  Use node coinjoin addrs to get a list of stored addresses`)
@@ -97,6 +110,7 @@ const cmd_remove_address = function(){
   }
 }
 
+//prints all recorded addresses stored in the client's local addr folder
 const cmd_print_recorded_addrs = function(){
   if (check_args_for_help(args)){
     console.log(`${DESC} prints all stored private keys along with their usernames`)
@@ -110,8 +124,8 @@ const cmd_print_recorded_addrs = function(){
   }
 }
 
+//run a complete coinjoin transaction
 const cmd_start_cj_instance = async(): Promise<any> => {
-
   if (check_args_for_help(args)){
     console.log(`${DESC} runs a complete transaction from start to finish, I.e. sends a valid input/output to the server and then signs`)
     console.log(`${STD_USAGE} ${JOIN} (ip) (join_ID) (private_key) (dest_addr) [input_amount]`)
@@ -127,6 +141,7 @@ const cmd_start_cj_instance = async(): Promise<any> => {
   }
 }
 
+//sign an existing input to an existing join
 const cmd_sign_cj_tx = async(): Promise<any> => {
   if (check_args_for_help(args)) {
     console.log(`${DESC} signs an existing transaction that the user is a part of`)
@@ -142,6 +157,7 @@ const cmd_sign_cj_tx = async(): Promise<any> => {
   }
 }
 
+//gets the option data for a cj server
 const cmd_get_option_data = function(){
   if (check_args_for_help(args)){
     console.log(`${DESC} gets the cj server's options for coinjoins, e.g. assetid/name, denominations, etc`)
@@ -152,6 +168,7 @@ const cmd_get_option_data = function(){
   }
 }
 
+//gets the data for a specific join in the cj server
 const cmd_print_join_data = async() => {
   if (check_args_for_help(args)){
     console.log(`${DESC} gets the data for a specific join that is in the CJ server.`)
@@ -164,6 +181,7 @@ const cmd_print_join_data = async() => {
   }
 }
 
+//searches for joins in a cj server that match the user's specification
 const cmd_find_matching_joins = async() => {
     const ip = args[0]
     const asset_ID = args[1]
@@ -186,8 +204,8 @@ const cmd_find_matching_joins = async() => {
     }
 }
 
+//sends a request to a cj server to remove the user from a join
 const cmd_exit_cj = function() {
-    
     if (check_args_for_help(args)){
         console.log(`${DESC} exits a particular coinjoin by signing a nonce.`)
         console.log(`NOTE: if you have signed in to a join with multiple addresses (not recommended), you MUST enter your private key to determine which address you used.`)
@@ -203,6 +221,7 @@ const cmd_exit_cj = function() {
     }
 }
 
+//check if the first paramater of a command is a call for help
 const check_args_for_help = function(args: any) {
   if (args[0] == INFO || args[0] == HELP || args.length == 0 || args[0] == undefined) {
     return true
@@ -210,7 +229,8 @@ const check_args_for_help = function(args: any) {
   return false
 }
 
-const convert_pk_username = function(private_key) {
+//if a username for a private key is stored in the local addresses, convert the parameter to the private key
+const convert_pk_username = function(private_key: string) {
   const address_data = get_address_data()
   if (private_key in address_data) {
     return address_data[private_key]

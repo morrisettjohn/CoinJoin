@@ -1,6 +1,8 @@
+//get the output data from the user's provided buffer
+
 var avm_1 = require("@avalabs/avalanche-wallet-sdk/node_modules/avalanche/dist/apis/avm");
 var avalanche_1 = require("@avalabs/avalanche-wallet-sdk/node_modules/avalanche");
-const { generate_xchain } = require("../../CJclient/avalancheutils");
+const { generate_xchain } = require("../../avalancheutils");
 
 process.stdin.on("data", data => process_data(data))
 
@@ -11,6 +13,8 @@ const process_data = function(data){
 
     const network_data = generate_xchain(data["network_ID"])
     const output_buf = new avalanche_1.Buffer(data["out_buf"])
+
+    //reconstruct the output
     const output = new avm_1.TransferableOutput()
     try {
         output.fromBuffer(output_buf)
@@ -19,6 +23,7 @@ const process_data = function(data){
         throw new Error("could not form output")
     }
     
+    //parse the data from the output
     const amount = output.getOutput().getAmount().toString()
     const asset_ID = bintools.cb58Encode(output.getAssetID())
     
