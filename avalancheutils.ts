@@ -1,3 +1,5 @@
+//several utilities that speed up the process of generating xchain/key data information
+
 import {
     Avalanche,
     Buffer,
@@ -9,6 +11,7 @@ import { Network, NetworkConstants } from "@avalabs/avalanche-wallet-sdk"
 
 const bintools: BinTools = BinTools.getInstance()
 
+//generates the appropriate xchain settings based on the network id
 const generate_xchain = function(network_ID: number){
     let Ip = ""
     let port = 0
@@ -34,6 +37,7 @@ const generate_xchain = function(network_ID: number){
     return {"xchain_ID": xchain_ID, "xchain": xchain, xchain_ID_buf}
 }
 
+//generates key data based on the private key and xchain provided
 const generate_key_chain = function(xchain: AVMAPI, privatekey: string){
     const x_key_chain: KeyChain = xchain.keyChain();
     const my_key_pair = x_key_chain.importKey(privatekey)
@@ -43,6 +47,7 @@ const generate_key_chain = function(xchain: AVMAPI, privatekey: string){
     return {"x_key_chain": x_key_chain, "my_key_pair": my_key_pair, "my_addr_buf": my_addr_buf, "my_addr_strings": my_addr_strings}
 }
 
+//determines if the key tpe is a privatekey or a mnemonic wallet phrase
 const get_key_type = function(key: string){
     if (key.startsWith("PrivateKey-")){
         return 0

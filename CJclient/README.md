@@ -1,45 +1,9 @@
-# CJserver
+# CJclient
 
-Application that runs a coinjoin server.  
+Application that runs a coinjoin client.  Contains multiple commands that help perform coinjoins
 
 OPERATION:
-    operate CoinJoin_server by accessing through commandline and putting ip address and port as an argument, as well as a network ID (1 or 5).  
-    usage:  python3 coinjoin.py (ip:port) (network_ID)
-    (e.g. python3 coinjoin.py 123.456.789:65432 5)
-
-CONFIGURATION:
-    FEE ADDRESS:
-        The server requires that the owner use either a private key or wallet key to send transaction fees.  Go into config.py and change FEE_KEY to the private key or mnemonic that you own.  
-        NOTE - the private key or mnemonic should be surrounded by quotation marks like this:
-            FEE_KEY = "foo-key".
-
-    FEE PERCENT
-        To set the standard fee percent for the server, simply change STANDARD_FEE_PERCENT in config.py to a decimal from 0 - 1, representing the percentage that the client must add on.
-        NOTE - the decimal should NOT be surrounded by quotation marks.  It should look like this:  
-            STANDARD_FEE_PERCENT = 0.42
-
-    NEW ADDRESS NUMBER
-        If the owner is using a wallet, the server will periodically use a new address from the wallet in order to preserve anonymity.  This is specified in config.py, under the variable GENERATE_NEW_ADDRESS_NUM.  As a standard, it is set to 7, which means that after 7 join transaction, a new address will be used for future joins.  However, this may have a small effect on performance.  If you wish to increase anonymity, setting the number to something lower like 3.  If the server is too intensive, try changing it to something higher like 15.
-        NOTE - like the fee percent, the integer should NOT be surrounded by quotation marks.  It should look like this:
-            GENERATE_NEW_ADDRESS_NUM = 7
-
-    SEARCH PARAMS
-        Users can petition to create new joins if the parameters they search for do not match any open joins.  However, the owner can specify what some of the upper and lower bounds of these parameters are.  They are defined under the comment #SEARCH PARAMS and do the following:
-
-        MIN_USER_BOUND:
-            Minimum threshold for a join that a user can search for
-
-        MAX_USER_BOUND:
-            Maximum threshold for a join that a user can search for
-
-        DEFAULT_LOWER_USER_BOUND:
-            If a user does not provide a designated lower user bound during a search, this number is used instead.
-
-        DEFAULT_UPPER_USER_BOUND:
-            If a user does not provide a designated upper user bound during a search, this number is used instead.
-
-        NOTE - like the fee percent, the integer specified in config.py under any of the above parameters should NOT be surrounded by quotation marks. E.g.:
-            MIN_USER_BOUND = 3
+    In order to obtain basic info about the client, 'run node coinjoin.js' info to get a list of possible commands (without the quotation marks).
 
 THE COINJOIN PROTOCOL:
 
