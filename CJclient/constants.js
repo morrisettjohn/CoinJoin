@@ -1,0 +1,13 @@
+"use strict";
+exports.__esModule = true;
+exports.BNSCALE = 1000000000;
+exports.START_PROCESS = 0;
+exports.SELECT_OPTIONS = 1;
+exports.GET_JOIN_DATA = 2;
+exports.COLLECT_INPUTS = 3;
+exports.COLLECT_SIGS = 4;
+exports.ISSUE_TX = 5;
+exports.REQUEST_WTX = 6;
+exports.REQUEST_TO_JOIN = 7;
+exports.EXIT = 8;
+exports.GET_USER_LIST = 9;
