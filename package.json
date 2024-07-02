@@ -1,0 +1,7 @@
+{
+  "dependencies": {
+    "@avalabs/avalanche-wallet-sdk": "^0.7.3",
+    "avalanche": "^3.7.0",
+    "module-alias": "^2.2.2"
+  }
+}
